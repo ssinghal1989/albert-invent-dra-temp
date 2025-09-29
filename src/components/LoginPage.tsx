@@ -88,4 +88,7 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
     redirectPath: "/tier1-results",
   });
 
+      </div>
+    </div>
+  );
 }
