@@ -263,8 +263,8 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
           <form onSubmit={handleFormSubmit} className="space-y-6">
             {/* Full Name Field */}
             <div>
-              <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                htmlFor="name"
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full Name
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -275,9 +275,9 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   id="name"
                   disabled={isUserLoggedIn}
                   value={tier2FormData.name}
-                    userFormErrors.name
+                  onChange={(e) => handleUserInputChange('name', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    errors.fullName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    userFormErrors.name ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your full name"
                 />
@@ -299,9 +299,9 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   id="email"
                   disabled={isUserLoggedIn}
                   value={tier2FormData.email}
-                    userFormErrors.email
+                  onChange={(e) => handleUserInputChange('email', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    userFormErrors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your email address"
                 />
@@ -322,14 +322,14 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   type="text"
                   id="companyName"
                   value={tier2FormData.companyName}
-                  onChange={(e) =>
-                    handleUserInputChange('companyName', e.target.value)
-                    errors.companyName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  onChange={(e) => handleUserInputChange('companyName', e.target.value)}
+                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                    userFormErrors.companyName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your company name"
                 />
               </div>
-              {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
+              {userFormErrors.companyName && <p className="mt-1 text-sm text-red-600">{userFormErrors.companyName}</p>}
             </div>
 
             {/* Job Title Field */}
@@ -347,7 +347,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   value={tier2FormData.jobTitle}
                   onChange={(e) => handleUserInputChange('jobTitle', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    userFormErrors.jobTitle
+                    userFormErrors.jobTitle ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your job title"
                 />
@@ -364,7 +364,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 type="button"
                 onClick={() => setShowCalendar(!showCalendar)}
                 className={`w-full flex items-center justify-between px-4 py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                  tier2Errors.selectedDate
+                  tier2Errors.selectedDate ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                 }`}
               >
                 <div className="flex items-center space-x-3">
