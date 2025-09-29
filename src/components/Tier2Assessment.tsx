@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { TrendingUp, User, Mail, Building, Briefcase, CheckCircle, ArrowRight } from 'lucide-react';
+import Calendar from 'react-calendar';
+import { TrendingUp, User, Mail, Building, Briefcase, CheckCircle, ArrowRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { domainBlockingService } from '../services/domainBlockingService';
 import { LoadingButton } from './ui/LoadingButton';
 import { useLoader } from '../hooks/useLoader';
+import 'react-calendar/dist/Calendar.css';
 
 interface Tier2AssessmentProps {
   onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
@@ -14,6 +16,8 @@ interface Tier2FormData {
   email: string;
   companyName: string;
   jobTitle: string;
+  selectedDate: Date | null;
+  selectedTime: string;
 }
 
 export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2AssessmentProps) {
@@ -23,9 +27,57 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     fullName: '',
     email: '',
     companyName: '',
-    jobTitle: ''
+    jobTitle: '',
+    selectedDate: null,
+    selectedTime: ''
   });
   const [errors, setErrors] = useState<Partial<Tier2FormData>>({});
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showTimeSlots, setShowTimeSlots] = useState(false);
+
+  // Generate time slots
+  const generateTimeSlots = () => {
+    const slots = [];
+    const startHour = 9;
+    const endHour = 17;
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const time12 = `${hour12}:${minute.toString().padStart(2, '0')} ${ampm}`;
+        
+        slots.push({
+          value: time24,
+          label: time12
+        });
+      }
+    }
+    
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Check if date is available (exclude weekends and past dates)
+  const isDateAvailable = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const dayOfWeek = date.getDay();
+    return date >= today && dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude weekends
+  };
+
+  // Get available time slots for selected date
+  const getAvailableTimeSlots = (date: Date | null) => {
+    if (!date) return [];
+    
+    // Simulate some unavailable slots based on date
+    const unavailableSlots = ['10:00', '14:30', '15:30'];
+    
+    return timeSlots.filter(slot => !unavailableSlots.includes(slot.value));
+  };
 
   const handleInputChange = (field: keyof Tier2FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -61,6 +113,14 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
       newErrors.jobTitle = 'Job title is required';
     }
 
+    if (!formData.selectedDate) {
+      newErrors.selectedDate = 'Please select a preferred date';
+    }
+
+    if (!formData.selectedTime) {
+      newErrors.selectedTime = 'Please select a preferred time';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -79,7 +139,34 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
   const isFormValid = formData.fullName.trim() !== '' && 
                      formData.email.trim() !== '' && 
                      formData.companyName.trim() !== '' && 
-                     formData.jobTitle.trim() !== '';
+                     formData.jobTitle.trim() !== '' &&
+                     formData.selectedDate !== null &&
+                     formData.selectedTime !== '';
+
+  const handleDateSelect = (date: Date) => {
+    setFormData(prev => ({ ...prev, selectedDate: date, selectedTime: '' }));
+    setShowCalendar(false);
+    setShowTimeSlots(true);
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setFormData(prev => ({ ...prev, selectedTime: time }));
+  };
+
+  const formatSelectedDate = () => {
+    if (!formData.selectedDate) return '';
+    return formData.selectedDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const getSelectedTimeLabel = () => {
+    const selectedTime = timeSlots.find(time => time.value === formData.selectedTime);
+    return selectedTime ? selectedTime.label : '';
+  };
 
   if (currentStep === 'confirmation') {
     return (
@@ -113,6 +200,12 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <div className="flex items-center space-x-3">
                   <Briefcase className="w-5 h-5 text-primary" />
                   <span className="text-gray-700">{formData.jobTitle}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <CalendarIcon className="w-5 h-5 text-primary" />
+                  <span className="text-gray-700">
+                    {formatSelectedDate()} at {getSelectedTimeLabel()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -243,6 +336,85 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
               {errors.jobTitle && <p className="mt-1 text-sm text-red-600">{errors.jobTitle}</p>}
             </div>
 
+            {/* Date Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferred Date
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowCalendar(!showCalendar)}
+                className={`w-full flex items-center justify-between px-4 py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  errors.selectedDate ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <CalendarIcon className="h-5 w-5 text-gray-400" />
+                  <span className={formData.selectedDate ? 'text-gray-900' : 'text-gray-400'}>
+                    {formData.selectedDate ? formatSelectedDate() : 'Select a preferred date'}
+                  </span>
+                </div>
+              </button>
+              {errors.selectedDate && <p className="mt-1 text-sm text-red-600">{errors.selectedDate}</p>}
+              
+              {showCalendar && (
+                <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                  <Calendar
+                    onChange={handleDateSelect}
+                    value={formData.selectedDate}
+                    minDate={new Date()}
+                    maxDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)} // 60 days from now
+                    tileDisabled={({ date }) => !isDateAvailable(date)}
+                    className="react-calendar-custom"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Time Selection */}
+            {showTimeSlots && formData.selectedDate && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Preferred Time
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {getAvailableTimeSlots(formData.selectedDate).map((slot) => (
+                    <button
+                      key={slot.value}
+                      type="button"
+                      onClick={() => handleTimeSelect(slot.value)}
+                      className={`p-3 text-sm font-medium rounded-lg border transition-all duration-200 ${
+                        formData.selectedTime === slot.value
+                          ? 'bg-primary text-white border-primary'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-blue-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-center space-x-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{slot.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {errors.selectedTime && <p className="mt-1 text-sm text-red-600">{errors.selectedTime}</p>}
+              </div>
+            )}
+
+            {/* Selected Time Summary */}
+            {formData.selectedDate && formData.selectedTime && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <div className="flex items-center space-x-3">
+                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Selected Assessment Time</p>
+                    <p className="text-sm text-gray-600">
+                      {formatSelectedDate()} at {getSelectedTimeLabel()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Submit Button */}
             <LoadingButton
               type="submit"
@@ -261,10 +433,37 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Our team will contact you within 1-2 business days to schedule your in-depth assessment session.
+              Our team will contact you to confirm your preferred time or suggest alternatives if needed.
             </p>
           </div>
         </div>
+
+        <style jsx>{`
+          .react-calendar-custom {
+            width: 100%;
+            border: none;
+            font-family: inherit;
+          }
+          
+          .react-calendar-custom .react-calendar__tile {
+            border-radius: 8px;
+            margin: 2px;
+          }
+          
+          .react-calendar-custom .react-calendar__tile--active {
+            background: #05f;
+            color: white;
+          }
+          
+          .react-calendar-custom .react-calendar__tile:disabled {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+          }
+          
+          .react-calendar-custom .react-calendar__tile:enabled:hover {
+            background-color: #e6f3ff;
+          }
+        `}</style>
       </div>
     </main>
   );
