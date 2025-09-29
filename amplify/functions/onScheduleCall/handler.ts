@@ -208,7 +208,6 @@ export const handler: DynamoDBStreamHandler = async (event) => {
           companyDomain: metadata.companyDomain,
           companyName: metadata.companyName,
           assessmentScore: metadata.assessmentScore,
-        }, tier1Assessment);
         }, { questions: tier1Questions, responses: userResponses, score: assessmentScore });
 
         try {
