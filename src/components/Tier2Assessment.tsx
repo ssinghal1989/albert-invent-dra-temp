@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
 import { TrendingUp, User, Mail, Building, Briefcase, CheckCircle, ArrowRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import { domainBlockingService } from '../services/domainBlockingService';
 import { LoadingButton } from './ui/LoadingButton';
 import { useLoader } from '../hooks/useLoader';
+import { useUserForm } from '../hooks/useUserForm';
+import { UserData } from '../context/AppContext';
 import 'react-calendar/dist/Calendar.css';
 
 interface Tier2AssessmentProps {
@@ -11,11 +12,7 @@ interface Tier2AssessmentProps {
   onShowLogin: () => void;
 }
 
-interface Tier2FormData {
-  fullName: string;
-  email: string;
-  companyName: string;
-  jobTitle: string;
+interface Tier2FormData extends UserData {
   selectedDate: Date | null;
   selectedTimes: string[];
 }
@@ -23,17 +20,37 @@ interface Tier2FormData {
 export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2AssessmentProps) {
   const { isLoading: submitLoading, withLoading } = useLoader();
   const [currentStep, setCurrentStep] = useState<'form' | 'confirmation'>('form');
-  const [formData, setFormData] = useState<Tier2FormData>({
-    fullName: '',
-    email: '',
-    companyName: '',
-    jobTitle: '',
+  
+  const {
+    formData: userFormData,
+    errors: userFormErrors,
+    loading: userFormLoading,
+    isFormValid: isUserFormValid,
+    isUserLoggedIn,
+    handleInputChange: handleUserInputChange,
+  } = useUserForm();
+
+  const [tier2FormData, setTier2FormData] = useState<Tier2FormData>({
+    ...userFormData,
     selectedDate: null,
     selectedTimes: []
   });
-  const [errors, setErrors] = useState<Partial<Tier2FormData>>({});
+  
+  const [tier2Errors, setTier2Errors] = useState<{
+    selectedDate?: string;
+    selectedTimes?: string;
+  }>({});
+  
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
+
+  // Update tier2FormData when userFormData changes
+  React.useEffect(() => {
+    setTier2FormData(prev => ({
+      ...prev,
+      ...userFormData
+    }));
+  }, [userFormData]);
 
   // Generate time slots
   const generateTimeSlots = () => {
@@ -81,55 +98,37 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     return timeSlots.filter(slot => !unavailableSlots.includes(slot.value));
   };
 
-  const handleInputChange = (field: keyof Tier2FormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+  const handleTier2InputChange = (field: keyof Pick<Tier2FormData, 'selectedDate' | 'selectedTimes'>, value: any) => {
+    setTier2FormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user makes selection
+    if (tier2Errors[field]) {
+      setTier2Errors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: Partial<Tier2FormData> = {};
+  const validateTier2Form = (): boolean => {
+    const newErrors: { selectedDate?: string; selectedTimes?: string } = {};
 
-    if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    } else {
-      const domainCheck = domainBlockingService.isEmailAllowed(formData.email);
-      if (!domainCheck.allowed) {
-        newErrors.email = domainCheck.reason || 'Email domain not allowed';
-      }
-    }
-
-    if (!formData.companyName.trim()) {
-      newErrors.companyName = 'Company name is required';
-    }
-
-    if (!formData.jobTitle.trim()) {
-      newErrors.jobTitle = 'Job title is required';
-    }
-
-    if (!formData.selectedDate) {
+    if (!tier2FormData.selectedDate) {
       newErrors.selectedDate = 'Please select a preferred date';
     }
 
-    if (formData.selectedTimes.length === 0) {
+    if (tier2FormData.selectedTimes.length === 0) {
       newErrors.selectedTimes = 'Please select at least one preferred time';
     }
 
-    setErrors(newErrors);
+    setTier2Errors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
+    
+    // Validate both user form and tier2 specific fields
+    const isUserFormValid = isUserFormValid;
+    const isTier2FormValid = validateTier2Form();
+    
+    if (isUserFormValid && isTier2FormValid) {
       withLoading(async () => {
         // Simulate form submission
         await new Promise(resolve => setTimeout(resolve, 1800));
@@ -138,21 +137,19 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     }
   };
 
-  const isFormValid = formData.fullName.trim() !== '' && 
-                     formData.email.trim() !== '' && 
-                     formData.companyName.trim() !== '' && 
-                     formData.jobTitle.trim() !== '' &&
-                     formData.selectedDate !== null &&
-                     formData.selectedTimes.length > 0;
+  const isFormValid = isUserFormValid && 
+                     tier2FormData.selectedDate !== null &&
+                     tier2FormData.selectedTimes.length > 0;
 
   const handleDateSelect = (data: any) => {
-    setFormData(prev => ({ ...prev, selectedDate: data, selectedTimes: [] }));
+    handleTier2InputChange('selectedDate', data);
+    handleTier2InputChange('selectedTimes', []);
     setShowCalendar(false);
     setShowTimeSlots(true);
   };
 
   const handleTimeSelect = (time: string) => {
-    setFormData(prev => {
+    setTier2FormData(prev => {
       const currentTimes = prev.selectedTimes;
       const isSelected = currentTimes.includes(time);
 
@@ -170,8 +167,8 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
   };
 
   const formatSelectedDate = () => {
-    if (!formData.selectedDate) return '';
-    return formData.selectedDate.toLocaleDateString('en-US', { 
+    if (!tier2FormData.selectedDate) return '';
+    return tier2FormData.selectedDate.toLocaleDateString('en-US', { 
       weekday: 'long', 
       month: 'long', 
       day: 'numeric',
@@ -180,7 +177,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
   };
 
   const getSelectedTimeLabels = () => {
-    return formData.selectedTimes
+    return tier2FormData.selectedTimes
       .map((timeValue) => {
         const slot = timeSlots.find((time) => time.value === timeValue);
         return slot ? slot.label : timeValue;
@@ -207,19 +204,19 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
               <div className="space-y-3 text-left">
                 <div className="flex items-center space-x-3">
                   <User className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">{formData.fullName}</span>
+                  <span className="text-gray-700">{tier2FormData.name}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">{formData.email}</span>
+                  <span className="text-gray-700">{tier2FormData.email}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Building className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">{formData.companyName}</span>
+                  <span className="text-gray-700">{tier2FormData.companyName}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Briefcase className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">{formData.jobTitle}</span>
+                  <span className="text-gray-700">{tier2FormData.jobTitle}</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="w-5 h-5 text-primary" />
@@ -267,7 +264,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
             {/* Full Name Field */}
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
-                Full Name
+                htmlFor="name"
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -275,16 +272,17 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 </div>
                 <input
                   type="text"
-                  id="fullName"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  id="name"
+                  disabled={isUserLoggedIn}
+                  value={tier2FormData.name}
+                    userFormErrors.name
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                     errors.fullName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your full name"
                 />
               </div>
-              {errors.fullName && <p className="mt-1 text-sm text-red-600">{errors.fullName}</p>}
+              {userFormErrors.name && <p className="mt-1 text-sm text-red-600">{userFormErrors.name}</p>}
             </div>
 
             {/* Email Field */}
@@ -299,15 +297,16 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <input
                   type="email"
                   id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  disabled={isUserLoggedIn}
+                  value={tier2FormData.email}
+                    userFormErrors.email
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                     errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your email address"
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {userFormErrors.email && <p className="mt-1 text-sm text-red-600">{userFormErrors.email}</p>}
             </div>
 
             {/* Company Name Field */}
@@ -322,9 +321,9 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <input
                   type="text"
                   id="companyName"
-                  value={formData.companyName}
-                  onChange={(e) => handleInputChange('companyName', e.target.value)}
-                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  value={tier2FormData.companyName}
+                  onChange={(e) =>
+                    handleUserInputChange('companyName', e.target.value)
                     errors.companyName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your company name"
@@ -345,15 +344,15 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <input
                   type="text"
                   id="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={(e) => handleInputChange('jobTitle', e.target.value)}
+                  value={tier2FormData.jobTitle}
+                  onChange={(e) => handleUserInputChange('jobTitle', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    errors.jobTitle ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    userFormErrors.jobTitle
                   }`}
                   placeholder="Enter your job title"
                 />
               </div>
-              {errors.jobTitle && <p className="mt-1 text-sm text-red-600">{errors.jobTitle}</p>}
+              {userFormErrors.jobTitle && <p className="mt-1 text-sm text-red-600">{userFormErrors.jobTitle}</p>}
             </div>
 
             {/* Date Selection */}
@@ -365,23 +364,23 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 type="button"
                 onClick={() => setShowCalendar(!showCalendar)}
                 className={`w-full flex items-center justify-between px-4 py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                  errors.selectedDate ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                  tier2Errors.selectedDate
                 }`}
               >
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="h-5 w-5 text-gray-400" />
-                  <span className={formData.selectedDate ? 'text-gray-900' : 'text-gray-400'}>
-                    {formData.selectedDate ? formatSelectedDate() : 'Select a preferred date'}
+                  <span className={tier2FormData.selectedDate ? 'text-gray-900' : 'text-gray-400'}>
+                    {tier2FormData.selectedDate ? formatSelectedDate() : 'Select a preferred date'}
                   </span>
                 </div>
               </button>
-              {errors.selectedDate && <p className="mt-1 text-sm text-red-600">{errors.selectedDate}</p>}
+              {tier2Errors.selectedDate && <p className="mt-1 text-sm text-red-600">{tier2Errors.selectedDate}</p>}
               
               {showCalendar && !showTimeSlots && (
                 <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
                   <Calendar
                     onChange={handleDateSelect}
-                    value={formData.selectedDate}
+                    value={tier2FormData.selectedDate}
                     minDate={new Date()}
                     maxDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)} // 60 days from now
                     tileDisabled={({ date }) => !isDateAvailable(date)}
@@ -392,15 +391,15 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
             </div>
 
             {/* Time Selection */}
-            {showTimeSlots && formData.selectedDate && (
+            {showTimeSlots && tier2FormData.selectedDate && (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Select Time Slots
                   </label>
-                  {formData.selectedTimes.length > 0 && (
+                  {tier2FormData.selectedTimes.length > 0 && (
                     <span className="text-xs text-primary font-medium">
-                      {formData.selectedTimes.length} selected
+                      {tier2FormData.selectedTimes.length} selected
                     </span>
                   )}
                 </div>
@@ -408,13 +407,13 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   You can select multiple time slots to give us more options
                 </p>
                 <div className="grid grid-cols-4 gap-2">
-                  {getAvailableTimeSlots(formData.selectedDate).map((slot) => (
+                  {getAvailableTimeSlots(tier2FormData.selectedDate).map((slot) => (
                     <button
                       key={slot.value}
                       type="button"
                       onClick={() => handleTimeSelect(slot.value)}
                       className={`p-2 text-xs font-medium rounded-lg border transition-all duration-200 ${
-                        formData.selectedTimes.includes(slot.value)
+                        tier2FormData.selectedTimes.includes(slot.value)
                           ? 'bg-primary text-white border-primary'
                           : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-blue-50'
                       }`}
@@ -426,18 +425,18 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                     </button>
                   ))}
                 </div>
-                {errors.selectedTimes && <p className="mt-1 text-sm text-red-600">{errors.selectedTimes}</p>}
+                {tier2Errors.selectedTimes && <p className="mt-1 text-sm text-red-600">{tier2Errors.selectedTimes}</p>}
               </div>
             )}
 
             {/* Selected Time Summary */}
-            {formData.selectedDate && formData.selectedTimes.length > 0 && (
+            {tier2FormData.selectedDate && tier2FormData.selectedTimes.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium text-gray-900">
-                      Selected Assessment Time{formData.selectedTimes.length > 1 ? 's' : ''}
+                      Selected Assessment Time{tier2FormData.selectedTimes.length > 1 ? 's' : ''}
                     </p>
                     <p className="text-sm text-gray-600">
                       {formatSelectedDate()} at {getSelectedTimeLabels()}
@@ -450,7 +449,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
             {/* Submit Button */}
             <LoadingButton
               type="submit"
-              loading={submitLoading}
+              loading={submitLoading || userFormLoading}
               loadingText="Submitting Request..."
               disabled={!isFormValid}
               className="w-full py-4"
