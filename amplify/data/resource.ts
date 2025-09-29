@@ -15,7 +15,8 @@ export const schema = a.schema({
       createdAt: a.datetime().default(new Date().toISOString()),
       updatedAt: a.datetime().default(new Date().toISOString()),
       assessmentInstances: a.hasMany("AssessmentInstance", "companyId"),
-      callScheduleRequest: a.hasMany("ScheduleRequest", "companyId")
+      callScheduleRequest: a.hasMany("ScheduleRequest", "companyId"),
+      config: a.json().default('{"tier2AccessEnabled": false}')
     })
     .identifier(["id"])
     .authorization((allow) => [

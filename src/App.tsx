@@ -17,6 +17,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Tier1Assessment } from "./components/Tier1Assessment";
 import { ScheduleCallData, Tier1Results } from "./components/Tier1Results";
 import { Tier2Assessment } from "./components/Tier2Assessment";
+import { AdminPanel } from "./components/AdminPanel";
 import {
   AppProvider,
   Tier2FormData,
@@ -65,10 +66,11 @@ function AppContent() {
     // checkAndSetupQuestions();
   }, []);
 
-  const getCurrentView = (): "home" | "tier1" | "tier2" => {
+  const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {
     const path = location.pathname;
     if (path === "/tier1") return "tier1";
     if (path === "/tier2") return "tier2";
+    if (path === "/admin") return "admin";
     return "home";
   };
 
@@ -78,6 +80,10 @@ function AppContent() {
 
   const navigateHome = () => {
     navigate("/");
+  };
+
+  const navigateToAdmin = () => {
+    navigate("/admin");
   };
 
   const toggleSidebar = () => {
@@ -222,6 +228,7 @@ function AppContent() {
       toggleSidebar={toggleSidebar}
       onNavigateHome={navigateHome}
       onNavigateToTier={navigateToTier}
+      onNavigateToAdmin={navigateToAdmin}
       onLogin={handleHeaderLogin}
       onLogout={handleLogout}
       userName={state.userData?.name || state.userData?.email || ""}
@@ -241,6 +248,14 @@ function AppContent() {
             <Tier2Assessment
               onNavigateToTier={navigateToTier}
             />
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute requireAuth={true} redirectTo="/">
+              <AdminPanel />
+            </ProtectedRoute>
           }
         />
         <Route

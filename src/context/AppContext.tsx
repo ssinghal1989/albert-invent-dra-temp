@@ -166,3 +166,17 @@ export function useHasCompleteProfile(): boolean {
       company.primaryDomain
   );
 }
+
+// Helper hook to check if user has Tier2 access
+export function useHasTier2Access(): boolean {
+  const { state } = useAppContext();
+  
+  if (!state.company?.config) return false;
+  
+  try {
+    const config = JSON.parse(state.company.config as string);
+    return config.tier2AccessEnabled === true;
+  } catch {
+    return false;
+  }
+}

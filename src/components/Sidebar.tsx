@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home, Shield } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
@@ -8,6 +8,7 @@ interface SidebarProps {
   toggleSidebar: () => void;
   onNavigateHome: () => void;
   onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
+  onNavigateToAdmin?: () => void;
 }
 
 export function Sidebar({ 
@@ -15,10 +16,13 @@ export function Sidebar({
   sidebarCollapsed, 
   toggleSidebar, 
   onNavigateHome, 
-  onNavigateToTier 
+  onNavigateToTier,
+  onNavigateToAdmin
 }: SidebarProps) {
   const { state } = useAppContext();
   const redirectPathAfterLogin = state.redirectPathAfterLogin;
+  const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
+  
   return (
     <aside className={`${sidebarCollapsed ? 'w-24' : 'w-64'} bg-white border-r border-gray-200 p-6 transition-all duration-300 relative`}>
       {/* Navigation Toggle */}
@@ -54,6 +58,13 @@ export function Sidebar({
         >
           <TrendingUp className="w-5 h-5 flex-shrink-0" />
           {!sidebarCollapsed && <span className="font-medium">Tier 2 Assessment</span>}
+        </div>}
+        {!!state.loggedInUserDetails && isAdmin && onNavigateToAdmin && <div 
+          onClick={onNavigateToAdmin}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${(currentView === 'admin') ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+        >
+          <Shield className="w-5 h-5 flex-shrink-0" />
+          {!sidebarCollapsed && <span className="font-medium">Admin Panel</span>}
         </div>}
       </nav>
     </aside>
