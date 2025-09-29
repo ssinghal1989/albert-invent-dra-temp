@@ -240,7 +240,6 @@ function AppContent() {
           element={
             <Tier2Assessment
               onNavigateToTier={navigateToTier}
-              onShowLogin={() => navigate("/login")}
             />
           }
         />

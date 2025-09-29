@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { client, LocalSchema } from "../amplifyClient";
 import { useAppContext } from "../context/AppContext"; // adjust path
-import { Tier1TemplateId } from "../services/defaultQuestions";
+import { Tier1TemplateId, Tier2TemplateId } from "../services/defaultQuestions";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 
 type Tier1AssessmentRequest = {
@@ -16,6 +16,9 @@ export function useAssessment() {
     []
   );
   const [userTier1Assessments, setUserTier1Assessments] = useState<
+    Record<string, any>[]
+  >([]);
+  const [userTier2Assessments, setUserTier2Assessments] = useState<
     Record<string, any>[]
   >([]);
   const [submittingAssesment, setSubmittingAssesment] =
@@ -34,6 +37,12 @@ export function useAssessment() {
         (instance) => instance?.assessmentType === "TIER1"
       );
       setUserTier1Assessments(tier1Instances);
+      
+      const tier2Instances = (userAssessments ?? []).filter(
+        (instance) => instance?.assessmentType === "TIER2"
+      );
+      setUserTier2Assessments(tier2Instances);
+      
       if (tier1Instances.length > 0) {
         dispatch({
           type: "SET_TIER1_SCORE",
@@ -105,6 +114,34 @@ export function useAssessment() {
     }
   };
 
+  const submitTier2Assessment = async (responses: Record<string, string>) => {
+    setSubmittingAssesment(true);
+    try {
+      if (!state.userData || !state.company) {
+        console.error("User data missing for submitting Tier 2 assessment");
+        setSubmittingAssesment(false);
+        return;
+      }
+      
+      // Create a new assessment instance for user
+      const assessmentData = {
+        templateId: Tier2TemplateId,
+        companyId: state.userData?.companyId,
+        initiatorUserId: state?.userData?.id,
+        assessmentType: "TIER2" as "TIER2",
+        responses: JSON.stringify(responses),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      await client.models.AssessmentInstance.create(assessmentData);
+      await fetchUserAssessments();
+      setSubmittingAssesment(false);
+    } catch (err) {
+      setSubmittingAssesment(false);
+      console.error("Error in submitting Tier 2 assessment:", err);
+    }
+  };
   const updateTier1AssessmentResponse = useCallback(
     async ({
       assessmentId,
@@ -133,10 +170,12 @@ export function useAssessment() {
 
   return {
     submitTier1Assessment,
+    submitTier2Assessment,
     fetchUserAssessments,
     updateTier1AssessmentResponse,
     userAssessments,
     userTier1Assessments,
+    userTier2Assessments,
     submittingAssesment,
     setSubmittingAssesment,
   };
