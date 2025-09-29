@@ -1,7 +1,10 @@
 import {
   BarChart3,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  Lightbulb
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAssessment } from "../hooks/useAssesment";
@@ -10,7 +13,9 @@ import { Tier1TemplateId } from "../services/defaultQuestions";
 import { questionsService } from "../services/questionsService";
 import { Loader } from "./ui/Loader";
 import { LoadingButton } from "./ui/LoadingButton";
-import { getScoreColor } from "../utils/common";
+import { getScoreColor, getMaturityLevel } from "../utils/common";
+import { generateRecommendations } from "../utils/recommendationsGenerator";
+import { Tier1ScoreResult } from "../utils/scoreCalculator";
 
 interface Tier1AssessmentProps {
   onComplete: (responses: Record<string, string>, questions: any[]) => void;
@@ -28,6 +33,7 @@ export function Tier1Assessment({
   const [selectedResponses, setSelectedResponses] = useState<
     Record<string, string>
   >({});
+  const [showRecommendations, setShowRecommendations] = useState(false);
   const {
     userTier1Assessments,
     submittingAssesment,
@@ -201,13 +207,22 @@ export function Tier1Assessment({
                   </div>
                 </div>
               </div>
-              {/* <button
-                //onClick={handleRetakeAssessment}
+              
+              {/* Recommendations Toggle Button */}
+              <button
+                onClick={() => setShowRecommendations(!showRecommendations)}
                 className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm"
               >
-                <RotateCcw className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-700 font-medium">Start Fresh</span>
-              </button> */}
+                <Lightbulb className="w-4 h-4 text-amber-600" />
+                <span className="text-gray-700 font-medium">
+                  {showRecommendations ? 'Hide' : 'Show'} Recommendations
+                </span>
+                {showRecommendations ? (
+                  <ChevronUp className="w-4 h-4 text-gray-600" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-600" />
+                )}
+              </button>
             </div>
             <div className="mt-4 bg-white/60 rounded-lg p-3">
               <p className="text-sm text-gray-700">
@@ -215,6 +230,85 @@ export function Tier1Assessment({
                 You can modify any answers and resubmit to update your score.
               </p>
             </div>
+            
+            {/* Expandable Recommendations Panel */}
+            {showRecommendations && (
+              <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                <div className="flex items-center space-x-2 mb-4">
+                  <Lightbulb className="w-5 h-5 text-amber-600" />
+                  <h4 className="text-lg font-semibold text-gray-900">
+                    Recommendations Based on Your Assessment
+                  </h4>
+                </div>
+                
+                {(() => {
+                  const scoreData = JSON.parse(firstPreviousAssessment.score) as Tier1ScoreResult;
+                  const recommendations = scoreData?.pillarScores 
+                    ? generateRecommendations(scoreData)
+                    : [
+                        scoreData.overallScore >= 85 ? 'Continue to innovate and lead in digital transformation' :
+                        scoreData.overallScore >= 70 ? 'Focus on scaling successful digital initiatives' :
+                        scoreData.overallScore >= 50 ? 'Prioritize foundational digital infrastructure' :
+                        'Begin with basic digital transformation initiatives',
+                        scoreData.overallScore >= 85 ? 'Share best practices across the organization' :
+                        scoreData.overallScore >= 70 ? 'Strengthen data governance and integration' :
+                        scoreData.overallScore >= 50 ? 'Develop digital skills across teams' :
+                        'Focus on data standardization and integration',
+                        scoreData.overallScore >= 85 ? 'Explore advanced AI and automation opportunities' :
+                        scoreData.overallScore >= 70 ? 'Invest in advanced analytics capabilities' :
+                        scoreData.overallScore >= 50 ? 'Establish clear data governance frameworks' :
+                        'Build digital culture and leadership support'
+                      ];
+                  
+                  return (
+                    <div className="space-y-3">
+                      {/* Priority Recommendation */}
+                      {recommendations.length > 0 && (
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border-l-4 border-amber-500">
+                          <div className="flex items-start space-x-3">
+                            <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-1">
+                              <span className="text-white text-xs font-bold">!</span>
+                            </div>
+                            <div>
+                              <h5 className="font-semibold text-gray-900 mb-1">Priority Focus</h5>
+                              <p className="text-gray-700 text-sm leading-relaxed">
+                                {recommendations[0]}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Additional Recommendations */}
+                      {recommendations.length > 1 && (
+                        <div>
+                          <h5 className="font-medium text-gray-900 mb-3">Additional Focus Areas:</h5>
+                          <div className="grid gap-3">
+                            {recommendations.slice(1, 4).map((recommendation, index) => (
+                              <div
+                                key={index}
+                                className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                              >
+                                <div className="flex items-start space-x-3">
+                                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <span className="text-white text-xs font-bold">
+                                      {index + 1}
+                                    </span>
+                                  </div>
+                                  <p className="text-gray-700 text-sm leading-relaxed flex-1">
+                                    {recommendation}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         )}
 
