@@ -17,7 +17,7 @@ interface Tier2FormData {
   companyName: string;
   jobTitle: string;
   selectedDate: Date | null;
-  selectedTime: string;
+  selectedTimes: string[];
 }
 
 export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2AssessmentProps) {
@@ -29,7 +29,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     companyName: '',
     jobTitle: '',
     selectedDate: null,
-    selectedTime: ''
+    selectedTimes: []
   });
   const [errors, setErrors] = useState<Partial<Tier2FormData>>({});
   const [showCalendar, setShowCalendar] = useState(false);
@@ -39,10 +39,12 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
   const generateTimeSlots = () => {
     const slots = [];
     const startHour = 9;
-    const endHour = 17;
+    const endHour = 18; // Changed to 18 to include 6PM (18:00)
     
-    for (let hour = startHour; hour < endHour; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
+    for (let hour = startHour; hour <= endHour; hour++) {
+      // For the last hour (6PM), only add the top of the hour slot
+      const maxMinute = hour === endHour ? 0 : 30;
+      for (let minute = 0; minute <= maxMinute; minute += 30) {
         const time24 = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const hour12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
         const ampm = hour >= 12 ? 'PM' : 'AM';
@@ -50,7 +52,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
         
         slots.push({
           value: time24,
-          label: time12
+          label: time12,
         });
       }
     }
@@ -117,8 +119,8 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
       newErrors.selectedDate = 'Please select a preferred date';
     }
 
-    if (!formData.selectedTime) {
-      newErrors.selectedTime = 'Please select a preferred time';
+    if (formData.selectedTimes.length === 0) {
+      newErrors.selectedTimes = 'Please select at least one preferred time';
     }
 
     setErrors(newErrors);
@@ -141,16 +143,30 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                      formData.companyName.trim() !== '' && 
                      formData.jobTitle.trim() !== '' &&
                      formData.selectedDate !== null &&
-                     formData.selectedTime !== '';
+                     formData.selectedTimes.length > 0;
 
-  const handleDateSelect = (date: Date) => {
-    setFormData(prev => ({ ...prev, selectedDate: date, selectedTime: '' }));
+  const handleDateSelect = (data: any) => {
+    setFormData(prev => ({ ...prev, selectedDate: data, selectedTimes: [] }));
     setShowCalendar(false);
     setShowTimeSlots(true);
   };
 
   const handleTimeSelect = (time: string) => {
-    setFormData(prev => ({ ...prev, selectedTime: time }));
+    setFormData(prev => {
+      const currentTimes = prev.selectedTimes;
+      const isSelected = currentTimes.includes(time);
+
+      let newTimes;
+      if (isSelected) {
+        // Remove time if already selected
+        newTimes = currentTimes.filter((t) => t !== time);
+      } else {
+        // Add time if not selected
+        newTimes = [...currentTimes, time].sort();
+      }
+
+      return { ...prev, selectedTimes: newTimes };
+    });
   };
 
   const formatSelectedDate = () => {
@@ -163,9 +179,13 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     });
   };
 
-  const getSelectedTimeLabel = () => {
-    const selectedTime = timeSlots.find(time => time.value === formData.selectedTime);
-    return selectedTime ? selectedTime.label : '';
+  const getSelectedTimeLabels = () => {
+    return formData.selectedTimes
+      .map((timeValue) => {
+        const slot = timeSlots.find((time) => time.value === timeValue);
+        return slot ? slot.label : timeValue;
+      })
+      .join(", ");
   };
 
   if (currentStep === 'confirmation') {
@@ -204,7 +224,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="w-5 h-5 text-primary" />
                   <span className="text-gray-700">
-                    {formatSelectedDate()} at {getSelectedTimeLabel()}
+                    {formatSelectedDate()} at {getSelectedTimeLabels()}
                   </span>
                 </div>
               </div>
@@ -357,7 +377,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
               </button>
               {errors.selectedDate && <p className="mt-1 text-sm text-red-600">{errors.selectedDate}</p>}
               
-              {showCalendar && (
+              {showCalendar && !showTimeSlots && (
                 <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
                   <Calendar
                     onChange={handleDateSelect}
@@ -374,41 +394,53 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
             {/* Time Selection */}
             {showTimeSlots && formData.selectedDate && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Preferred Time
-                </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Select Time Slots
+                  </label>
+                  {formData.selectedTimes.length > 0 && (
+                    <span className="text-xs text-primary font-medium">
+                      {formData.selectedTimes.length} selected
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  You can select multiple time slots to give us more options
+                </p>
+                <div className="grid grid-cols-4 gap-2">
                   {getAvailableTimeSlots(formData.selectedDate).map((slot) => (
                     <button
                       key={slot.value}
                       type="button"
                       onClick={() => handleTimeSelect(slot.value)}
-                      className={`p-3 text-sm font-medium rounded-lg border transition-all duration-200 ${
-                        formData.selectedTime === slot.value
+                      className={`p-2 text-xs font-medium rounded-lg border transition-all duration-200 ${
+                        formData.selectedTimes.includes(slot.value)
                           ? 'bg-primary text-white border-primary'
                           : 'bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-blue-50'
                       }`}
                     >
                       <div className="flex items-center justify-center space-x-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3 h-3 flex-shrink-0" />
                         <span>{slot.label}</span>
                       </div>
                     </button>
                   ))}
                 </div>
-                {errors.selectedTime && <p className="mt-1 text-sm text-red-600">{errors.selectedTime}</p>}
+                {errors.selectedTimes && <p className="mt-1 text-sm text-red-600">{errors.selectedTimes}</p>}
               </div>
             )}
 
             {/* Selected Time Summary */}
-            {formData.selectedDate && formData.selectedTime && (
+            {formData.selectedDate && formData.selectedTimes.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="h-5 w-5 text-primary" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Selected Assessment Time</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      Selected Assessment Time{formData.selectedTimes.length > 1 ? 's' : ''}
+                    </p>
                     <p className="text-sm text-gray-600">
-                      {formatSelectedDate()} at {getSelectedTimeLabel()}
+                      {formatSelectedDate()} at {getSelectedTimeLabels()}
                     </p>
                   </div>
                 </div>
