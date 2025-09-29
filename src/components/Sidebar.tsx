@@ -1,0 +1,58 @@
+import React from 'react';
+import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home } from 'lucide-react';
+
+interface SidebarProps {
+  currentView: 'home' | 'tier1' | 'tier2';
+  sidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+  onNavigateHome: () => void;
+  onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
+}
+
+export function Sidebar({ 
+  currentView, 
+  sidebarCollapsed, 
+  toggleSidebar, 
+  onNavigateHome, 
+  onNavigateToTier 
+}: SidebarProps) {
+  return (
+    <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 p-6 transition-all duration-300 relative`}>
+      {/* Navigation Toggle */}
+      <button
+        onClick={toggleSidebar}
+        className="absolute -right-4 top-8 w-8 h-8 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center z-10"
+      >
+        {sidebarCollapsed ? (
+          <ChevronRight className="w-4 h-4 text-black" />
+        ) : (
+          <ChevronLeft className="w-4 h-4 text-black" />
+        )}
+      </button>
+      
+      <nav className="space-y-2">
+        <div 
+          onClick={onNavigateHome}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'home' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+        >
+          <Home className="w-5 h-5 flex-shrink-0" />
+          {!sidebarCollapsed && <span className="font-medium">Home</span>}
+        </div>
+        <div 
+          onClick={() => onNavigateToTier('tier1')}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'tier1' || currentView === 'consent' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+        >
+          <CheckCircle className="w-5 h-5 flex-shrink-0" />
+          {!sidebarCollapsed && <span className="font-medium">Tier 1 Assessment</span>}
+        </div>
+        <div 
+          onClick={() => onNavigateToTier('tier2')}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'tier2' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+        >
+          <TrendingUp className="w-5 h-5 flex-shrink-0" />
+          {!sidebarCollapsed && <span className="font-medium">Tier 2 Assessment</span>}
+        </div>
+      </nav>
+    </aside>
+  );
+}

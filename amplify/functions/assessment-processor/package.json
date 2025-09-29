@@ -1,0 +1,8 @@
+{
+  "name": "assessment-processor",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@types/aws-lambda": "^8.10.119"
+  }
+}
