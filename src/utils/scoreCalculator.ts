@@ -1,10 +1,37 @@
 // Tier 1 Assessment Score Calculator Utility
 
+import { getMaturityLevel } from "./common";
+
 export interface AssessmentResponses {
   [questionId: string]: string;
 }
 
-export interface ScoreResult {
+export interface Question {
+  id: string;
+  prompt: string;
+  metadata?: {
+    pillar?: string;
+  };
+  options: Array<{
+    value: string;
+    score: number;
+  }>;
+}
+
+export interface PillarScore {
+  pillar: string;
+  averageScore: number;
+  questionCount: number;
+}
+
+export interface FocusAreaScore {
+  focusArea: string;
+  pillar: string;
+  maturityLevel: string;
+  score: number;
+}
+
+export interface Tier1ScoreResult {
   overallScore: number;
   totalQuestions: number;
   scoreBreakdown: {
@@ -14,6 +41,9 @@ export interface ScoreResult {
     worldClass: number;
   };
   maturityLevel: string;
+  pillarScores: PillarScore[];
+  focusAreaScores: FocusAreaScore[];
+  lowestScoringPillar: string;
 }
 
 // Maturity level to score mapping
@@ -35,9 +65,10 @@ const MATURITY_LEVELS = {
 /**
  * Calculate the overall score for Tier 1 assessment
  * @param responses - Object with questionId as key and maturity level as value
+ * @param questions - Array of question objects with metadata
  * @returns ScoreResult with overall score and breakdown
  */
-export function calculateTier1Score(responses: AssessmentResponses): ScoreResult {
+export function calculateTier1Score(responses: AssessmentResponses, questions: Question[] = []): Tier1ScoreResult {
   const questionIds = Object.keys(responses);
   const totalQuestions = questionIds.length;
   
@@ -51,7 +82,10 @@ export function calculateTier1Score(responses: AssessmentResponses): ScoreResult
         established: 0,
         worldClass: 0
       },
-      maturityLevel: 'Basic'
+      maturityLevel: 'Basic',
+      pillarScores: [],
+      focusAreaScores: [],
+      lowestScoringPillar: 'DIGITALIZATION'
     };
   }
 
@@ -62,6 +96,10 @@ export function calculateTier1Score(responses: AssessmentResponses): ScoreResult
     established: 0,
     worldClass: 0
   };
+
+  // Calculate pillar scores
+  const pillarData: { [pillar: string]: { totalScore: number; count: number } } = {};
+  const focusAreaScores: FocusAreaScore[] = [];
 
   // Calculate total score
   let totalScore = 0;
@@ -87,6 +125,49 @@ export function calculateTier1Score(responses: AssessmentResponses): ScoreResult
         scoreBreakdown.worldClass++;
         break;
     }
+
+    // Find the question to get pillar and focus area info
+    const question = questions.find(q => q.id === questionId);
+    if (question) {
+      
+      const pillar = !!question.metadata ? JSON.parse(question?.metadata as string)?.pillar : 'UNKNOWN';
+      const focusArea = question.prompt;
+
+      // Update pillar data
+      if (!pillarData[pillar]) {
+        pillarData[pillar] = { totalScore: 0, count: 0 };
+      }
+      pillarData[pillar].totalScore += score;
+      pillarData[pillar].count += 1;
+
+      // Add focus area score
+      focusAreaScores.push({
+        focusArea,
+        pillar,
+        maturityLevel,
+        score
+      });
+    }
+  });
+
+  // Calculate pillar scores
+  const pillarScores: PillarScore[] = Object.entries(pillarData).map(([pillar, data]) => ({
+    pillar,
+    averageScore: Math.round(data.totalScore / data.count),
+    questionCount: data.count
+  }));
+
+  // Find lowest scoring pillar (with tie-breaking priority)
+  const pillarPriority = ['DIGITALIZATION', 'TRANSFORMATION', 'VALUE_SCALING'];
+  let lowestScoringPillar = 'DIGITALIZATION';
+  let lowestScore = Infinity;
+
+  pillarPriority.forEach(pillar => {
+    const pillarScore = pillarScores.find(p => p.pillar === pillar);
+    if (pillarScore && pillarScore.averageScore < lowestScore) {
+      lowestScore = pillarScore.averageScore;
+      lowestScoringPillar = pillar;
+    }
   });
 
   // Calculate average score (overall score)
@@ -99,32 +180,11 @@ export function calculateTier1Score(responses: AssessmentResponses): ScoreResult
     overallScore,
     totalQuestions,
     scoreBreakdown,
-    maturityLevel
+    maturityLevel,
+    pillarScores,
+    focusAreaScores,
+    lowestScoringPillar
   };
-}
-
-/**
- * Get maturity level label based on overall score
- * @param score - Overall score (0-100)
- * @returns Maturity level label
- */
-export function getMaturityLevel(score: number): string {
-  if (score >= 85) return 'World Class';
-  if (score >= 70) return 'Established';
-  if (score >= 50) return 'Emerging';
-  return 'Basic';
-}
-
-/**
- * Get score color based on overall score
- * @param score - Overall score (0-100)
- * @returns CSS color value
- */
-export function getScoreColor(score: number): string {
-  if (score >= 85) return '#05f'; // primary
-  if (score >= 70) return '#088aff'; // accent
-  if (score >= 50) return '#374151'; // secondary
-  return '#6b7280'; // gray-500
 }
 
 /**
@@ -180,7 +240,6 @@ export function exampleCalculation() {
 
   const result = calculateTier1Score(sampleResponses);
   
-  console.log('Sample Calculation Result:', result);
   // Expected result:
   // - 8 EMERGING responses (50 points each) = 400 points
   // - 1 BASIC response (25 points) = 25 points  

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
   currentView: 'home' | 'tier1' | 'tier2';
@@ -16,8 +17,10 @@ export function Sidebar({
   onNavigateHome, 
   onNavigateToTier 
 }: SidebarProps) {
+  const { state } = useAppContext();
+  const redirectPathAfterLogin = state.redirectPathAfterLogin;
   return (
-    <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 p-6 transition-all duration-300 relative`}>
+    <aside className={`${sidebarCollapsed ? 'w-24' : 'w-64'} bg-white border-r border-gray-200 p-6 transition-all duration-300 relative`}>
       {/* Navigation Toggle */}
       <button
         onClick={toggleSidebar}
@@ -33,25 +36,25 @@ export function Sidebar({
       <nav className="space-y-2">
         <div 
           onClick={onNavigateHome}
-          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'home' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${(currentView === 'home' && !redirectPathAfterLogin) ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
         >
           <Home className="w-5 h-5 flex-shrink-0" />
           {!sidebarCollapsed && <span className="font-medium">Home</span>}
         </div>
-        <div 
+        {!!state.loggedInUserDetails && <div 
           onClick={() => onNavigateToTier('tier1')}
-          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'tier1' || currentView === 'consent' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${(currentView === 'tier1' || redirectPathAfterLogin?.includes('/tier1')) ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
         >
           <CheckCircle className="w-5 h-5 flex-shrink-0" />
           {!sidebarCollapsed && <span className="font-medium">Tier 1 Assessment</span>}
-        </div>
-        <div 
+        </div>}
+        {!!state.loggedInUserDetails && <div 
           onClick={() => onNavigateToTier('tier2')}
-          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${currentView === 'tier2' ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
+          className={`flex items-center ${sidebarCollapsed ? 'justify-center w-10 h-10 p-0 mr-8' : 'space-x-3 p-3'} ${(currentView === 'tier2' || redirectPathAfterLogin?.includes('/tier2')) ? 'text-white bg-primary' : 'text-secondary hover:bg-light'} rounded-lg cursor-pointer transition-colors duration-200`}
         >
           <TrendingUp className="w-5 h-5 flex-shrink-0" />
           {!sidebarCollapsed && <span className="font-medium">Tier 2 Assessment</span>}
-        </div>
+        </div>}
       </nav>
     </aside>
   );

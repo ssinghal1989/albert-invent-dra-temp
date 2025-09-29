@@ -55,7 +55,7 @@ export function HomePage({ onNavigateToTier }: HomePageProps) {
               onClick={() => onNavigateToTier('tier1')}
               className="w-full bg-primary text-white py-4 px-6 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all duration-200 hover:shadow-md hover:opacity-90"
             >
-              <span>Start Quick Assessment</span>
+              <span>Start High-Level Assessment</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>
@@ -95,7 +95,7 @@ export function HomePage({ onNavigateToTier }: HomePageProps) {
               onClick={() => onNavigateToTier('tier2')}
               className="w-full bg-primary text-white py-4 px-6 rounded-xl font-semibold flex items-center justify-center space-x-2 transition-all duration-200 hover:shadow-md hover:opacity-90"
             >
-              <span>Begin In-Depth Analysis</span>
+              <span>Request In-Depth Assessment</span>
               <ArrowRight className="w-5 h-5" />
             </button>
           </div>

@@ -105,6 +105,22 @@
                   "companyId"
                 ]
               }
+            },
+            "callScheduleRequest": {
+              "name": "callScheduleRequest",
+              "isArray": true,
+              "type": {
+                "model": "ScheduleRequest"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "companyId"
+                ]
+              }
             }
           },
           "syncable": true,
@@ -183,6 +199,15 @@
               "isRequired": false,
               "attributes": []
             },
+            "role": {
+              "name": "role",
+              "isArray": false,
+              "type": {
+                "enum": "UserRole"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
             "companyId": {
               "name": "companyId",
               "isArray": false,
@@ -224,6 +249,22 @@
               "isArray": true,
               "type": {
                 "model": "AssessmentInstance"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": true,
+              "association": {
+                "connectionType": "HAS_MANY",
+                "associatedWith": [
+                  "initiatorUserId"
+                ]
+              }
+            },
+            "callScheduleRequest": {
+              "name": "callScheduleRequest",
+              "isArray": true,
+              "type": {
+                "model": "ScheduleRequest"
               },
               "isRequired": false,
               "attributes": [],
@@ -829,6 +870,214 @@
               }
             },
             {
+              "type": "key",
+              "properties": {
+                "name": "assessmentInstancesByInitiatorUserIdAndCreatedAt",
+                "queryField": "listAssessmentInstanceByInitiatorUserIdAndCreatedAt",
+                "fields": [
+                  "initiatorUserId",
+                  "createdAt"
+                ]
+              }
+            },
+            {
+              "type": "auth",
+              "properties": {
+                "rules": [
+                  {
+                    "allow": "private",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  },
+                  {
+                    "provider": "userPools",
+                    "ownerField": "owner",
+                    "allow": "owner",
+                    "identityClaim": "cognito:username",
+                    "operations": [
+                      "create",
+                      "update",
+                      "delete",
+                      "read"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "primaryKeyInfo": {
+            "isCustomPrimaryKey": false,
+            "primaryKeyFieldName": "id",
+            "sortKeyFieldNames": []
+          }
+        },
+        "ScheduleRequest": {
+          "name": "ScheduleRequest",
+          "fields": {
+            "id": {
+              "name": "id",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": true,
+              "attributes": []
+            },
+            "type": {
+              "name": "type",
+              "isArray": false,
+              "type": {
+                "enum": "ScheduleRequestType"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "initiatorUserId": {
+              "name": "initiatorUserId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "companyId": {
+              "name": "companyId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "preferredDate": {
+              "name": "preferredDate",
+              "isArray": false,
+              "type": "AWSDate",
+              "isRequired": true,
+              "attributes": []
+            },
+            "preferredTimes": {
+              "name": "preferredTimes",
+              "isArray": true,
+              "type": "String",
+              "isRequired": false,
+              "attributes": [],
+              "isArrayNullable": false
+            },
+            "remarks": {
+              "name": "remarks",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "company": {
+              "name": "company",
+              "isArray": false,
+              "type": {
+                "model": "Company"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "companyId"
+                ]
+              }
+            },
+            "metadata": {
+              "name": "metadata",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
+            },
+            "initiator": {
+              "name": "initiator",
+              "isArray": false,
+              "type": {
+                "model": "User"
+              },
+              "isRequired": false,
+              "attributes": [],
+              "association": {
+                "connectionType": "BELONGS_TO",
+                "targetNames": [
+                  "initiatorUserId"
+                ]
+              }
+            },
+            "status": {
+              "name": "status",
+              "isArray": false,
+              "type": {
+                "enum": "ScheduleRequestStatus"
+              },
+              "isRequired": false,
+              "attributes": []
+            },
+            "assessmentInstanceId": {
+              "name": "assessmentInstanceId",
+              "isArray": false,
+              "type": "ID",
+              "isRequired": false,
+              "attributes": []
+            },
+            "scheduledDateTime": {
+              "name": "scheduledDateTime",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "meetingLink": {
+              "name": "meetingLink",
+              "isArray": false,
+              "type": "String",
+              "isRequired": false,
+              "attributes": []
+            },
+            "notificationsSent": {
+              "name": "notificationsSent",
+              "isArray": false,
+              "type": "Boolean",
+              "isRequired": false,
+              "attributes": []
+            },
+            "createdAt": {
+              "name": "createdAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            },
+            "updatedAt": {
+              "name": "updatedAt",
+              "isArray": false,
+              "type": "AWSDateTime",
+              "isRequired": false,
+              "attributes": []
+            }
+          },
+          "syncable": true,
+          "pluralName": "ScheduleRequests",
+          "attributes": [
+            {
+              "type": "model",
+              "properties": {}
+            },
+            {
+              "type": "key",
+              "properties": {
+                "name": "scheduleRequestsByInitiatorUserIdAndCreatedAt",
+                "queryField": "listScheduleRequestByInitiatorUserIdAndCreatedAt",
+                "fields": [
+                  "initiatorUserId",
+                  "createdAt"
+                ]
+              }
+            },
+            {
               "type": "auth",
               "properties": {
                 "rules": [
@@ -865,6 +1114,14 @@
         }
       },
       "enums": {
+        "UserRole": {
+          "name": "UserRole",
+          "values": [
+            "user",
+            "admin",
+            "superAdmin"
+          ]
+        },
         "QuestionKind": {
           "name": "QuestionKind",
           "values": [
@@ -886,6 +1143,22 @@
           "values": [
             "TIER1",
             "TIER2"
+          ]
+        },
+        "ScheduleRequestType": {
+          "name": "ScheduleRequestType",
+          "values": [
+            "TIER1_FOLLOWUP",
+            "TIER2_REQUEST"
+          ]
+        },
+        "ScheduleRequestStatus": {
+          "name": "ScheduleRequestStatus",
+          "values": [
+            "PENDING",
+            "SCHEDULED",
+            "COMPLETED",
+            "CANCELLED"
           ]
         }
       },

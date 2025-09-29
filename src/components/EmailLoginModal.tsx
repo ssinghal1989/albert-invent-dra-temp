@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
 import { Mail, ArrowRight, X } from 'lucide-react';
-import { domainBlockingService } from '../services/domainBlockingService';
+import { LOGIN_NEXT_STEP, useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import { useAuthFlow } from '../hooks/useAuthFlow';
+import { ifDomainAlloeded } from '../utils/domain';
+import { getDomainFromEmail } from '../utils/common';
 import { LoadingButton } from './ui/LoadingButton';
-import { useLoader } from '../hooks/useLoader';
 
 interface EmailLoginModalProps {
-  onSubmit: (email: string) => void;
   onCancel: () => void;
 }
 
-export function EmailLoginModal({ onSubmit, onCancel }: EmailLoginModalProps) {
-  const { isLoading, withLoading } = useLoader();
+export function EmailLoginModal({ onCancel }: EmailLoginModalProps) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const { dispatch } = useAppContext();
+  const navigate = useNavigate();
 
   const handleInputChange = (value: string) => {
     setEmail(value);
@@ -25,7 +28,16 @@ export function EmailLoginModal({ onSubmit, onCancel }: EmailLoginModalProps) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
+    dispatch({ type: 'LOGIN_NEXT_STEP', payload: nextStep });
+    dispatch({ type: 'SET_LOGIN_EMAIL', payload: email });
+    dispatch({ type: 'SET_LOGIN_FLOW', payload: 'DIRECT' });
+    navigate('/otp-login');
+  }
+
+  const { handleAuth, loading } = useAuthFlow(updateStateAndNavigateToOtp);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email.trim()) {
@@ -38,17 +50,11 @@ export function EmailLoginModal({ onSubmit, onCancel }: EmailLoginModalProps) {
       return;
     }
 
-    const domainCheck = domainBlockingService.isEmailAllowed(email);
-    if (!domainCheck.allowed) {
-      setError(domainCheck.reason || 'Email domain not allowed');
+    if (!ifDomainAlloeded(getDomainFromEmail(email)!)) {
+      setError('Please use your work email address');
       return;
     }
-
-    withLoading(async () => {
-      // Simulate sending verification code
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      onSubmit(email);
-    });
+    await handleAuth(email);
   };
 
   const isEmailValid = email.trim() !== '' && validateEmail(email);
@@ -97,25 +103,17 @@ export function EmailLoginModal({ onSubmit, onCancel }: EmailLoginModalProps) {
             {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
           </div>
 
-          {/* Submit Button */}
-          <LoadingButton
-            type="submit"
-            loading={isLoading}
-            loadingText="Sending Code..."
-            disabled={!isEmailValid}
-            className="w-full py-4"
-            size="lg"
-          >
-            <span className="flex items-center space-x-2">
-              <span>Send Verification Code</span>
+          <LoadingButton disabled={!isEmailValid} loadingText='Sending Verification Code ...' loading={loading} style={{width: '100%'}} >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+              Send Verification Code
               <ArrowRight className="w-5 h-5" />
-            </span>
+            </div>
           </LoadingButton>
         </form>
 
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            We'll send a 6-digit verification code to your email
+            We'll send a verification code to your email
           </p>
         </div>
       </div>

@@ -18,7 +18,7 @@ export function useLoader(initialState: boolean = false): UseLoaderReturn {
     setIsLoading(false);
   }, []);
 
-  const withLoading = useCallback(async <T>(asyncFn: () => Promise<T>): Promise<T> => {
+  const withLoading = useCallback(async (asyncFn: () => Promise<any>): Promise<any> => {
     try {
       setIsLoading(true);
       const result = await asyncFn();

@@ -1,293 +1,219 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
-import { AppProvider, useAppContext, UserData } from './context/AppContext';
-import { apiService } from './services/amplifyService';
-import { seedDataService } from './services/seedDataService';
-import { useLoader } from './hooks/useLoader';
-import { Loader } from './components/ui/Loader';
-import { Layout } from './components/Layout';
-import { HomePage } from './components/HomePage';
-import { ConsentPage } from './components/ConsentPage';
-import { Tier1Assessment } from './components/Tier1Assessment';
-import { Tier2Assessment } from './components/Tier2Assessment';
-import { LoginPage } from './components/LoginPage';
-import { OtpVerificationPage } from './components/OtpVerificationPage';
-import { EmailLoginModal } from './components/EmailLoginModal';
-import { Tier1Results } from './components/Tier1Results';
-
-interface AssessmentTemplate {
-  id: string;
-  name: string;
-  slug: string;
-  version: string;
-  sections: Array<{
-    id: string;
-    title: string;
-    description: string;
-  }>;
-  questions: Array<{
-    id: string;
-    sectionId: string;
-    order: number;
-    kind: string;
-    prompt: string;
-    required: boolean;
-    options: Array<{
-      id: string;
-      label: string;
-      value: string;
-      score: number;
-    }>;
-  }>;
-  scoringConfig: {
-    weights: Record<string, number>;
-    maturityToScore: Record<string, number>;
-  };
-}
+import { getCurrentUser, signOut } from "aws-amplify/auth";
+import { useEffect } from "react";
+import {
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+import { LocalSchema } from "./amplifyClient";
+import { EmailLoginModal } from "./components/EmailLoginModal";
+import { HomePage } from "./components/HomePage";
+import { Layout } from "./components/Layout";
+import { LoginPage } from "./components/LoginPage";
+import { OtpVerificationPage } from "./components/OtpVerificationPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Tier1Assessment } from "./components/Tier1Assessment";
+import { ScheduleCallData, Tier1Results } from "./components/Tier1Results";
+import { Tier2Assessment } from "./components/Tier2Assessment";
+import {
+  AppProvider,
+  Tier2FormData,
+  useAppContext,
+  useHasCompleteProfile,
+  UserData,
+} from "./context/AppContext";
+import { useSetUserData } from "./hooks/setUserData";
+import { useAssessment } from "./hooks/useAssesment";
+import { seedDataService } from "./services/seedDataService";
+import { calculateTier1Score } from "./utils/scoreCalculator";
+import { ToastProvider, useToast } from "./context/ToastContext";
+import { useCallRequest } from "./hooks/useCallRequest";
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isLoading: templateLoading, withLoading } = useLoader();
-  const [assessmentTemplate, setAssessmentTemplate] = useState<AssessmentTemplate | null>(null);
-  const [currentAssessmentInstance, setCurrentAssessmentInstance] = useState<string | null>(null);
-  
-  // Load previous assessments on component mount
+  const hasCompleteProfile = useHasCompleteProfile();
+  const { setUserData } = useSetUserData();
+  const { submitTier1Assessment, fetchUserAssessments } = useAssessment();
+  const { scheduleRequest, fetchUserCallRequests } = useCallRequest();
+  const { showToast } = useToast();
+
+  const checkIfUserAlreadyLoggedIn = async () => {
+    try {
+      dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: true });
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
+        setUserData({ loggedInUserDetails: currentUser! });
+      }
+      dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
+    } catch (error) {
+      dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
+      console.error("Error checking if user is logged in:", error);
+    }
+  };
+
+  const checkAndSetupQuestions = async () => {
+    await seedDataService.initializeDefaultQuestions();
+  };
+
   useEffect(() => {
-    loadPreviousAssessments();
+    checkIfUserAlreadyLoggedIn();
+    // checkAndSetupQuestions();
   }, []);
 
-  useEffect(() => {
-    // Add a small delay to ensure Amplify is fully configured
-    const timer = setTimeout(() => {
-      withLoading(async () => {
-        // Initialize default questions first
-        await initializeDefaultQuestions();
-        // Then load assessment template
-        await loadAssessmentTemplate();
-      });
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, [withLoading]);
-
-  const initializeDefaultQuestions = async (): Promise<void> => {
-    try {
-      console.log('🌱 Initializing default questions...');
-      const result = await seedDataService.initializeDefaultQuestions();
-      if (result.success) {
-        console.log('✅ Default questions initialized:', result.data);
-      } else {
-        console.warn('⚠️ Failed to initialize default questions:', result.error);
-      }
-    } catch (error) {
-      console.error('❌ Error initializing default questions:', error);
-    }
-  };
-
-  const loadPreviousAssessments = async () => {
-    try {
-      // DUMMY DATA: This loads dummy previous assessments
-      // REAL AMPLIFY: Replace with actual user ID when authenticated
-      const result = await apiService.getUserAssessments('dummy_user_id');
-      if (result.success && result.data) {
-        dispatch({ type: 'SET_PREVIOUS_ASSESSMENTS', payload: result.data });
-      }
-    } catch (error) {
-      console.error('Failed to load previous assessments:', error);
-    }
-  };
-
-  const loadAssessmentTemplate = async (): Promise<void> => {
-    try {
-      const result = await apiService.getAssessmentTemplate('digital-readiness-high');
-      if (result.success && result.data) {
-        setAssessmentTemplate(result.data);
-      }
-    } catch (error) {
-      console.error('Failed to load assessment template:', error);
-    }
-  };
-
-  const getCurrentView = (): 'home' | 'tier1' | 'tier2' => {
+  const getCurrentView = (): "home" | "tier1" | "tier2" => {
     const path = location.pathname;
-    if (path === '/tier1') return 'tier1';
-    if (path === '/tier2') return 'tier2';
-    return 'home';
+    if (path === "/tier1") return "tier1";
+    if (path === "/tier2") return "tier2";
+    return "home";
   };
 
-  const navigateToTier = (tier: 'tier1' | 'tier2') => {
-    if (tier === 'tier1') {
-      navigate('/consent');
-    } else {
-      navigate(`/${tier}`);
-    }
+  const navigateToTier = (tier: "tier1" | "tier2") => {
+    navigate(`/${tier}`);
   };
 
   const navigateHome = () => {
-    navigate('/');
+    navigate("/");
   };
 
   const toggleSidebar = () => {
-    dispatch({ type: 'TOGGLE_SIDEBAR' });
-  };
-
-  const handleConsentAccept = async () => {
-    try {
-      // Create assessment instance
-      if (assessmentTemplate) {
-        const result = await apiService.createAssessmentInstance(
-          assessmentTemplate.id,
-          'HIGH_LEVEL',
-          { source: 'web_app' }
-        );
-        
-        if (result.success && result.data) {
-          setCurrentAssessmentInstance(result.data.id);
-          navigate('/tier1');
-        }
-      }
-    } catch (error) {
-      console.error('Failed to create assessment instance:', error);
-      // Still navigate to allow demo to work
-      navigate('/tier1');
-    }
-  };
-
-  const handleConsentDecline = () => {
-    navigate('/');
+    dispatch({ type: "TOGGLE_SIDEBAR" });
   };
 
   const handleLogin = (data: UserData) => {
-    dispatch({ type: 'SET_PENDING_USER_DATA', payload: data });
-    navigate('/otp');
+    navigate("/otp");
   };
 
-  const handleOtpVerification = async () => {
-    if (state.pendingUserData) {
-      try {
-        // Extract domain from email
-        const emailDomain = state.pendingUserData.email.split('@')[1];
-        
-        // Create or get company
-        const companyResult = await apiService.createOrGetCompany(
-          emailDomain,
-          state.pendingUserData.companyName
-        );
-        
-        let companyId = null;
-        if (companyResult.success && companyResult.data) {
-          companyId = companyResult.data.id;
-        }
-
-        // Create user
-        const userResult = await apiService.createUser({
-          email: state.pendingUserData.email,
-          firstName: state.pendingUserData.name.split(' ')[0],
-          lastName: state.pendingUserData.name.split(' ').slice(1).join(' '),
-          jobTitle: state.pendingUserData.jobTitle,
-          companyId
-        });
-
-        if (userResult.success && userResult.data) {
-          // Record consent
-          await apiService.recordConsent(
-            userResult.data.id,
-            'By continuing, you agree to the Albert Digital Readiness Assessment Terms and Privacy Policy.',
-            'v1.0'
-          );
-        }
-
-        dispatch({ type: 'SET_USER_DATA', payload: state.pendingUserData });
-        dispatch({ type: 'SET_PENDING_USER_DATA', payload: null });
-        navigate('/tier1-results');
-      } catch (error) {
-        console.error('Failed to create user:', error);
-        // Still proceed for demo purposes
-        dispatch({ type: 'SET_USER_DATA', payload: state.pendingUserData });
-        dispatch({ type: 'SET_PENDING_USER_DATA', payload: null });
-        navigate('/tier1-results');
-      }
+  const handleOtpVerification = () => {
+    dispatch({ type: "SET_LOGIN_EMAIL", payload: "" });
+    if (state.redirectPathAfterLogin?.includes("tier1")) {
+      // Handle to redirect on result page
+      navigate("/tier1-results");
+    } else if (state.redirectPathAfterLogin?.includes("tier2")) {
+      // Handle to redirect on result page
+      navigate("/tier2");
+    } else {
+      navigate("/");
     }
+    dispatch({ type: "SET_REDIRECT_PATH_AFTER_LOGIN", payload: undefined });
   };
 
-  const handleLogout = () => {
-    dispatch({ type: 'RESET_STATE' });
-    navigate('/');
+  const handleLogout = async () => {
+    await signOut();
+    dispatch({ type: "RESET_STATE" });
+    navigate("/");
   };
 
   const handleHeaderLogin = () => {
-    navigate('/email-login');
-  };
-
-  const handleEmailSubmit = (email: string) => {
-    dispatch({ type: 'SET_LOGIN_EMAIL', payload: email });
-    navigate('/otp-login');
-  };
-
-  const handleLoginOtpVerification = () => {
-    dispatch({ 
-      type: 'SET_USER_DATA', 
-      payload: {
-        name: 'User',
-        email: state.loginEmail,
-        companyName: '',
-        jobTitle: ''
-      }
+    // get the current path to redirect after login
+    dispatch({
+      type: "SET_REDIRECT_PATH_AFTER_LOGIN",
+      payload: location.pathname,
     });
-    dispatch({ type: 'SET_LOGIN_EMAIL', payload: '' });
-    navigate('/');
+    navigate("/email-login");
   };
 
-  const handleScheduleCall = () => {
+  const handleLoginOtpVerification = async (data: {
+    user?: LocalSchema["User"]["type"];
+    company?: LocalSchema["Company"]["type"];
+  }) => {
+    const { user, company } = data;
+    dispatch({ type: "SET_LOGIN_EMAIL", payload: "" });
+    if (state.redirectPathAfterLogin?.includes("tier1-results")) {
+      await submitTier1Assessment(data);
+      await fetchUserAssessments();
+      navigate(state.redirectPathAfterLogin || "/");
+      dispatch({ type: "SET_REDIRECT_PATH_AFTER_LOGIN", payload: undefined });
+    }
+    if (state.redirectPathAfterLogin?.includes("tier2")) {
+      try {
+        const tier2FormData = state.userFormData as Tier2FormData;
+        const { data } = await scheduleRequest({
+          preferredDate: new Date(tier2FormData?.selectedDate!)
+            .toISOString()
+            .split("T")[0]!,
+          preferredTimes: tier2FormData?.selectedTimes,
+          initiatorUserId: user?.id,
+          companyId: company?.id,
+          status: "PENDING",
+          type: "TIER2_REQUEST",
+          metadata: JSON.stringify({
+            userEmail: tier2FormData?.email!,
+            userName: tier2FormData?.name!,
+            companyDomain: company?.primaryDomain!,
+            companyName: tier2FormData?.companyName!,
+            userJobTitle: tier2FormData?.jobTitle!,
+          }),
+        });
+        if (data) {
+          fetchUserCallRequests();
+          navigate(state.redirectPathAfterLogin || "/");
+          dispatch({
+            type: "SET_REDIRECT_PATH_AFTER_LOGIN",
+            payload: undefined,
+          });
+          //setCurrentStep("confirmation");
+        } else {
+          showToast({
+            type: "error",
+            title: "Request Failed",
+            message: "Failed to schedule the call. Please try again.",
+            duration: 5000,
+          });
+        }
+      } catch (err) {
+        showToast({
+          type: "error",
+          title: "Request Failed",
+          message: "Failed to schedule the call. Please try again.",
+          duration: 5000,
+        });
+      }
+    } else {
+      navigate(state.redirectPathAfterLogin || "/");
+      dispatch({ type: "SET_REDIRECT_PATH_AFTER_LOGIN", payload: undefined });
+    }
+    // Handle tier2 assessment request
+  };
+
+  const handleScheduleCall = (data: ScheduleCallData) => {
     // In a real app, this would open a calendar booking system
-    alert('Calendar booking system would open here');
+    console.log("Calendar booking system would open here", data);
   };
 
   const handleRetakeAssessment = () => {
-    navigate('/consent');
+    navigate("/tier1");
   };
 
-  const handleTier1Complete = async (responses: Record<string, string>) => {
-    dispatch({ type: 'SET_TIER1_RESPONSES', payload: responses });
-    
-    await withLoading(async () => {
-      try {
-        if (currentAssessmentInstance) {
-          const result = await apiService.submitAssessment(currentAssessmentInstance, responses);
-          if (result.success && result.data) {
-            dispatch({ type: 'SET_TIER1_SCORE', payload: result.data.overallScore });
-          }
-        }
-      } catch (error) {
-        console.error('Failed to submit assessment:', error);
-        // Calculate score locally as fallback
-        const score = Math.floor(Math.random() * 40) + 60;
-        dispatch({ type: 'SET_TIER1_SCORE', payload: score });
-      }
+  const handleTier1Complete = async (
+    responses: Record<string, string>,
+    questions: any[]
+  ) => {
+    const score = calculateTier1Score(responses, questions);
+    dispatch({ type: "SET_TIER1_RESPONSES", payload: responses });
+    dispatch({
+      type: "SET_TIER1_SCORE",
+      payload: score,
     });
-    
-    navigate('/login');
+    if (hasCompleteProfile) {
+      await submitTier1Assessment({
+        tier1Score: score,
+        tier1Responses: responses,
+      });
+      await fetchUserAssessments();
+      navigate("/tier1-results");
+    } else {
+      dispatch({
+        type: "SET_REDIRECT_PATH_AFTER_LOGIN",
+        payload: "/tier1-results",
+      });
+      navigate("/login");
+    }
   };
-
-  if (templateLoading) {
-    return (
-      <Layout
-        currentView={getCurrentView()}
-        sidebarCollapsed={state.sidebarCollapsed}
-        toggleSidebar={toggleSidebar}
-        onNavigateHome={navigateHome}
-        onNavigateToTier={navigateToTier}
-        onLogin={handleHeaderLogin}
-        onLogout={handleLogout}
-        userName={state.userData?.name}
-      >
-        <Loader fullScreen text="Loading assessment template..." size="lg" />
-      </Layout>
-    );
-  }
 
   return (
     <Layout
@@ -298,94 +224,82 @@ function AppContent() {
       onNavigateToTier={navigateToTier}
       onLogin={handleHeaderLogin}
       onLogout={handleLogout}
-      userName={state.userData?.name}
+      userName={state.userData?.name || state.userData?.email || ""}
     >
       <Routes>
-        <Route path="/" element={<HomePage onNavigateToTier={navigateToTier} />} />
-        <Route 
-          path="/consent" 
-          element={
-            <ConsentPage 
-              onAccept={handleConsentAccept}
-              onDecline={handleConsentDecline}
-            />
-          } 
+        <Route
+          path="/"
+          element={<HomePage onNavigateToTier={navigateToTier} />}
         />
-        <Route 
-          path="/tier1" 
-          element={
-            assessmentTemplate ? (
-              <Tier1Assessment 
-                assessmentTemplate={assessmentTemplate}
-                previousAssessments={state.previousAssessments}
-                onNavigateToTier={navigateToTier} 
-                onShowLogin={() => navigate('/login')}
-                onComplete={handleTier1Complete}
-              />
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <p className="text-gray-600">Failed to load assessment template</p>
-              </div>
-            )
-          } 
+        <Route
+          path="/tier1"
+          element={<Tier1Assessment onComplete={handleTier1Complete} />}
         />
-        <Route 
-          path="/tier2" 
+        <Route
+          path="/tier2"
           element={
-            <Tier2Assessment 
-              onNavigateToTier={navigateToTier} 
-              onShowLogin={() => navigate('/login')} 
+            <Tier2Assessment
+              onNavigateToTier={navigateToTier}
+              onShowLogin={() => navigate("/login")}
             />
-          } 
+          }
         />
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
-            <LoginPage 
-              onLogin={handleLogin} 
-              onCancel={() => navigate('/')} 
-            />
-          } 
+            <LoginPage onLogin={handleLogin} onCancel={() => navigate("/")} />
+          }
         />
-        <Route 
-          path="/otp" 
+        <Route
+          path="/otp"
           element={
-            <OtpVerificationPage 
-              userEmail={state.pendingUserData?.email || ''} 
-              onVerify={handleOtpVerification} 
-              onCancel={() => navigate('/login')} 
+            <OtpVerificationPage
+              userEmail={state.loginEmail}
+              onVerify={handleOtpVerification}
+              onCancel={() => navigate("/login")}
             />
-          } 
+          }
         />
-        <Route 
-          path="/tier1-results" 
+        <Route
+          path="/tier1-results"
           element={
-            <Tier1Results 
-              score={state.tier1Score}
-              onNavigateToTier2={() => navigate('/tier2')}
-              onScheduleCall={handleScheduleCall}
-              onRetakeAssessment={handleRetakeAssessment}
-            />
-          } 
+            state.tier1Score ? (
+              <ProtectedRoute requireAuth={true} redirectTo="/">
+                <Tier1Results
+                  score={state.tier1Score}
+                  onNavigateToTier2={() => navigate("/tier2")}
+                  onScheduleCall={handleScheduleCall}
+                  onRetakeAssessment={handleRetakeAssessment}
+                />
+              </ProtectedRoute>
+            ) : // <Navigate to={"/"} state={{ from: location }} replace />
+            null
+          }
         />
-        <Route 
-          path="/email-login" 
+        <Route
+          path="/email-login"
           element={
-            <EmailLoginModal 
-              onSubmit={handleEmailSubmit} 
-              onCancel={() => navigate('/')} 
+            <EmailLoginModal
+              onCancel={() => {
+                navigate(`${state.redirectPathAfterLogin}` || "/");
+                dispatch({
+                  type: "SET_REDIRECT_PATH_AFTER_LOGIN",
+                  payload: undefined,
+                });
+              }}
             />
-          } 
+          }
         />
-        <Route 
-          path="/otp-login" 
+        {/* OTP verification route for direct login flow */}
+        <Route
+          path="/otp-login"
           element={
-            <OtpVerificationPage 
-              userEmail={state.loginEmail} 
-              onVerify={handleLoginOtpVerification} 
-              onCancel={() => navigate('/email-login')} 
+            <OtpVerificationPage
+              userEmail={state.loginEmail}
+              onVerify={handleLoginOtpVerification}
+              onCancel={() => navigate("/email-login")}
             />
-          } 
+          }
         />
       </Routes>
     </Layout>
@@ -395,9 +309,11 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <ToastProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </ToastProvider>
     </AppProvider>
   );
 }
