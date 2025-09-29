@@ -142,6 +142,71 @@ async function fetchUserTier1Assessment(userId: string) {
   }
 }
 
+// Function to fetch questions by template ID
+async function getQuestionsByTemplate(templateId: string) {
+  try {
+    const query = `
+      query ListQuestions($filter: ModelQuestionFilterInput) {
+        listQuestions(filter: $filter) {
+          items {
+            id
+            templateId
+            sectionId
+            order
+            kind
+            prompt
+            helpText
+            required
+            metadata
+            options {
+              items {
+                id
+                label
+                value
+                score
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(APPSYNC_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': APPSYNC_API_KEY,
+      },
+      body: JSON.stringify({
+        query,
+        variables: {
+          filter: {
+            templateId: { eq: templateId }
+          }
+        }
+      })
+    });
+
+    const result = await response.json();
+    
+    if (result.data?.listQuestions?.items) {
+      // Sort questions by order and flatten options
+      const questions = result.data.listQuestions.items
+        .map((question: any) => ({
+          ...question,
+          options: question.options?.items || []
+        }))
+        .sort((a: any, b: any) => a.order - b.order);
+      
+      return { success: true, data: questions };
+    }
+    
+    return { success: false, error: 'No questions found' };
+  } catch (error) {
+    logger.error('Error fetching questions by template:', error);
+    return { success: false, error };
+  }
+}
 // Function to generate Tier1 assessment grid HTML
 function generateTier1AssessmentGrid(responses: any, score: any) {
   if (!responses) {
