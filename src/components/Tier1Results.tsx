@@ -454,10 +454,10 @@ export function Tier1Results({
           )}
 
           {/* Action Buttons */}
-          <div className="flex justify-center gap-4 mb-8">
+          <div className="flex justify-center gap-4 mb-8 flex-wrap">
             <button
               onClick={handleScheduleClick}
-              className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200"
+              className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[220px] whitespace-nowrap"
               style={{ backgroundColor: "#05f" }}
             >
               <CalendarIcon className="w-5 h-5" />
@@ -466,7 +466,7 @@ export function Tier1Results({
 
             <button
               onClick={onNavigateToTier2}
-              className="flex items-center justify-center space-x-2 text-white py-4 px-8 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200"
+              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[220px] whitespace-nowrap"
               style={{ backgroundColor: "#05f" }}
             >
               <TrendingUp className="w-5 h-5" />
@@ -475,7 +475,7 @@ export function Tier1Results({
 
             <button
               onClick={onRetakeAssessment}
-              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-8 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 min-w-[220px] whitespace-nowrap"
             >
               <BarChart3 className="w-5 h-5" />
               <span>Retake Assessment</span>
