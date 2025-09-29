@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
 import { TrendingUp, User, Mail, Building, Briefcase, CheckCircle, ArrowRight, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { UserData } from '../context/AppContext';
+import { domainBlockingService } from '../services/domainBlockingService';
 import { LoadingButton } from './ui/LoadingButton';
 import { useLoader } from '../hooks/useLoader';
-import { useUserForm } from '../hooks/useUserForm';
-import { UserData } from '../context/AppContext';
 import 'react-calendar/dist/Calendar.css';
 
 interface Tier2AssessmentProps {
@@ -20,18 +20,25 @@ interface Tier2FormData extends UserData {
 export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2AssessmentProps) {
   const { isLoading: submitLoading, withLoading } = useLoader();
   const [currentStep, setCurrentStep] = useState<'form' | 'confirmation'>('form');
-  
-  const {
-    formData: userFormData,
-    errors: userFormErrors,
-    loading: userFormLoading,
-    isFormValid: isUserFormValid,
-    isUserLoggedIn,
-    handleInputChange: handleUserInputChange,
-  } = useUserForm();
+  const [formData, setFormData] = useState<UserData>({
+    name: '',
+    email: '',
+    companyName: '',
+    jobTitle: ''
+  });
+
+  const [errors, setErrors] = useState<Partial<UserData>>({});
+
+  const handleInputChange = (field: keyof UserData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   const [tier2FormData, setTier2FormData] = useState<Tier2FormData>({
-    ...userFormData,
+    ...formData,
     selectedDate: null,
     selectedTimes: []
   });
@@ -44,13 +51,43 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
 
-  // Update tier2FormData when userFormData changes
+  const validateForm = (): boolean => {
+    const newErrors: Partial<UserData> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    } else {
+      const domainCheck = domainBlockingService.isEmailAllowed(formData.email);
+      if (!domainCheck.allowed) {
+        newErrors.email = domainCheck.reason || 'Email domain not allowed';
+      }
+    }
+
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required';
+    }
+
+    if (!formData.jobTitle.trim()) {
+      newErrors.jobTitle = 'Job title is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Update tier2FormData when formData changes
   React.useEffect(() => {
     setTier2FormData(prev => ({
       ...prev,
-      ...userFormData
+      ...formData
     }));
-  }, [userFormData]);
+  }, [formData]);
 
   // Generate time slots
   const generateTimeSlots = () => {
@@ -125,7 +162,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     e.preventDefault();
     
     // Validate both user form and tier2 specific fields
-    const isUserFormValid = isUserFormValid;
+    const isUserFormValid = validateForm();
     const isTier2FormValid = validateTier2Form();
     
     if (isUserFormValid && isTier2FormValid) {
@@ -137,7 +174,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
     }
   };
 
-  const isFormValid = isUserFormValid && 
+  const isFormValid = Object.values(formData).every(value => value.trim() !== '') && 
                      tier2FormData.selectedDate !== null &&
                      tier2FormData.selectedTimes.length > 0;
 
@@ -273,16 +310,15 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <input
                   type="text"
                   id="name"
-                  disabled={isUserLoggedIn}
                   value={tier2FormData.name}
-                  onChange={(e) => handleUserInputChange('name', e.target.value)}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    userFormErrors.name ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.name ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your full name"
                 />
               </div>
-              {userFormErrors.name && <p className="mt-1 text-sm text-red-600">{userFormErrors.name}</p>}
+              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
             </div>
 
             {/* Email Field */}
@@ -297,16 +333,15 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                 <input
                   type="email"
                   id="email"
-                  disabled={isUserLoggedIn}
                   value={tier2FormData.email}
-                  onChange={(e) => handleUserInputChange('email', e.target.value)}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    userFormErrors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.email ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your email address"
                 />
               </div>
-              {userFormErrors.email && <p className="mt-1 text-sm text-red-600">{userFormErrors.email}</p>}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
             </div>
 
             {/* Company Name Field */}
@@ -322,14 +357,14 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   type="text"
                   id="companyName"
                   value={tier2FormData.companyName}
-                  onChange={(e) => handleUserInputChange('companyName', e.target.value)}
+                  onChange={(e) => handleInputChange('companyName', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    userFormErrors.companyName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.companyName ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your company name"
                 />
               </div>
-              {userFormErrors.companyName && <p className="mt-1 text-sm text-red-600">{userFormErrors.companyName}</p>}
+              {errors.companyName && <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>}
             </div>
 
             {/* Job Title Field */}
@@ -345,14 +380,14 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
                   type="text"
                   id="jobTitle"
                   value={tier2FormData.jobTitle}
-                  onChange={(e) => handleUserInputChange('jobTitle', e.target.value)}
+                  onChange={(e) => handleInputChange('jobTitle', e.target.value)}
                   className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
-                    userFormErrors.jobTitle ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                    errors.jobTitle ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                   }`}
                   placeholder="Enter your job title"
                 />
               </div>
-              {userFormErrors.jobTitle && <p className="mt-1 text-sm text-red-600">{userFormErrors.jobTitle}</p>}
+              {errors.jobTitle && <p className="mt-1 text-sm text-red-600">{errors.jobTitle}</p>}
             </div>
 
             {/* Date Selection */}
@@ -449,7 +484,7 @@ export function Tier2Assessment({ onNavigateToTier, onShowLogin }: Tier2Assessme
             {/* Submit Button */}
             <LoadingButton
               type="submit"
-              loading={submitLoading || userFormLoading}
+              loading={submitLoading}
               loadingText="Submitting Request..."
               disabled={!isFormValid}
               className="w-full py-4"
