@@ -16,9 +16,226 @@ const SOURCE_EMAIL = process.env.SOURCE_EMAIL! || 'ssinghal1989@gmail.com';
 const DESTINATION_EMAIL = process.env.DESTINATION_EMAIL! || 'ssinghal1989@gmail.com';
 const APPSYNC_API_URL = process.env.APPSYNC_API_URL!;
 const APPSYNC_API_KEY = process.env.APPSYNC_API_KEY!;
+const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN!;
 
 // Tier1 Template ID
 const TIER1_TEMPLATE_ID = 'tier1_high_level_assessment';
+
+// HubSpot API integration
+async function createHubSpotContact(contactData: {
+  email: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  jobTitle?: string;
+  phone?: string;
+  website?: string;
+}) {
+  try {
+    const hubspotUrl = 'https://api.hubapi.com/crm/v3/objects/contacts';
+    
+    const contactPayload = {
+      properties: {
+        email: contactData.email,
+        firstname: contactData.firstName,
+        lastname: contactData.lastName,
+        company: contactData.company,
+        jobtitle: contactData.jobTitle || '',
+        phone: contactData.phone || '',
+        website: contactData.website || '',
+        lifecyclestage: 'lead',
+        lead_source: 'Digital Readiness Assessment'
+      }
+    };
+
+    const response = await fetch(hubspotUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(contactPayload)
+    });
+
+    if (!response.ok) {
+      // If contact already exists (409), try to get existing contact
+      if (response.status === 409) {
+        logger.info('Contact already exists in HubSpot, attempting to retrieve');
+        return await getHubSpotContactByEmail(contactData.email);
+      }
+      throw new Error(`HubSpot API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    logger.info('Successfully created HubSpot contact:', result.id);
+    return { success: true, contactId: result.id, data: result };
+  } catch (error) {
+    logger.error('Error creating HubSpot contact:', error);
+    return { success: false, error };
+  }
+}
+
+async function getHubSpotContactByEmail(email: string) {
+  try {
+    const hubspotUrl = `https://api.hubapi.com/crm/v3/objects/contacts/${email}?idProperty=email`;
+    
+    const response = await fetch(hubspotUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HubSpot API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    logger.info('Retrieved existing HubSpot contact:', result.id);
+    return { success: true, contactId: result.id, data: result };
+  } catch (error) {
+    logger.error('Error retrieving HubSpot contact:', error);
+    return { success: false, error };
+  }
+}
+
+async function createHubSpotDeal(dealData: {
+  contactId: string;
+  dealName: string;
+  dealStage: string;
+  amount?: number;
+  closeDate?: string;
+  dealType: string;
+  assessmentScore?: number;
+  companyName: string;
+  notes?: string;
+}) {
+  try {
+    const hubspotUrl = 'https://api.hubapi.com/crm/v3/objects/deals';
+    
+    const dealPayload = {
+      properties: {
+        dealname: dealData.dealName,
+        dealstage: dealData.dealStage,
+        amount: dealData.amount || 0,
+        closedate: dealData.closeDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days from now
+        dealtype: dealData.dealType,
+        pipeline: 'default', // You may want to customize this
+        hubspot_owner_id: '', // Set this to assign to a specific owner
+        deal_source: 'Digital Readiness Assessment',
+        assessment_score: dealData.assessmentScore?.toString() || '',
+        company_name: dealData.companyName,
+        deal_notes: dealData.notes || ''
+      },
+      associations: [
+        {
+          to: {
+            id: dealData.contactId
+          },
+          types: [
+            {
+              associationCategory: "HUBSPOT_DEFINED",
+              associationTypeId: 3 // Contact to Deal association
+            }
+          ]
+        }
+      ]
+    };
+
+    const response = await fetch(hubspotUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(dealPayload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HubSpot API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    logger.info('Successfully created HubSpot deal:', result.id);
+    return { success: true, dealId: result.id, data: result };
+  } catch (error) {
+    logger.error('Error creating HubSpot deal:', error);
+    return { success: false, error };
+  }
+}
+
+async function createHubSpotTask(taskData: {
+  contactId: string;
+  dealId?: string;
+  taskTitle: string;
+  taskBody: string;
+  dueDate: string;
+  taskType: string;
+}) {
+  try {
+    const hubspotUrl = 'https://api.hubapi.com/crm/v3/objects/tasks';
+    
+    const taskPayload = {
+      properties: {
+        hs_task_subject: taskData.taskTitle,
+        hs_task_body: taskData.taskBody,
+        hs_task_status: 'NOT_STARTED',
+        hs_task_priority: 'MEDIUM',
+        hs_task_type: taskData.taskType,
+        hs_timestamp: new Date(taskData.dueDate).getTime().toString()
+      },
+      associations: [
+        {
+          to: {
+            id: taskData.contactId
+          },
+          types: [
+            {
+              associationCategory: "HUBSPOT_DEFINED",
+              associationTypeId: 204 // Contact to Task association
+            }
+          ]
+        }
+      ]
+    };
+
+    // Add deal association if dealId is provided
+    if (taskData.dealId) {
+      taskPayload.associations.push({
+        to: {
+          id: taskData.dealId
+        },
+        types: [
+          {
+            associationCategory: "HUBSPOT_DEFINED",
+            associationTypeId: 214 // Deal to Task association
+          }
+        ]
+      });
+    }
+
+    const response = await fetch(hubspotUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${HUBSPOT_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(taskPayload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HubSpot API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    logger.info('Successfully created HubSpot task:', result.id);
+    return { success: true, taskId: result.id, data: result };
+  } catch (error) {
+    logger.error('Error creating HubSpot task:', error);
+    return { success: false, error };
+  }
+}
 
 // Function to fetch questions by template ID
 async function getQuestionsByTemplate(templateId: string) {
@@ -197,6 +414,9 @@ export const handler: DynamoDBStreamHandler = async (event) => {
           }
         }
         
+        // Create HubSpot contact and deal
+        await processHubSpotIntegration(newRecord, metadata);
+        
         const { html, subject, text } = await formatScheduleRequestEmail({
           type: newRecord.type as "TIER1_FOLLOWUP" | "TIER2_REQUEST",
           remarks: newRecord.remarks,
@@ -236,6 +456,95 @@ export const handler: DynamoDBStreamHandler = async (event) => {
     batchItemFailures: [],
   };
 };
+
+async function processHubSpotIntegration(scheduleRequest: any, metadata: any) {
+  try {
+    logger.info('Starting HubSpot integration for schedule request');
+    
+    // Parse user name into first and last name
+    const nameParts = metadata.userName.split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    // Create or get HubSpot contact
+    const contactResult = await createHubSpotContact({
+      email: metadata.userEmail,
+      firstName: firstName,
+      lastName: lastName,
+      company: metadata.companyName,
+      jobTitle: metadata.userJobTitle,
+      website: `https://${metadata.companyDomain}`
+    });
+    
+    if (!contactResult.success) {
+      logger.error('Failed to create/get HubSpot contact');
+      return;
+    }
+    
+    const contactId = contactResult.contactId;
+    
+    // Determine deal details based on request type
+    const isFollowUp = scheduleRequest.type === "TIER1_FOLLOWUP";
+    const dealName = `${metadata.companyName} - ${isFollowUp ? 'Tier 1 Follow-up' : 'Tier 2 Assessment'}`;
+    const dealType = isFollowUp ? 'existingbusiness' : 'newbusiness';
+    const dealStage = 'appointmentscheduled'; // You may want to customize this based on your HubSpot pipeline
+    
+    // Create HubSpot deal
+    const dealResult = await createHubSpotDeal({
+      contactId: contactId,
+      dealName: dealName,
+      dealStage: dealStage,
+      amount: isFollowUp ? 5000 : 15000, // Estimated deal values - customize as needed
+      dealType: dealType,
+      assessmentScore: metadata.assessmentScore,
+      companyName: metadata.companyName,
+      notes: `
+        Request Type: ${scheduleRequest.type}
+        Preferred Date: ${scheduleRequest.preferredDate}
+        Preferred Times: ${scheduleRequest.preferredTimes.join(', ')}
+        ${scheduleRequest.remarks ? `Remarks: ${scheduleRequest.remarks}` : ''}
+        ${metadata.assessmentScore ? `Assessment Score: ${metadata.assessmentScore}` : ''}
+        Company Domain: ${metadata.companyDomain}
+      `.trim()
+    });
+    
+    if (!dealResult.success) {
+      logger.error('Failed to create HubSpot deal');
+      return;
+    }
+    
+    // Create follow-up task
+    const taskDate = new Date(scheduleRequest.preferredDate);
+    const taskResult = await createHubSpotTask({
+      contactId: contactId,
+      dealId: dealResult.dealId,
+      taskTitle: `Schedule ${isFollowUp ? 'Tier 1 Follow-up Call' : 'Tier 2 Assessment'} with ${metadata.userName}`,
+      taskBody: `
+        Contact: ${metadata.userName} (${metadata.userEmail})
+        Company: ${metadata.companyName}
+        Job Title: ${metadata.userJobTitle}
+        Preferred Date: ${scheduleRequest.preferredDate}
+        Preferred Times: ${scheduleRequest.preferredTimes.join(', ')}
+        ${scheduleRequest.remarks ? `Remarks: ${scheduleRequest.remarks}` : ''}
+        ${metadata.assessmentScore ? `Assessment Score: ${metadata.assessmentScore}` : ''}
+        
+        Please reach out to schedule the ${isFollowUp ? 'follow-up call' : 'in-depth assessment'}.
+      `.trim(),
+      dueDate: taskDate.toISOString(),
+      taskType: 'CALL'
+    });
+    
+    if (taskResult.success) {
+      logger.info('Successfully completed HubSpot integration');
+    } else {
+      logger.error('Failed to create HubSpot task');
+    }
+    
+  } catch (error) {
+    logger.error('Error in HubSpot integration:', error);
+    // Don't throw error to prevent email sending failure
+  }
+}
 
 export interface ScheduleRequestData {
   type: "TIER1_FOLLOWUP" | "TIER2_REQUEST";
