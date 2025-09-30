@@ -108,9 +108,18 @@ export function RecommendationsPanel({
                   Additional Focus Areas:
                 </h5>
                 <div className="grid gap-3">
-                  {recommendations
-                    .slice(1, maxRecommendations)
-                    .map((recommendation, index) => {
+                  {(() => {
+                    const maturityOrder = ['BASIC', 'EMERGING', 'ESTABLISHED', 'WORLD_CLASS'];
+                    const sortedRecommendations = recommendations
+                      .slice(1)
+                      .sort((a, b) => {
+                        const aIndex = a.maturityLevel ? maturityOrder.indexOf(a.maturityLevel) : 999;
+                        const bIndex = b.maturityLevel ? maturityOrder.indexOf(b.maturityLevel) : 999;
+                        return aIndex - bIndex;
+                      })
+                      .slice(0, maxRecommendations - 1);
+                    
+                    return sortedRecommendations.map((recommendation, index) => {
                       const bgColor = recommendation.maturityLevel 
                         ? getMaturityColor(recommendation.maturityLevel) 
                         : (recommendation.pillar ? getPillarColor(recommendation.pillar) : scoreColor);
@@ -136,7 +145,8 @@ export function RecommendationsPanel({
                           </div>
                         </div>
                       </div>
-                    )})}
+                    )});
+                  })()}
                 </div>
               </div>
             )}
