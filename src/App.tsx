@@ -16,7 +16,6 @@ import { OtpVerificationPage } from "./components/OtpVerificationPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Tier1Assessment } from "./components/Tier1Assessment";
 import { ScheduleCallData, Tier1Results } from "./components/Tier1Results";
-import { Tier2Assessment } from "./components/Tier2Assessment";
 import { AdminPanel } from "./components/AdminPanel";
 import {
   AppProvider,

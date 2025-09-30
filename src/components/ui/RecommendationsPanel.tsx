@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
-import { Tier1ScoreResult } from '../../utils/scoreCalculator';
-import { 
-  generateRecommendations, 
-  getPillarColor, 
-  getMaturityColor, 
-  getPillarName,
-  RecommendationWithMetadata 
-} from '../../utils/recommendationsGenerator';
+import { useState } from 'react';
 import { getScoreColor } from '../../utils/common';
+import {
+  generateRecommendations,
+  getMaturityColor,
+  getPillarColor
+} from '../../utils/recommendationsGenerator';
+import { Tier1ScoreResult } from '../../utils/scoreCalculator';
 
 interface RecommendationsPanelProps {
   scoreData: Tier1ScoreResult;
@@ -29,38 +27,11 @@ export function RecommendationsPanel({
 
   const recommendations = scoreData?.pillarScores
     ? generateRecommendations(scoreData)
-    : getBasicRecommendations(scoreData.overallScore).map(text => ({ text, isPriority: false }));
+    : [];
 
   const scoreColor = getScoreColor(scoreData.overallScore);
 
-  const getBasicRecommendations = (score: number): RecommendationWithMetadata[] => {
-    if (score >= 85) {
-      return [
-        { text: 'Continue to innovate and lead in digital transformation', isPriority: false },
-        { text: 'Share best practices across the organization', isPriority: false },
-        { text: 'Explore advanced AI and automation opportunities', isPriority: false },
-      ];
-    }
-    if (score >= 70) {
-      return [
-        { text: 'Focus on scaling successful digital initiatives', isPriority: false },
-        { text: 'Strengthen data governance and integration', isPriority: false },
-        { text: 'Invest in advanced analytics capabilities', isPriority: false },
-      ];
-    }
-    if (score >= 50) {
-      return [
-        { text: 'Prioritize foundational digital infrastructure', isPriority: false },
-        { text: 'Develop digital skills across teams', isPriority: false },
-        { text: 'Establish clear data governance frameworks', isPriority: false },
-      ];
-    }
-    return [
-      { text: 'Begin with basic digital transformation initiatives', isPriority: false },
-      { text: 'Focus on data standardization and integration', isPriority: false },
-      { text: 'Build digital culture and leadership support', isPriority: false },
-    ];
-  };
+ 
 
   if (!showToggleButton && !defaultExpanded) {
     return null;
@@ -104,9 +75,7 @@ export function RecommendationsPanel({
               <div
                 className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border-l-4"
                 style={{ 
-                  borderColor: recommendations[0].pillar 
-                    ? getPillarColor(recommendations[0].pillar) 
-                    : '#05f' 
+                  borderColor: '#05f' 
                 }}
               >
                 <div className="flex items-start space-x-3">
@@ -122,15 +91,7 @@ export function RecommendationsPanel({
                   </div>
                   <div>
                     <h5 className="font-semibold text-gray-900 mb-2">
-                      Priority Focus
-                      {recommendations[0].pillar && (
-                        <span 
-                          className="ml-2 px-2 py-1 text-xs rounded-full text-white"
-                          style={{ backgroundColor: getPillarColor(recommendations[0].pillar) }}
-                        >
-                          {getPillarName(recommendations[0].pillar)}
-                        </span>
-                      )}
+                      Priority Focus {recommendations[0].pillar}
                     </h5>
                     <p className="text-gray-700 text-sm leading-relaxed">
                       {recommendations[0].text}
@@ -169,24 +130,6 @@ export function RecommendationsPanel({
                             </span>
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              {recommendation.maturityLevel && (
-                                <span 
-                                  className="px-2 py-0.5 text-xs rounded-full text-white font-medium"
-                                  style={{ backgroundColor: getMaturityColor(recommendation.maturityLevel) }}
-                                >
-                                  {recommendation.maturityLevel.replace('_', ' ')}
-                                </span>
-                              )}
-                              {recommendation.pillar && (
-                                <span 
-                                  className="px-2 py-0.5 text-xs rounded-full text-white font-medium"
-                                  style={{ backgroundColor: getPillarColor(recommendation.pillar) }}
-                                >
-                                  {getPillarName(recommendation.pillar)}
-                                </span>
-                              )}
-                            </div>
                             <p className="text-gray-700 text-sm leading-relaxed">
                               {recommendation.text}
                             </p>

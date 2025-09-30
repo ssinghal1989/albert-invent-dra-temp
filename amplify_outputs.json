@@ -121,6 +121,13 @@
                   "companyId"
                 ]
               }
+            },
+            "config": {
+              "name": "config",
+              "isArray": false,
+              "type": "AWSJSON",
+              "isRequired": false,
+              "attributes": []
             }
           },
           "syncable": true,
@@ -1162,46 +1169,7 @@
           ]
         }
       },
-      "nonModels": {
-        "GetAssessmentDataReturnType": {
-          "name": "GetAssessmentDataReturnType",
-          "fields": {
-            "focusAreas": {
-              "name": "focusAreas",
-              "isArray": true,
-              "type": "String",
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": false
-            },
-            "maturityLevels": {
-              "name": "maturityLevels",
-              "isArray": true,
-              "type": "String",
-              "isRequired": false,
-              "attributes": [],
-              "isArrayNullable": false
-            },
-            "gridData": {
-              "name": "gridData",
-              "isArray": false,
-              "type": "AWSJSON",
-              "isRequired": true,
-              "attributes": []
-            }
-          }
-        }
-      },
-      "queries": {
-        "getAssessmentData": {
-          "name": "getAssessmentData",
-          "isArray": false,
-          "type": {
-            "nonModel": "GetAssessmentDataReturnType"
-          },
-          "isRequired": false
-        }
-      }
+      "nonModels": {}
     }
   },
   "version": "1.2"
