@@ -46,14 +46,13 @@ function AppContent() {
     try {
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: true });
       const currentUser = await getCurrentUser();
-      if (currentUser) {
-        dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
-        setUserData({ loggedInUserDetails: currentUser! });
-      }
+      dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
+      setUserData({ loggedInUserDetails: currentUser! });
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
     } catch (error) {
+      // User is not authenticated, which is expected behavior
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
-      console.error("Error checking if user is logged in:", error);
+      // Don't log this as an error since it's normal when user is not logged in
     }
   };
 
