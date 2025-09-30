@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
 import { Tier1ScoreResult } from '../../utils/scoreCalculator';
-import { generateRecommendations } from '../../utils/recommendationsGenerator';
+import { 
+  generateRecommendations, 
+  getPillarColor, 
+  getMaturityColor, 
+  getPillarName,
+  RecommendationWithMetadata 
+} from '../../utils/recommendationsGenerator';
 import { getScoreColor } from '../../utils/common';
 
 interface RecommendationsPanelProps {
@@ -23,36 +29,36 @@ export function RecommendationsPanel({
 
   const recommendations = scoreData?.pillarScores
     ? generateRecommendations(scoreData)
-    : getBasicRecommendations(scoreData.overallScore);
+    : getBasicRecommendations(scoreData.overallScore).map(text => ({ text, isPriority: false }));
 
   const scoreColor = getScoreColor(scoreData.overallScore);
 
-  const getBasicRecommendations = (score: number): string[] => {
+  const getBasicRecommendations = (score: number): RecommendationWithMetadata[] => {
     if (score >= 85) {
       return [
-        'Continue to innovate and lead in digital transformation',
-        'Share best practices across the organization',
-        'Explore advanced AI and automation opportunities',
+        { text: 'Continue to innovate and lead in digital transformation', isPriority: false },
+        { text: 'Share best practices across the organization', isPriority: false },
+        { text: 'Explore advanced AI and automation opportunities', isPriority: false },
       ];
     }
     if (score >= 70) {
       return [
-        'Focus on scaling successful digital initiatives',
-        'Strengthen data governance and integration',
-        'Invest in advanced analytics capabilities',
+        { text: 'Focus on scaling successful digital initiatives', isPriority: false },
+        { text: 'Strengthen data governance and integration', isPriority: false },
+        { text: 'Invest in advanced analytics capabilities', isPriority: false },
       ];
     }
     if (score >= 50) {
       return [
-        'Prioritize foundational digital infrastructure',
-        'Develop digital skills across teams',
-        'Establish clear data governance frameworks',
+        { text: 'Prioritize foundational digital infrastructure', isPriority: false },
+        { text: 'Develop digital skills across teams', isPriority: false },
+        { text: 'Establish clear data governance frameworks', isPriority: false },
       ];
     }
     return [
-      'Begin with basic digital transformation initiatives',
-      'Focus on data standardization and integration',
-      'Build digital culture and leadership support',
+      { text: 'Begin with basic digital transformation initiatives', isPriority: false },
+      { text: 'Focus on data standardization and integration', isPriority: false },
+      { text: 'Build digital culture and leadership support', isPriority: false },
     ];
   };
 
@@ -96,22 +102,38 @@ export function RecommendationsPanel({
             {/* Priority Recommendation */}
             {recommendations.length > 0 && (
               <div
-                className="bg-gradient-to-r rounded-lg p-4 border-l-4"
-                style={{ borderColor: '#05f' }}
+                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border-l-4"
+                style={{ 
+                  borderColor: recommendations[0].pillar 
+                    ? getPillarColor(recommendations[0].pillar) 
+                    : '#05f' 
+                }}
               >
                 <div className="flex items-start space-x-3">
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
-                    style={{ backgroundColor: scoreColor }}
+                    style={{ 
+                      backgroundColor: recommendations[0].pillar 
+                        ? getPillarColor(recommendations[0].pillar) 
+                        : scoreColor 
+                    }}
                   >
                     <span className="text-white text-xs font-bold">!</span>
                   </div>
                   <div>
-                    <h5 className="font-semibold text-gray-900 mb-1">
+                    <h5 className="font-semibold text-gray-900 mb-2">
                       Priority Focus
+                      {recommendations[0].pillar && (
+                        <span 
+                          className="ml-2 px-2 py-1 text-xs rounded-full text-white"
+                          style={{ backgroundColor: getPillarColor(recommendations[0].pillar) }}
+                        >
+                          {getPillarName(recommendations[0].pillar)}
+                        </span>
+                      )}
                     </h5>
                     <p className="text-gray-700 text-sm leading-relaxed">
-                      {recommendations[0]}
+                      {recommendations[0].text}
                     </p>
                   </div>
                 </div>
@@ -127,7 +149,12 @@ export function RecommendationsPanel({
                 <div className="grid gap-3">
                   {recommendations
                     .slice(1, maxRecommendations)
-                    .map((recommendation, index) => (
+                    .map((recommendation, index) => {
+                      const bgColor = recommendation.maturityLevel 
+                        ? getMaturityColor(recommendation.maturityLevel) 
+                        : (recommendation.pillar ? getPillarColor(recommendation.pillar) : scoreColor);
+                      
+                      return (
                       <div
                         key={index}
                         className="bg-gray-50 rounded-lg p-3 border border-gray-200"
@@ -135,18 +162,38 @@ export function RecommendationsPanel({
                         <div className="flex items-start space-x-3">
                           <div
                             className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                            style={{ backgroundColor: scoreColor }}
+                            style={{ backgroundColor: bgColor }}
                           >
                             <span className="text-white text-xs font-bold">
                               {index + 1}
                             </span>
                           </div>
-                          <p className="text-gray-700 text-sm leading-relaxed flex-1">
-                            {recommendation}
-                          </p>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              {recommendation.maturityLevel && (
+                                <span 
+                                  className="px-2 py-0.5 text-xs rounded-full text-white font-medium"
+                                  style={{ backgroundColor: getMaturityColor(recommendation.maturityLevel) }}
+                                >
+                                  {recommendation.maturityLevel.replace('_', ' ')}
+                                </span>
+                              )}
+                              {recommendation.pillar && (
+                                <span 
+                                  className="px-2 py-0.5 text-xs rounded-full text-white font-medium"
+                                  style={{ backgroundColor: getPillarColor(recommendation.pillar) }}
+                                >
+                                  {getPillarName(recommendation.pillar)}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-700 text-sm leading-relaxed">
+                              {recommendation.text}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )})}
                 </div>
               </div>
             )}

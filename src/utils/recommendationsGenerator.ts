@@ -1,11 +1,35 @@
 // Recommendations Generator based on Pillar Scoring
 import { Tier1ScoreResult } from './scoreCalculator';
 
+// Enhanced recommendation interface with metadata
+export interface RecommendationWithMetadata {
+  text: string;
+  pillar?: string;
+  maturityLevel?: string;
+  focusArea?: string;
+  isPriority?: boolean;
+}
+
 // Priority sentences based on lowest-scoring pillar
 const PRIORITY_SENTENCES = {
   DIGITALIZATION: "Since your data is still siloed and core systems aren't integrated, start by improving your data foundation and lab digitalization workflows.",
   TRANSFORMATION: "A shared digital vision and empowered digital workforce are critical—focus on leadership alignment and skills development.",
   VALUE_SCALING: "You've made progress in digital infrastructure—now extend that by improving feedback loops, sustainability, and supplier connectivity. Don't forget to continue expanding on your data foundation and bolstering digital culture in your organization!"
+};
+
+// Pillar mapping for color coding
+const PILLAR_INFO = {
+  DIGITALIZATION: { name: 'Digitalization', color: '#3b82f6' }, // blue
+  TRANSFORMATION: { name: 'Transformation', color: '#10b981' }, // emerald
+  VALUE_SCALING: { name: 'Value Scaling', color: '#f59e0b' } // amber
+};
+
+// Maturity level colors
+const MATURITY_COLORS = {
+  BASIC: '#ef4444', // red
+  EMERGING: '#f59e0b', // amber
+  ESTABLISHED: '#3b82f6', // blue
+  WORLD_CLASS: '#10b981' // emerald
 };
 
 // Focus area recommendations by maturity level
@@ -80,31 +104,68 @@ const FOCUS_AREA_RECOMMENDATIONS = {
 /**
  * Generate recommendations based on pillar scoring and focus area analysis
  * @param scoreResult - Complete score result with pillar and focus area data
- * @returns Array of recommendation strings
+ * @returns Array of recommendations with metadata
  */
-export function generateRecommendations(scoreResult: Tier1ScoreResult): string[] {
-  const recommendations: string[] = [];
+export function generateRecommendations(scoreResult: Tier1ScoreResult): RecommendationWithMetadata[] {
+  const recommendations: RecommendationWithMetadata[] = [];
 
   // 1. Add priority sentence based on lowest-scoring pillar
   const prioritySentence = PRIORITY_SENTENCES[scoreResult.lowestScoringPillar as keyof typeof PRIORITY_SENTENCES];
   if (prioritySentence) {
-    recommendations.push(prioritySentence);
+    recommendations.push({
+      text: prioritySentence,
+      pillar: scoreResult.lowestScoringPillar,
+      isPriority: true
+    });
   }
 
   // 2. Add focus area recommendations based on maturity levels
   scoreResult.focusAreaScores.forEach(focusArea => {
     const focusAreaKey = focusArea.focusArea;
     const maturityLevel = focusArea.maturityLevel;
+    const pillar = focusArea.pillar;
     
     // Find matching recommendation
     const focusAreaRecs = FOCUS_AREA_RECOMMENDATIONS[focusAreaKey as keyof typeof FOCUS_AREA_RECOMMENDATIONS];
     if (focusAreaRecs) {
       const recommendation = focusAreaRecs[maturityLevel as keyof typeof focusAreaRecs];
       if (recommendation) {
-        recommendations.push(recommendation);
+        recommendations.push({
+          text: recommendation,
+          pillar: pillar,
+          maturityLevel: maturityLevel,
+          focusArea: focusAreaKey,
+          isPriority: false
+        });
       }
     }
   });
 
   return recommendations;
 }
+
+/**
+ * Get color for a pillar
+ * @param pillar - Pillar name
+ * @returns Color hex code
+ */
+export function getPillarColor(pillar: string): string {
+  return PILLAR_INFO[pillar as keyof typeof PILLAR_INFO]?.color || '#6b7280';
+}
+
+/**
+ * Get color for a maturity level
+ * @param maturityLevel - Maturity level
+ * @returns Color hex code
+ */
+export function getMaturityColor(maturityLevel: string): string {
+  return MATURITY_COLORS[maturityLevel as keyof typeof MATURITY_COLORS] || '#6b7280';
+}
+
+/**
+ * Get pillar display name
+ * @param pillar - Pillar name
+ * @returns Display name
+ */
+export function getPillarName(pillar: string): string {
+  return PILLAR_INFO[pillar as keyof typeof PILLAR_INFO]?.name || pillar;
