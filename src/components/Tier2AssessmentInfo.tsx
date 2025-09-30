@@ -1,14 +1,12 @@
-import React from 'react';
-import { 
-  TrendingUp, 
-  CheckCircle, 
-  ArrowRight, 
-  Database,
-  Users,
-  TrendingUp as TrendingUpIcon,
-  Clock,
-  Award,
-  BarChart3
+import {
+    ArrowRight,
+    Award,
+    BarChart3,
+    Clock,
+    Database,
+    TrendingUp,
+    TrendingUp as TrendingUpIcon,
+    Users
 } from 'lucide-react';
 
 interface Tier2AssessmentInfoProps {
@@ -171,12 +169,12 @@ export function Tier2AssessmentInfo({ onStartAssessment, onNavigateToSchedule }:
               <ArrowRight className="w-5 h-5" />
             </button>
 
-            <button
+            {/* <button
               onClick={onNavigateToSchedule}
               className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-8 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
             >
               <span>Schedule Workshop Instead</span>
-            </button>
+            </button> */}
           </div>
 
           <div className="mt-6 text-center">

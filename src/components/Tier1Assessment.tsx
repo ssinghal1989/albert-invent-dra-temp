@@ -4,7 +4,7 @@ import {
   TrendingUp,
   ChevronDown,
   ChevronUp,
-  Lightbulb
+  Lightbulb,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAssessment } from "../hooks/useAssesment";
@@ -23,9 +23,7 @@ interface Tier1AssessmentProps {
 
 const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
 
-export function Tier1Assessment({
-  onComplete,
-}: Tier1AssessmentProps) {
+export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
   const { isLoading: questionsLoading, withLoading: withQuestionsLoading } =
     useLoader();
 
@@ -34,11 +32,8 @@ export function Tier1Assessment({
     Record<string, string>
   >({});
   const [showRecommendations, setShowRecommendations] = useState(false);
-  const {
-    userTier1Assessments,
-    submittingAssesment,
-    setSubmittingAssesment,
-  } = useAssessment();
+  const { userTier1Assessments, submittingAssesment, setSubmittingAssesment } =
+    useAssessment();
 
   // Load questions from database on component mount
   useEffect(() => {
@@ -207,7 +202,7 @@ export function Tier1Assessment({
                   </div>
                 </div>
               </div>
-              
+
               {/* Recommendations Toggle Button */}
               <button
                 onClick={() => setShowRecommendations(!showRecommendations)}
@@ -215,7 +210,7 @@ export function Tier1Assessment({
               >
                 <Lightbulb className="w-4 h-4 text-amber-600" />
                 <span className="text-gray-700 font-medium">
-                  {showRecommendations ? 'Hide' : 'Show'} Recommendations
+                  {showRecommendations ? "Hide" : "Show"} Recommendations
                 </span>
                 {showRecommendations ? (
                   <ChevronUp className="w-4 h-4 text-gray-600" />
@@ -230,7 +225,7 @@ export function Tier1Assessment({
                 You can modify any answers and resubmit to update your score.
               </p>
             </div>
-            
+
             {/* Expandable Recommendations Panel */}
             {showRecommendations && (
               <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
@@ -240,37 +235,37 @@ export function Tier1Assessment({
                     Recommendations Based on Your Assessment
                   </h4>
                 </div>
-                
+
                 {(() => {
-                  const scoreData = JSON.parse(firstPreviousAssessment.score) as Tier1ScoreResult;
-                  const recommendations = scoreData?.pillarScores 
+                  const scoreData = JSON.parse(
+                    firstPreviousAssessment.score
+                  ) as Tier1ScoreResult;
+                  const recommendations = scoreData?.pillarScores
                     ? generateRecommendations(scoreData)
-                    : [
-                        scoreData.overallScore >= 85 ? 'Continue to innovate and lead in digital transformation' :
-                        scoreData.overallScore >= 70 ? 'Focus on scaling successful digital initiatives' :
-                        scoreData.overallScore >= 50 ? 'Prioritize foundational digital infrastructure' :
-                        'Begin with basic digital transformation initiatives',
-                        scoreData.overallScore >= 85 ? 'Share best practices across the organization' :
-                        scoreData.overallScore >= 70 ? 'Strengthen data governance and integration' :
-                        scoreData.overallScore >= 50 ? 'Develop digital skills across teams' :
-                        'Focus on data standardization and integration',
-                        scoreData.overallScore >= 85 ? 'Explore advanced AI and automation opportunities' :
-                        scoreData.overallScore >= 70 ? 'Invest in advanced analytics capabilities' :
-                        scoreData.overallScore >= 50 ? 'Establish clear data governance frameworks' :
-                        'Build digital culture and leadership support'
-                      ];
-                  
+                    : [];
+                  const scoreColor = getScoreColor(scoreData.overallScore);
+
                   return (
                     <div className="space-y-3">
                       {/* Priority Recommendation */}
                       {recommendations.length > 0 && (
-                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-4 border-l-4 border-amber-500">
+                        <div
+                          className="bg-gradient-to-r  rounded-lg p-4 border-l-4"
+                          style={{ borderColor: "#05f" }}
+                        >
                           <div className="flex items-start space-x-3">
-                            <div className="w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 mt-1">
-                              <span className="text-white text-xs font-bold">!</span>
+                            <div
+                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
+                              style={{ backgroundColor: scoreColor }}
+                            >
+                              <span className="text-white text-xs font-bold">
+                                !
+                              </span>
                             </div>
                             <div>
-                              <h5 className="font-semibold text-gray-900 mb-1">Priority Focus</h5>
+                              <h5 className="font-semibold text-gray-900 mb-1">
+                                Priority Focus
+                              </h5>
                               <p className="text-gray-700 text-sm leading-relaxed">
                                 {recommendations[0]}
                               </p>
@@ -278,19 +273,21 @@ export function Tier1Assessment({
                           </div>
                         </div>
                       )}
-                      
+
                       {/* Additional Recommendations */}
                       {recommendations.length > 1 && (
                         <div>
-                          <h5 className="font-medium text-gray-900 mb-3">Additional Focus Areas:</h5>
+                          <h5 className="font-medium text-gray-900 mb-3">
+                            Additional Focus Areas:
+                          </h5>
                           <div className="grid gap-3">
-                            {recommendations.slice(1, 4).map((recommendation, index) => (
+                            {recommendations.splice(1, 10).map((recommendation, index) => (
                               <div
                                 key={index}
                                 className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                               >
                                 <div className="flex items-start space-x-3">
-                                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: scoreColor }}>
                                     <span className="text-white text-xs font-bold">
                                       {index + 1}
                                     </span>
@@ -368,7 +365,10 @@ export function Tier1Assessment({
                       const isSelected =
                         selectedResponses[question.id] === option.value;
                       return (
-                        <td key={`${question.id}_${option.label}`} className="p-2 align-top">
+                        <td
+                          key={`${question.id}_${option.label}`}
+                          className="p-2 align-top"
+                        >
                           <div
                             onClick={() =>
                               handleOptionSelect(question, option.value)

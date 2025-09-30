@@ -47,11 +47,14 @@ export function AdminPanel() {
     try {
       setLoading(true);
       const { data } = await client.models.Company.list();
+
+      console.log('data', data);
       
       // Fetch users for each company
       const companiesWithUsers = await Promise.all(
         (data || []).map(async (company) => {
           const users = await company.users();
+          console.log('users', users)
           return {
             ...company,
             users: users.data || []
@@ -59,7 +62,7 @@ export function AdminPanel() {
         })
       );
       
-      setCompanies(companiesWithUsers);
+      setCompanies(companiesWithUsers as Company[]);
     } catch (error) {
       console.error('Error fetching companies:', error);
       showToast({

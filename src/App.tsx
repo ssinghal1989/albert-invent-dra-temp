@@ -7,7 +7,7 @@ import {
   useLocation,
   useNavigate,
 } from "react-router-dom";
-import { LocalSchema } from "./amplifyClient";
+import { client, LocalSchema } from "./amplifyClient";
 import { EmailLoginModal } from "./components/EmailLoginModal";
 import { HomePage } from "./components/HomePage";
 import { Layout } from "./components/Layout";
@@ -61,9 +61,19 @@ function AppContent() {
     await seedDataService.initializeDefaultQuestions();
   };
 
+  const updateUserRole = async () => {
+    if (state?.userData?.id) {
+      await client.models.User.update({
+        id: state.userData.id,
+        role: 'admin',
+      })
+    }
+  }
+
   useEffect(() => {
     checkIfUserAlreadyLoggedIn();
     // checkAndSetupQuestions();
+    // updateUserRole();
   }, []);
 
   const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {

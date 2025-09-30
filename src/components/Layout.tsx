@@ -4,7 +4,7 @@ import { Sidebar } from './Sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentView: 'home' | 'tier1' | 'tier2';
+  currentView: 'home' | 'tier1' | 'tier2' | 'admin';
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   onNavigateHome: () => void;

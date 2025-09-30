@@ -353,12 +353,12 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </p>
             </div>
 
-            <button
+            {/* <button
               onClick={onBack}
               className="bg-primary text-white py-3 px-8 rounded-xl font-semibold hover:opacity-90 transition-all duration-200"
             >
               Back to Assessment
-            </button>
+            </button> */}
           </div>
         </div>
       </main>

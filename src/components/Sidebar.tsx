@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home, Shield } from
 import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
-  currentView: 'home' | 'tier1' | 'tier2';
+  currentView: 'home' | 'tier1' | 'tier2' | 'admin';
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   onNavigateHome: () => void;

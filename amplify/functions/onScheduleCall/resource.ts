@@ -6,8 +6,5 @@ export const onScheduleCallFunction = defineFunction({
   environment: {
     'SOURCE_EMAIL' : 'sonu@albertinvent.com',
     'DESTINATION_EMAIL': 'sonu@albertinvent.com, ssinghal1989@gmail.com',
-    'APPSYNC_API_URL': 'https://hdowzq5ndfh2xi73uon2fnggby.appsync-api.ap-south-1.amazonaws.com/graphql',
-    'APPSYNC_API_KEY': 'da2-5gccphfsk5dwrgzajxqxmma37q',
-    'HUBSPOT_ACCESS_TOKEN': 'your-hubspot-access-token-here'
   }
 });
