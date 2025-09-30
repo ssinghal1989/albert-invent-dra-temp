@@ -175,7 +175,7 @@ export function useHasTier2Access(): boolean {
   
   try {
     const config = JSON.parse(state.company.config as string);
-    return config.tier2AccessEnabled === true;
+    return config?.tier2AccessEnabled === true;
   } catch {
     return false;
   }

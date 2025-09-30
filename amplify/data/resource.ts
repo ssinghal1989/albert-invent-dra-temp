@@ -16,14 +16,13 @@ export const schema = a.schema({
       updatedAt: a.datetime().default(new Date().toISOString()),
       assessmentInstances: a.hasMany("AssessmentInstance", "companyId"),
       callScheduleRequest: a.hasMany("ScheduleRequest", "companyId"),
-      config: a.json().default('{"tier2AccessEnabled": false}')
+      config: a.json().default('{}')
     })
     .identifier(["id"])
     .authorization((allow) => [
       allow.authenticated(),
       allow.publicApiKey().to(["read"]),
     ]),
-
   User: a
     .model({
       id: a.id().required(),
@@ -40,22 +39,6 @@ export const schema = a.schema({
     })
     .identifier(["id"])
     .authorization((allow) => [allow.authenticated()]),
-
-  getAssessmentData: a
-    .query()
-    .returns(
-      a.customType({
-        focusAreas: a.string().array().required(),
-        maturityLevels: a.string().array().required(),
-        gridData: a.json().required(),
-      })
-    )
-    .authorization((allow) => [allow.publicApiKey()])
-    .handler(
-      a.handler.custom({
-        entry: "./get-assesment-data.js",
-      })
-    ),
   Question: a
     .model({
       templateId: a.id().required(),
@@ -84,7 +67,6 @@ export const schema = a.schema({
       assessmentInstances: a.hasMany("AssessmentInstance", "templateId"),
     })
     .authorization((allow) => [allow.publicApiKey()]),
-  // Question options
   Option: a
     .model({
       questionId: a.id().required(),
@@ -94,7 +76,6 @@ export const schema = a.schema({
       question: a.belongsTo("Question", "questionId"),
     })
     .authorization((allow) => [allow.publicApiKey()]),
-  // Assessment instances (runs)
   AssessmentInstance: a
     .model({
       id: a.id().required(),
@@ -126,7 +107,6 @@ export const schema = a.schema({
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
     .authorization((allow) => [allow.authenticated(), allow.owner()]),
-
   ScheduleRequest: a
     .model({
       type: a.enum(["TIER1_FOLLOWUP", "TIER2_REQUEST"]),
@@ -149,7 +129,7 @@ export const schema = a.schema({
     .secondaryIndexes((index) => [
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
-    .authorization((allow) => [allow.authenticated(), allow.owner()]),
+    .authorization((allow) => [allow.authenticated(), allow.owner()])
 });
 
 export type Schema = ClientSchema<typeof schema>;

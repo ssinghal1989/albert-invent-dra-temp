@@ -213,7 +213,7 @@ export function AdminPanel() {
               ) : (
                 filteredCompanies.map((company) => {
                   const config = company.config ? JSON.parse(company.config) : {};
-                  const hasTier2Access = config.tier2AccessEnabled === true;
+                  const hasTier2Access = config?.tier2AccessEnabled === true;
                   
                   return (
                     <div key={company.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">

@@ -21,7 +21,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   const companyConfig = state.company?.config
     ? JSON.parse(state.company.config as string)
     : {};
-  const hasTier2Access = companyConfig.tier2AccessEnabled === true;
+  const hasTier2Access = companyConfig?.tier2AccessEnabled === true;
 
   const handleStartAssessment = () => {
     setCurrentStep("questions");
