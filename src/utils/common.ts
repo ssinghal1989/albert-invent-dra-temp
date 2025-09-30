@@ -41,3 +41,21 @@ export const getMaturityLevel = (score: number): string => {
   if (score >= 37.5) return "Emerging";
   return "Basic";
 };
+
+/**
+ * Converts strings like "VALUE_SCALING" or "SOME_TEXT" to "Value Scaling" or "Some Text" format
+ * @param str - The string to format (e.g., "VALUE_SCALING", "HELLO_WORLD")
+ * @returns Formatted string (e.g., "Value Scaling", "Hello World")
+ */
+export const formatStringToTitle = (str: string): string => {
+  if (!str) return '';
+  
+  return str
+    .toLowerCase()                    // Convert to lowercase: "value_scaling"
+    .split('_')                       // Split by underscores: ["value", "scaling"]
+    .map(word => 
+      word.charAt(0).toUpperCase() +  // Capitalize first letter
+      word.slice(1)                   // Keep rest lowercase
+    )
+    .join(' ');                       // Join with spaces: "Value Scaling"
+};
