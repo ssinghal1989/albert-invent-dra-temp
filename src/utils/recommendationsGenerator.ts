@@ -169,3 +169,4 @@ export function getMaturityColor(maturityLevel: string): string {
  */
 export function getPillarName(pillar: string): string {
   return PILLAR_INFO[pillar as keyof typeof PILLAR_INFO]?.name || pillar;
+}
