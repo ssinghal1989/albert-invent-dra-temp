@@ -31,6 +31,7 @@ import { seedDataService } from "./services/seedDataService";
 import { calculateTier1Score } from "./utils/scoreCalculator";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import { useCallRequest } from "./hooks/useCallRequest";
+import { Tier2AssessmentOld } from "./components/Tier2AssessmentOld";
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -65,7 +66,7 @@ function AppContent() {
     if (state?.userData?.id) {
       await client.models.User.update({
         id: state.userData.id,
-        role: 'admin',
+        role: 'user',
       })
     }
   }
@@ -73,7 +74,7 @@ function AppContent() {
   useEffect(() => {
     checkIfUserAlreadyLoggedIn();
     // checkAndSetupQuestions();
-    // updateUserRole();
+    updateUserRole();
   }, []);
 
   const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {
@@ -255,9 +256,10 @@ function AppContent() {
         <Route
           path="/tier2"
           element={
-            <Tier2Assessment
-              onNavigateToTier={navigateToTier}
-            />
+            // <Tier2Assessment
+            //   onNavigateToTier={navigateToTier}
+            // />
+            <Tier2AssessmentOld />
           }
         />
         <Route

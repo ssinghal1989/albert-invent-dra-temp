@@ -119,8 +119,6 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   //   );
   // }
 
-  console.log('Current step', currentStep);
-
   if (!hasTier2Access) {
     return <Tier2AssessmentSchedule onBack={handleBackToInfo} />;
   }
