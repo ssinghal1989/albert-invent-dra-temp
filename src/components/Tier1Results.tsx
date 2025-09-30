@@ -10,9 +10,9 @@ import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { useLoader } from "../hooks/useLoader";
 import { getMaturityLevel, getScoreColor } from "../utils/common";
-import { generateRecommendations } from "../utils/recommendationsGenerator";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { LoadingButton } from "./ui/LoadingButton";
+import { RecommendationsPanel } from "./ui/RecommendationsPanel";
 import { client } from "../amplifyClient";
 import { useAppContext } from "../context/AppContext";
 import { useAssessment } from "../hooks/useAssesment";
@@ -82,9 +82,6 @@ export function Tier1Results({
 
   const maturityLevel = getMaturityLevel(score.overallScore);
   const scoreColor = getScoreColor(score.overallScore);
-  const recommendations = score?.pillarScores
-    ? generateRecommendations(score)
-    : getRecommendations(score.overallScore);
 
   // Generate time slots
   const generateTimeSlots = () => {
@@ -393,65 +390,13 @@ export function Tier1Results({
           </div>
 
           {/* Priority Recommendation */}
-          {recommendations.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-                Priority Focus Area
-              </h3>
-              <div
-                className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 max-w-4xl mx-auto"
-                style={{ borderColor: "#05f" }}
-              >
-                <div className="flex items-start space-x-4">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
-                    style={{ backgroundColor: scoreColor }}
-                  >
-                    <span className="text-white text-sm font-bold">!</span>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
-                      Key Priority
-                    </h4>
-                    <p className="text-gray-700 leading-relaxed">
-                      {recommendations[0]}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Focus Area Recommendations */}
-          {recommendations.length > 1 && (
-            <div className="mb-12">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">
-                Focus Area Recommendations
-              </h3>
-              <div className="grid md:grid-cols-2 gap-4 max-w-6xl mx-auto">
-                {recommendations.slice(1).map((recommendation, index) => (
-                  <div
-                    key={index}
-                    className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow duration-200"
-                  >
-                    <div className="flex items-start space-x-3">
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
-                        style={{ backgroundColor: scoreColor }}
-                      >
-                        <span className="text-white text-xs font-bold">
-                          {index + 1}
-                        </span>
-                      </div>
-                      <p className="text-gray-700 text-sm leading-relaxed flex-1">
-                        {recommendation}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          <RecommendationsPanel
+            scoreData={score}
+            className="mb-12"
+            defaultExpanded={true}
+            showToggleButton={false}
+            maxRecommendations={10}
+          />
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-4 mb-8 flex-wrap">

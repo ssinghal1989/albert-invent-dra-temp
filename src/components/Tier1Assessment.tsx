@@ -14,7 +14,7 @@ import { questionsService } from "../services/questionsService";
 import { Loader } from "./ui/Loader";
 import { LoadingButton } from "./ui/LoadingButton";
 import { getScoreColor, getMaturityLevel } from "../utils/common";
-import { generateRecommendations } from "../utils/recommendationsGenerator";
+import { RecommendationsPanel } from "./ui/RecommendationsPanel";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 
 interface Tier1AssessmentProps {
@@ -228,83 +228,13 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
 
             {/* Expandable Recommendations Panel */}
             {showRecommendations && (
-              <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Lightbulb className="w-5 h-5 text-amber-600" />
-                  <h4 className="text-lg font-semibold text-gray-900">
-                    Recommendations Based on Your Assessment
-                  </h4>
-                </div>
-
-                {(() => {
-                  const scoreData = JSON.parse(
-                    firstPreviousAssessment.score
-                  ) as Tier1ScoreResult;
-                  const recommendations = scoreData?.pillarScores
-                    ? generateRecommendations(scoreData)
-                    : [];
-                  const scoreColor = getScoreColor(scoreData.overallScore);
-
-                  return (
-                    <div className="space-y-3">
-                      {/* Priority Recommendation */}
-                      {recommendations.length > 0 && (
-                        <div
-                          className="bg-gradient-to-r  rounded-lg p-4 border-l-4"
-                          style={{ borderColor: "#05f" }}
-                        >
-                          <div className="flex items-start space-x-3">
-                            <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
-                              style={{ backgroundColor: scoreColor }}
-                            >
-                              <span className="text-white text-xs font-bold">
-                                !
-                              </span>
-                            </div>
-                            <div>
-                              <h5 className="font-semibold text-gray-900 mb-1">
-                                Priority Focus
-                              </h5>
-                              <p className="text-gray-700 text-sm leading-relaxed">
-                                {recommendations[0]}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Additional Recommendations */}
-                      {recommendations.length > 1 && (
-                        <div>
-                          <h5 className="font-medium text-gray-900 mb-3">
-                            Additional Focus Areas:
-                          </h5>
-                          <div className="grid gap-3">
-                            {recommendations.splice(1, 10).map((recommendation, index) => (
-                              <div
-                                key={index}
-                                className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                              >
-                                <div className="flex items-start space-x-3">
-                                  <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: scoreColor }}>
-                                    <span className="text-white text-xs font-bold">
-                                      {index + 1}
-                                    </span>
-                                  </div>
-                                  <p className="text-gray-700 text-sm leading-relaxed flex-1">
-                                    {recommendation}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-              </div>
+              <RecommendationsPanel
+                scoreData={JSON.parse(firstPreviousAssessment.score) as Tier1ScoreResult}
+                className="mt-4"
+                defaultExpanded={true}
+                showToggleButton={false}
+                maxRecommendations={3}
+              />
             )}
           </div>
         )}
