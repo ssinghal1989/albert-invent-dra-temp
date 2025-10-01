@@ -48,6 +48,7 @@ interface CallRequest {
   createdAt: string;
   initiator?: any;
   company?: any;
+  assessmentInstanceId?: any;
 }
 
 type AdminView = 'companies' | 'callRequests';
@@ -142,7 +143,7 @@ export function AdminPanel() {
       
       // Sort by creation date (newest first)
       const sortedRequests = requestsWithDetails.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
       );
       
       setCallRequests(sortedRequests as CallRequest[]);
