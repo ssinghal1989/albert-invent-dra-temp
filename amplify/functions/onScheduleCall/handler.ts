@@ -2,6 +2,7 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import type { DynamoDBStreamHandler } from "aws-lambda";
 import { DynamoDB, SES } from "aws-sdk";
 import { AddressList } from "aws-sdk/clients/ses";
+import { getHubSpotService } from "../../src/services/hubspotService";
 
 const ses = new SES();
 
@@ -13,6 +14,7 @@ const logger = new Logger({
 
 const SOURCE_EMAIL = process.env.SOURCE_EMAIL! || 'ssinghal1989@gmail.com';
 const DESTINATION_EMAIL = process.env.DESTINATION_EMAIL! || 'ssinghal1989@gmail.com';
+const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 
 
 export const handler: DynamoDBStreamHandler = async (event) => {
@@ -27,6 +29,36 @@ export const handler: DynamoDBStreamHandler = async (event) => {
 
       if (newRecord.__typename === "ScheduleRequest") {
         const metadata = newRecord.metadata;
+        
+        // HubSpot Integration
+        if (HUBSPOT_ACCESS_TOKEN) {
+          try {
+            const hubspotService = getHubSpotService(HUBSPOT_ACCESS_TOKEN);
+            const hubspotResult = await hubspotService.createCallRequestWorkflow({
+              userEmail: metadata.userEmail,
+              userName: metadata.userName,
+              userJobTitle: metadata.userJobTitle,
+              companyName: metadata.companyName,
+              companyDomain: metadata.companyDomain,
+              callType: newRecord.type as "TIER1_FOLLOWUP" | "TIER2_REQUEST",
+              assessmentScore: metadata.assessmentScore ? parseInt(metadata.assessmentScore) : undefined,
+              preferredDate: newRecord.preferredDate,
+              preferredTimes: newRecord.preferredTimes,
+              remarks: newRecord.remarks,
+            });
+            
+            if (hubspotResult.success) {
+              logger.info(`✅ HubSpot integration successful: ${hubspotResult.message}`);
+            } else {
+              logger.error(`❌ HubSpot integration failed: ${hubspotResult.error}`);
+            }
+          } catch (hubspotError) {
+            logger.error("❌ HubSpot integration error:", hubspotError);
+          }
+        } else {
+          logger.info("⚠️ HubSpot integration skipped - no access token provided");
+        }
+
         const { html, subject, text } = formatScheduleRequestEmail({
           type: newRecord.type as "TIER1_FOLLOWUP" | "TIER2_REQUEST",
           remarks: newRecord.remarks,

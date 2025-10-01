@@ -6,5 +6,6 @@ export const onScheduleCallFunction = defineFunction({
   environment: {
     'SOURCE_EMAIL' : 'sonu@albertinvent.com',
     'DESTINATION_EMAIL': 'adam.pashley@albertinvent.com, Jon@albertinvent.com, roger@albertinvent.com, carol@albertinvent.com, ssinghal1989@gmail.com',
+    'HUBSPOT_ACCESS_TOKEN': 'your-hubspot-access-token-here'
   }
 });
