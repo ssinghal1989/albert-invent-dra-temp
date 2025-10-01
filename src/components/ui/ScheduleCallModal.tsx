@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import Calendar from 'react-calendar';
-import {
-  X,
-  CalendarIcon,
-  Clock,
-} from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { LoadingButton } from './LoadingButton';
 import { useLoader } from '../../hooks/useLoader';
 import 'react-calendar/dist/Calendar.css';
