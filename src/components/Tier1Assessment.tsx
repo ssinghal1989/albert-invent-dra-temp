@@ -11,7 +11,7 @@ import { useAssessment } from "../hooks/useAssesment";
 import { useLoader } from "../hooks/useLoader";
 import { Tier1TemplateId } from "../services/defaultQuestions";
 import { questionsService } from "../services/questionsService";
-import { getScoreColor } from "../utils/common";
+import { formatStringToTitle, getScoreColor } from "../utils/common";
 import {
   generateRecommendations,
   getMaturityColor,
@@ -268,7 +268,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                             </div>
                             <div>
                               <h5 className="font-semibold text-gray-900 mb-1">
-                                Priority Focus {recommendations[0].pillar}
+                                Priority Focus ({formatStringToTitle(recommendations[0].pillar || '')})
                               </h5>
                               <p className="text-gray-700 text-sm leading-relaxed">
                                 {recommendations[0].text}
@@ -287,6 +287,11 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                           <div className="grid gap-3">
                             {recommendations
                               .splice(1, 10)
+                              .sort((a, b) => {
+                                const aIndex = a.maturityLevel ? maturityOrder.indexOf(a.maturityLevel) : 999;
+                                const bIndex = b.maturityLevel ? maturityOrder.indexOf(b.maturityLevel) : 999;
+                                return aIndex - bIndex;
+                              })
                               .map((recommendation, index) => (
                                 <div
                                   key={index}

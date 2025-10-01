@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Lightbulb } from 'lucide-react';
 import { useState } from 'react';
-import { getScoreColor } from '../../utils/common';
+import { formatStringToTitle, getScoreColor } from '../../utils/common';
 import {
   generateRecommendations,
   getMaturityColor,
@@ -82,16 +82,14 @@ export function RecommendationsPanel({
                   <div
                     className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-1"
                     style={{ 
-                      backgroundColor: recommendations[0].pillar 
-                        ? getPillarColor(recommendations[0].pillar) 
-                        : scoreColor 
+                      backgroundColor: scoreColor 
                     }}
                   >
                     <span className="text-white text-xs font-bold">!</span>
                   </div>
                   <div>
                     <h5 className="font-semibold text-gray-900 mb-2">
-                      Priority Focus {recommendations[0].pillar}
+                      Priority Focus ({formatStringToTitle(recommendations[0].pillar || '')})
                     </h5>
                     <p className="text-gray-700 text-sm leading-relaxed">
                       {recommendations[0].text}
@@ -116,8 +114,7 @@ export function RecommendationsPanel({
                         const aIndex = a.maturityLevel ? maturityOrder.indexOf(a.maturityLevel) : 999;
                         const bIndex = b.maturityLevel ? maturityOrder.indexOf(b.maturityLevel) : 999;
                         return aIndex - bIndex;
-                      })
-                      .slice(0, maxRecommendations - 1);
+                      });
                     
                     return sortedRecommendations.map((recommendation, index) => {
                       const bgColor = recommendation.maturityLevel 
