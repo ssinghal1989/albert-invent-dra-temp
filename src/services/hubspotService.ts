@@ -173,7 +173,7 @@ class HubSpotService {
       const properties = {
         name: companyData.name,
         domain: companyData.domain || '',
-        industry: companyData.industry || 'Technology',
+        industry: companyData.industry || 'INFORMATION_TECHNOLOGY_AND_SERVICES',
         description: companyData.description || 'Digital Readiness Assessment Client',
       };
 
@@ -268,7 +268,7 @@ class HubSpotService {
       const company = await this.createOrUpdateCompany({
         name: data.companyName,
         domain: data.companyDomain,
-        industry: 'Technology',
+        industry: 'INFORMATION_TECHNOLOGY_AND_SERVICES',
         description: 'Digital Readiness Assessment Client'
       });
 
