@@ -167,17 +167,22 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
     );
   }
 
-              {/* Schedule a follow-up call Button - only show if user has completed assessment */}
-              {!!firstPreviousAssessment && (
-                <button
-                  onClick={handleScheduleCall}
-                  className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Schedule a follow-up call</span>
-                </button>
-              )}
+  return (
+    <main className="flex-1 p-8">
+      <div className="max-w-none mx-8">
+        {/* Previous Assessment Results */}
+        {firstPreviousAssessment && (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <div
+                  style={{
+                    backgroundColor: getScoreColor(
+                      JSON.parse(firstPreviousAssessment.score).overallScore
+                    ),
+                  }}
                   className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                >
                   {JSON.parse(firstPreviousAssessment.score).overallScore}
                 </div>
                 <div>
@@ -211,21 +216,34 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 </div>
               </div>
 
-              {/* Recommendations Toggle Button */}
-              <button
-                onClick={() => setShowRecommendations(!showRecommendations)}
-                className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm"
-              >
-                <Lightbulb className="w-4 h-4 text-amber-600" />
-                <span className="text-gray-700 font-medium">
-                  {showRecommendations ? "Hide" : "Show"} Recommendations
-                </span>
-                {showRecommendations ? (
-                  <ChevronUp className="w-4 h-4 text-gray-600" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
+              <div className="flex items-center space-x-3">
+                {/* Schedule a follow-up call Button - only show if user has completed assessment */}
+                {!!firstPreviousAssessment && (
+                  <button
+                    onClick={handleScheduleCall}
+                    className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
+                  >
+                    <Calendar className="w-4 h-4" />
+                    <span>Schedule a follow-up call</span>
+                  </button>
                 )}
-              </button>
+
+                {/* Recommendations Toggle Button */}
+                <button
+                  onClick={() => setShowRecommendations(!showRecommendations)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+                >
+                  <Lightbulb className="w-4 h-4 text-amber-600" />
+                  <span className="text-gray-700 font-medium">
+                    {showRecommendations ? "Hide" : "Show"} Recommendations
+                  </span>
+                  {showRecommendations ? (
+                    <ChevronUp className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="mt-4 bg-white/60 rounded-lg p-3">
               <p className="text-sm text-gray-700">
@@ -348,6 +366,10 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
               Tier 1 Assessment
             </h2>
             <p className="text-black mb-6">
+              Please answer all questions to complete your assessment.
+            </p>
+
+            <div className="flex justify-between items-center mb-6">
               {/* Request In-Depth Assessment Button - only show if user has completed assessment */}
               {!!firstPreviousAssessment && (
                 <button
@@ -359,7 +381,6 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 </button>
               )}
 
-            <div className="flex justify-end mb-6">
               <LoadingButton
                 onClick={handleSubmit}
                 loading={submittingAssesment}
