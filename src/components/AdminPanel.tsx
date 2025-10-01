@@ -17,13 +17,16 @@ import {
   ChevronDown,
   ChevronUp,
   Mail,
-  Briefcase
+  Briefcase,
+  BarChart3
 } from 'lucide-react';
 import { client } from '../amplifyClient';
 import { useAppContext } from '../context/AppContext';
 import { LoadingButton } from './ui/LoadingButton';
 import { Loader } from './ui/Loader';
 import { useToast } from '../context/ToastContext';
+import { questionsService } from '../services/questionsService';
+import { Tier1TemplateId } from '../services/defaultQuestions';
 
 interface Company {
   id: string;
@@ -59,6 +62,9 @@ export function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingCompany, setUpdatingCompany] = useState<string | null>(null);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
+  const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(new Set());
+  const [tier1Questions, setTier1Questions] = useState<any[]>([]);
+  const [assessmentData, setAssessmentData] = useState<Record<string, any>>({});
 
   // Check if current user is admin
   const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
@@ -69,8 +75,22 @@ export function AdminPanel() {
         fetchCompanies();
       } else {
         fetchCallRequests();
+        loadTier1Questions();
       }
     }
+  }, [isAdmin, currentView]);
+
+  const loadTier1Questions = async () => {
+    try {
+      const result = await questionsService.getQuestionsByTemplate(Tier1TemplateId);
+      if (result.success && result.data) {
+        const sortedQuestions = result.data.sort((a, b) => a.order - b.order);
+        setTier1Questions(sortedQuestions);
+      }
+    } catch (error) {
+      console.error('Error loading Tier 1 questions:', error);
+    }
+  };
   }, [isAdmin, currentView]);
 
   const fetchCompanies = async () => {
@@ -196,6 +216,18 @@ export function AdminPanel() {
     });
   };
 
+  const toggleCallRequestExpansion = (requestId: string) => {
+    setExpandedCallRequests(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(requestId)) {
+        newSet.delete(requestId);
+      } else {
+        newSet.add(requestId);
+      }
+      return newSet;
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
@@ -230,6 +262,32 @@ export function AdminPanel() {
       const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
       return `${displayHour}:${minutes} ${ampm}`;
     }).join(', ');
+  };
+
+  const getSortedOptions = (question: any) => {
+    const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
+    const sortedOptions = question.options.sort((a: any, b: any) => {
+      const aIndex = maturityOrder.indexOf(a.value);
+      const bIndex = maturityOrder.indexOf(b.value);
+      return aIndex - bIndex;
+    });
+    return sortedOptions;
+  };
+
+  const getMaturityLabels = () => {
+    const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
+    if (tier1Questions.length > 0 && tier1Questions[0].options) {
+      const maturityLevels = maturityOrder.filter((level) =>
+        tier1Questions[0].options.some((opt: any) => opt.value === level)
+      );
+      return maturityLevels.map((level) =>
+        level
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (l) => l.toUpperCase())
+      );
+    }
+    return [];
   };
 
   const filteredCompanies = companies.filter(company =>
@@ -502,10 +560,12 @@ export function AdminPanel() {
                 ) : (
                   filteredCallRequests.map((request) => {
                     const metadata = request.metadata ? JSON.parse(request.metadata) : {};
+                    const isExpanded = expandedCallRequests.has(request.id);
+                    const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstance;
                     
                     return (
                       <div key={request.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between mb-4">
                           <div className="flex items-start space-x-4">
                             <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
                               <Phone className="w-6 h-6 text-gray-600" />
@@ -577,7 +637,106 @@ export function AdminPanel() {
                               )}
                             </div>
                           </div>
+
+                          {/* Expand Button for Tier 1 Follow-up requests */}
+                          {hasAssessmentData && (
+                            <button
+                              onClick={() => toggleCallRequestExpansion(request.id)}
+                              className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                            >
+                              <BarChart3 className="w-4 h-4" />
+                              <span>{isExpanded ? 'Hide' : 'View'} Assessment</span>
+                              {isExpanded ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
                         </div>
+
+                        {/* Expanded Assessment View */}
+                        {isExpanded && hasAssessmentData && request.assessmentInstance && (
+                          <div className="mt-6 border-t pt-6">
+                            <div className="mb-4">
+                              <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                                Tier 1 Assessment Results
+                              </h4>
+                              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>Completed: {formatDate(request.assessmentInstance.createdAt)}</span>
+                                </div>
+                                {request.assessmentInstance.score && (
+                                  <div className="flex items-center space-x-1">
+                                    <BarChart3 className="w-4 h-4" />
+                                    <span>
+                                      Score: {JSON.parse(request.assessmentInstance.score).overallScore}/100
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Assessment Grid */}
+                            {tier1Questions.length > 0 && request.assessmentInstance.responses && (
+                              <div className="bg-gray-50 rounded-lg p-4">
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border-collapse">
+                                    <thead>
+                                      <tr>
+                                        <th className="text-left p-3 font-semibold text-gray-700 border-b bg-white">
+                                          Focus Areas
+                                        </th>
+                                        {getMaturityLabels().map((level: any) => (
+                                          <th
+                                            key={level}
+                                            className="text-center p-3 font-semibold text-gray-700 border-b min-w-32 bg-white"
+                                          >
+                                            {level}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {tier1Questions.map((question) => {
+                                        const responses = JSON.parse(request.assessmentInstance.responses);
+                                        const selectedResponse = responses[question.id];
+                                        
+                                        return (
+                                          <tr key={question.id} className="border-b border-gray-200">
+                                            <td className="p-3 font-medium text-gray-800 bg-white align-top text-sm">
+                                              {question.prompt}
+                                            </td>
+                                            {getSortedOptions(question).map((option: any) => {
+                                              const isSelected = selectedResponse === option.value;
+                                              return (
+                                                <td
+                                                  key={`${question.id}_${option.label}`}
+                                                  className="p-2 align-top"
+                                                >
+                                                  <div
+                                                    className={`p-2 rounded-lg text-xs leading-tight ${
+                                                      isSelected
+                                                        ? "text-white bg-blue-500"
+                                                        : "text-gray-700 bg-white border border-gray-200"
+                                                    }`}
+                                                  >
+                                                    {option.label}
+                                                  </div>
+                                                </td>
+                                              );
+                                            })}
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })
