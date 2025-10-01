@@ -200,9 +200,103 @@ class HubSpotService {
     }
   }
 
-  // Create deal
-  async createDeal(dealData: HubSpotDeal, contactId?: string, companyId?: string) {
+  // Search for existing deal by name and company
+  async searchDealByNameAndCompany(dealName: string, companyId?: string) {
     try {
+      const filterGroups: any[] = [
+        {
+          filters: [
+            {
+              propertyName: 'dealname',
+              operator: 'EQ',
+              value: dealName
+            }
+          ]
+        }
+      ];
+
+      // If we have a company ID, add it as an additional filter
+      if (companyId) {
+        filterGroups.push({
+          filters: [
+            {
+              propertyName: 'associations.company',
+              operator: 'EQ',
+              value: companyId
+            }
+          ]
+        });
+      }
+
+      const response = await this.makeRequest(
+        `/crm/v3/objects/deals/search`,
+        'POST',
+        {
+          filterGroups,
+          properties: ['dealname', 'dealstage', 'amount', 'createdate']
+        }
+      );
+      
+      return response.results && response.results.length > 0 ? response.results[0] : null;
+    } catch (error) {
+      console.error('Error searching deal:', error);
+      return null;
+    }
+  }
+
+  // Alternative: Search deals by company association (more reliable)
+  async searchDealsByCompany(companyId: string, dealType: string) {
+    try {
+      // Get all deals associated with the company
+      const response = await this.makeRequest(
+        `/crm/v3/objects/companies/${companyId}/associations/deals`
+      );
+
+      if (response.results && response.results.length > 0) {
+        // Get deal details for each associated deal
+        const dealIds = response.results.map((deal: any) => deal.id);
+        const dealDetails = await Promise.all(
+          dealIds.map(async (dealId: string) => {
+            try {
+              return await this.makeRequest(`/crm/v3/objects/deals/${dealId}`);
+            } catch (error) {
+              return null;
+            }
+          })
+        );
+
+        // Filter for deals that match our criteria
+        const matchingDeals = dealDetails.filter(deal => 
+          deal && 
+          deal.properties.dealname && 
+          deal.properties.dealname.includes(dealType === 'TIER1_FOLLOWUP' ? 'Tier 1 Follow-up' : 'Tier 2 Assessment')
+        );
+
+        return matchingDeals.length > 0 ? matchingDeals[0] : null;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error searching deals by company:', error);
+      return null;
+    }
+  }
+
+  // Create deal
+  async createOrUpdateDeal(dealData: HubSpotDeal, contactId?: string, companyId?: string, callType?: string) {
+    try {
+      // Check for existing deal first
+      let existingDeal = null;
+      
+      if (companyId && callType) {
+        existingDeal = await this.searchDealsByCompany(companyId, callType);
+      }
+      
+      if (!existingDeal) {
+        // Also try searching by deal name
+        existingDeal = await this.searchDealByNameAndCompany(dealData.dealname, companyId);
+      }
+
       const properties = {
         dealname: dealData.dealname,
         dealstage: dealData.dealstage,
@@ -212,6 +306,19 @@ class HubSpotService {
         hubspot_owner_id: dealData.hubspot_owner_id || '',
       };
 
+      if (existingDeal) {
+        // Update existing deal
+        console.log(`Updating existing deal: ${existingDeal.id}`);
+        const response = await this.makeRequest(
+          `/crm/v3/objects/deals/${existingDeal.id}`,
+          'PATCH',
+          { properties }
+        );
+        return { ...response, isNew: false, updated: true };
+      }
+
+      // Create new deal
+      console.log('Creating new deal');
       const dealPayload: any = { properties };
 
       // Associate with contact and company if provided
@@ -239,7 +346,7 @@ class HubSpotService {
         dealPayload
       );
       
-      return response;
+      return { ...response, isNew: true };
     } catch (error) {
       console.error('Error creating deal:', error);
       throw error;
@@ -286,12 +393,12 @@ class HubSpotService {
       const dealName = `${data.callType === 'TIER1_FOLLOWUP' ? 'Tier 1 Follow-up' : 'Tier 2 Assessment'} - ${data.companyName}`;
       const dealStage = 'appointmentscheduled'; // Adjust based on your HubSpot pipeline
       
-      const deal = await this.createDeal({
+      const deal = await this.createOrUpdateDeal({
         dealname: dealName,
         dealstage: dealStage,
         amount: data.callType === 'TIER1_FOLLOWUP' ? '5000' : '15000', // Estimated values
         pipeline: 'default'
-      }, contact.id, company.id);
+      }, contact.id, company.id, data.callType);
 
       // 4. Add notes to the deal
       if (data.remarks || data.assessmentScore) {
@@ -313,8 +420,8 @@ class HubSpotService {
         success: true,
         contact: { id: contact.id, isNew: contact.isNew },
         company: { id: company.id, isNew: company.isNew },
-        deal: { id: deal.id },
-        message: `Successfully created ${contact.isNew ? 'new' : 'updated'} contact and ${company.isNew ? 'new' : 'updated'} company with new deal`
+        deal: { id: deal.id, isNew: deal.isNew, updated: deal.updated },
+        message: `Successfully ${contact.isNew ? 'created' : 'updated'} contact, ${company.isNew ? 'created' : 'updated'} company, and ${deal.isNew ? 'created new' : 'updated existing'} deal`
       };
 
     } catch (error) {
