@@ -131,10 +131,25 @@ export function AdminPanel() {
         (data || []).map(async (request) => {
           const initiator = await request.initiator();
           const company = await request.company();
+          
+          // Fetch assessment data if it's a Tier 1 follow-up
+          let assessmentInstance = null;
+          if (request.type === 'TIER1_FOLLOWUP' && request.assessmentInstanceId) {
+            try {
+              const { data: assessment } = await client.models.AssessmentInstance.get({
+                id: request.assessmentInstanceId
+              });
+              assessmentInstance = assessment;
+            } catch (error) {
+              console.error('Error fetching assessment:', error);
+            }
+          }
+          
           return {
             ...request,
             initiator: initiator.data,
-            company: company.data
+            company: company.data,
+            assessmentInstance
           };
         })
       );
@@ -210,18 +225,6 @@ export function AdminPanel() {
         newSet.delete(companyId);
       } else {
         newSet.add(companyId);
-      }
-      return newSet;
-    });
-  };
-
-  const toggleCallRequestExpansion = (requestId: string) => {
-    setExpandedCallRequests(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
       }
       return newSet;
     });
