@@ -215,18 +215,6 @@ export function AdminPanel() {
     });
   };
 
-  const toggleCallRequestExpansion = (requestId: string) => {
-    setExpandedCallRequests(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(requestId)) {
-        newSet.delete(requestId);
-      } else {
-        newSet.add(requestId);
-      }
-      return newSet;
-    });
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PENDING': return 'bg-yellow-100 text-yellow-800';
@@ -261,32 +249,6 @@ export function AdminPanel() {
       const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
       return `${displayHour}:${minutes} ${ampm}`;
     }).join(', ');
-  };
-
-  const getSortedOptions = (question: any) => {
-    const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
-    const sortedOptions = question.options.sort((a: any, b: any) => {
-      const aIndex = maturityOrder.indexOf(a.value);
-      const bIndex = maturityOrder.indexOf(b.value);
-      return aIndex - bIndex;
-    });
-    return sortedOptions;
-  };
-
-  const getMaturityLabels = () => {
-    const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
-    if (tier1Questions.length > 0 && tier1Questions[0].options) {
-      const maturityLevels = maturityOrder.filter((level) =>
-        tier1Questions[0].options.some((opt: any) => opt.value === level)
-      );
-      return maturityLevels.map((level) =>
-        level
-          .replace(/_/g, " ")
-          .toLowerCase()
-          .replace(/\b\w/g, (l) => l.toUpperCase())
-      );
-    }
-    return [];
   };
 
   const filteredCompanies = companies.filter(company =>
