@@ -21,6 +21,10 @@ import {
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { Loader } from "./ui/Loader";
 import { LoadingButton } from "./ui/LoadingButton";
+import { ScheduleCallModal, ScheduleCallData } from "./ui/ScheduleCallModal";
+import { useAppContext } from "../context/AppContext";
+import { useCallRequest } from "../hooks/useCallRequest";
+import { useToast } from "../context/ToastContext";
 
 interface Tier1AssessmentProps {
   onComplete: (responses: Record<string, string>, questions: any[]) => void;
@@ -30,6 +34,9 @@ const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
 
 export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
   const navigate = useNavigate();
+  const { state } = useAppContext();
+  const { scheduleRequest } = useCallRequest();
+  const { showToast } = useToast();
   const { isLoading: questionsLoading, withLoading: withQuestionsLoading } =
     useLoader();
 
@@ -38,17 +45,68 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
     Record<string, string>
   >({});
   const [showRecommendations, setShowRecommendations] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const { userTier1Assessments, submittingAssesment, setSubmittingAssesment } =
     useAssessment();
-
-  const handleScheduleCall = () => {
-    navigate('/tier1-results');
-  };
 
   const handleRequestTier2 = () => {
     navigate('/tier2');
   };
 
+  const handleScheduleCall = () => {
+    setShowScheduleModal(true);
+  };
+
+  const handleScheduleSubmit = async (data: ScheduleCallData) => {
+    try {
+      const { data: result, errors } = await scheduleRequest({
+        preferredDate: new Date(data.selectedDate!)
+          .toISOString()
+          .split("T")[0]!,
+        preferredTimes: data.selectedTimes,
+        initiatorUserId: state.userData?.id,
+        companyId: state.company?.id,
+        status: "PENDING",
+        type: "TIER1_FOLLOWUP",
+        remarks: data.remarks,
+        assessmentInstanceId: userTier1Assessments?.[0]?.id,
+        metadata: JSON.stringify({
+          userEmail: state.userData?.email!,
+          userName: state.userData?.name!,
+          companyDomain: state.company?.primaryDomain!,
+          companyName: state.company?.name!,
+          userJobTitle: state.userData?.jobTitle!,
+          assessmentScore: userTier1Assessments?.[0] 
+            ? JSON.parse(userTier1Assessments[0].score).overallScore 
+            : 0,
+        }),
+      });
+
+      if (result) {
+        showToast({
+          type: "success",
+          title: "Follow-up Call Requested!",
+          message:
+            "We've received your request and will contact you soon to schedule your follow-up call.",
+          duration: 6000,
+        });
+      } else {
+        showToast({
+          type: "error",
+          title: "Request Failed",
+          message: "Failed to schedule the call. Please try again.",
+          duration: 5000,
+        });
+      }
+    } catch (err) {
+      showToast({
+        type: "error",
+        title: "Request Failed",
+        message: "Failed to schedule the call. Please try again.",
+        duration: 5000,
+      });
+    }
+  };
   // Load questions from database on component mount
   useEffect(() => {
     loadQuestionsFromDatabase();
@@ -466,6 +524,14 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
           </div>
         </div>
       </div>
+
+      {/* Schedule Call Modal */}
+      <ScheduleCallModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSubmit={handleScheduleSubmit}
+        title="Schedule a Follow-up Call"
+      />
     </main>
   );
 }
