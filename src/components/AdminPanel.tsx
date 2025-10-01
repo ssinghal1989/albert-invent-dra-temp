@@ -131,7 +131,10 @@ export function AdminPanel() {
       setLoading(true);
       const { data } = await client.models.ScheduleRequest.list();
       
-      // Fetch related data for each request
+      //
+    }
+  }
+} Fetch related data for each request
       const requestsWithDetails = await Promise.all(
         (data || []).map(async (request) => {
           const initiator = await request.initiator();
@@ -830,72 +833,6 @@ export function AdminPanel() {
                   })
                 )
               )}
-            </div>
-          )}
-          
-          {/* Pagination for Call Requests */}
-          {currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage && (
-            <div className="p-6 border-t border-gray-200">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                            currentPage === pageNumber
-                              ? 'bg-primary text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                      currentPage === totalPages
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
             </div>
           )}
         </div>
