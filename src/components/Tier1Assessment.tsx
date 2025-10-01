@@ -29,7 +29,7 @@ interface Tier1AssessmentProps {
 
 const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
 
-export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
+export function Tier1Assessment({ onComplete, onScheduleCall, onRequestTier2 }: Tier1AssessmentProps) {
   const { isLoading: questionsLoading, withLoading: withQuestionsLoading } =
     useLoader();
 
@@ -352,49 +352,6 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
             </p>
 
             <div className="flex justify-end mb-6">
-            {/* Action Buttons Row */}
-            <div className="flex flex-wrap justify-end gap-4 mb-6">
-              {/* Hide/Show Recommendations Button */}
-              {!!firstPreviousAssessment && (
-                <button
-                  onClick={() => setShowRecommendations(!showRecommendations)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors duration-200 shadow-sm"
-                >
-                  <Lightbulb className="w-4 h-4 text-amber-600" />
-                  <span className="text-gray-700 font-medium">
-                    {showRecommendations ? 'Hide' : 'Show'} Recommendations
-                  </span>
-                  {showRecommendations ? (
-                    <ChevronUp className="w-4 h-4 text-gray-600" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  )}
-                </button>
-              )}
-
-              {/* Schedule Follow-up Call Button */}
-              {onScheduleCall && (
-                <button
-                  onClick={onScheduleCall}
-                  className="flex items-center justify-center space-x-2 bg-primary text-white py-3 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200"
-                >
-                  <Calendar className="w-5 h-5" />
-                  <span>Schedule a follow-up call</span>
-                </button>
-              )}
-
-              {/* Request In-Depth Assessment Button */}
-              {onRequestTier2 && (
-                <button
-                  onClick={onRequestTier2}
-                  className="flex items-center justify-center space-x-2 bg-primary text-white py-3 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200"
-                >
-                  <TrendingUp className="w-5 h-5" />
-                  <span>Request In-Depth Assessment</span>
-                </button>
-              )}
-
-              {/* Submit Assessment Button */}
               <LoadingButton
                 onClick={handleSubmit}
                 loading={submittingAssesment}
