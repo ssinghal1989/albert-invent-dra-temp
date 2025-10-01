@@ -64,7 +64,8 @@ export function AdminPanel() {
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(new Set());
   const [tier1Questions, setTier1Questions] = useState<any[]>([]);
-  const [assessmentData, setAssessmentData] = useState<Record<string, any>>({});
+  const [assessmentInstances, setAssessmentInstances] = useState<Record<string, any>>({});
+  const [loadingAssessment, setLoadingAssessment] = useState<string | null>(null);
 
   // Check if current user is admin
   const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
@@ -225,6 +226,45 @@ export function AdminPanel() {
       }
       return newSet;
     });
+  };
+
+  const fetchAssessmentInstance = async (assessmentInstanceId: string) => {
+    try {
+      setLoadingAssessment(assessmentInstanceId);
+      const { data } = await client.models.AssessmentInstance.get({
+        id: assessmentInstanceId
+      });
+      
+      if (data) {
+        setAssessmentInstances(prev => ({
+          ...prev,
+          [assessmentInstanceId]: data
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching assessment instance:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load assessment data'
+      });
+    } finally {
+      setLoadingAssessment(null);
+    }
+  };
+
+  const handleViewAssessment = async (requestId: string, assessmentInstanceId: string) => {
+    const isExpanded = expandedCallRequests.has(requestId);
+    
+    if (!isExpanded) {
+      // Expanding - fetch assessment data if not already loaded
+      if (!assessmentInstances[assessmentInstanceId]) {
+        await fetchAssessmentInstance(assessmentInstanceId);
+      }
+    }
+    
+    // Toggle expansion
+    toggleCallRequestExpansion(requestId);
   };
 
   const getStatusColor = (status: string) => {
@@ -560,7 +600,9 @@ export function AdminPanel() {
                   filteredCallRequests.map((request) => {
                     const metadata = request.metadata ? JSON.parse(request.metadata) : {};
                     const isExpanded = expandedCallRequests.has(request.id);
-                    const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstance;
+                    const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstanceId;
+                    const assessmentInstance = request.assessmentInstanceId ? assessmentInstances[request.assessmentInstanceId] : null;
+                    const isLoadingThisAssessment = loadingAssessment === request.assessmentInstanceId;
                     
                     return (
                       <div key={request.id} className="p-6 hover:bg-gray-50 transition-colors duration-200">
@@ -640,22 +682,32 @@ export function AdminPanel() {
                           {/* Expand Button for Tier 1 Follow-up requests */}
                           {hasAssessmentData && (
                             <button
-                              onClick={() => toggleCallRequestExpansion(request.id)}
+                              onClick={() => handleViewAssessment(request.id, request.assessmentInstanceId!)}
+                              disabled={isLoadingThisAssessment}
                               className="flex items-center space-x-2 px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
                             >
-                              <BarChart3 className="w-4 h-4" />
-                              <span>{isExpanded ? 'Hide' : 'View'} Assessment</span>
-                              {isExpanded ? (
+                              {isLoadingThisAssessment ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                  <span>Loading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <BarChart3 className="w-4 h-4" />
+                                  <span>{isExpanded ? 'Hide' : 'View'} Assessment</span>
+                                </>
+                              )}
+                              {!isLoadingThisAssessment && (isExpanded ? (
                                 <ChevronUp className="w-4 h-4" />
                               ) : (
                                 <ChevronDown className="w-4 h-4" />
-                              )}
+                              ))}
                             </button>
                           )}
                         </div>
 
                         {/* Expanded Assessment View */}
-                        {isExpanded && hasAssessmentData && request.assessmentInstance && (
+                        {isExpanded && hasAssessmentData && assessmentInstance && (
                           <div className="mt-6 border-t pt-6">
                             <div className="mb-4">
                               <h4 className="text-lg font-semibold text-gray-900 mb-2">
@@ -664,13 +716,13 @@ export function AdminPanel() {
                               <div className="flex items-center space-x-4 text-sm text-gray-600">
                                 <div className="flex items-center space-x-1">
                                   <Calendar className="w-4 h-4" />
-                                  <span>Completed: {formatDate(request.assessmentInstance.createdAt)}</span>
+                                  <span>Completed: {formatDate(assessmentInstance.createdAt)}</span>
                                 </div>
-                                {request.assessmentInstance.score && (
+                                {assessmentInstance.score && (
                                   <div className="flex items-center space-x-1">
                                     <BarChart3 className="w-4 h-4" />
                                     <span>
-                                      Score: {JSON.parse(request.assessmentInstance.score).overallScore}/100
+                                      Score: {JSON.parse(assessmentInstance.score).overallScore}/100
                                     </span>
                                   </div>
                                 )}
@@ -678,7 +730,7 @@ export function AdminPanel() {
                             </div>
 
                             {/* Assessment Grid */}
-                            {tier1Questions.length > 0 && request.assessmentInstance.responses && (
+                            {tier1Questions.length > 0 && assessmentInstance.responses && (
                               <div className="bg-gray-50 rounded-lg p-4">
                                 <div className="overflow-x-auto">
                                   <table className="w-full border-collapse">
@@ -699,7 +751,7 @@ export function AdminPanel() {
                                     </thead>
                                     <tbody>
                                       {tier1Questions.map((question) => {
-                                        const responses = JSON.parse(request.assessmentInstance.responses);
+                                        const responses = JSON.parse(assessmentInstance.responses);
                                         const selectedResponse = responses[question.id];
                                         
                                         return (
