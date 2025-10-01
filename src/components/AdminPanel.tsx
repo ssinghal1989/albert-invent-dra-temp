@@ -67,6 +67,9 @@ export function AdminPanel() {
   const [tier1Questions, setTier1Questions] = useState<any[]>([]);
   const [assessmentInstances, setAssessmentInstances] = useState<Record<string, any>>({});
   const [loadingAssessment, setLoadingAssessment] = useState<string | null>(null);
+  const [callRequestFilter, setCallRequestFilter] = useState<'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST'>('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   // Check if current user is admin
   const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
@@ -337,12 +340,27 @@ export function AdminPanel() {
 
   const filteredCallRequests = callRequests.filter(request => {
     const metadata = request.metadata ? JSON.parse(request.metadata) : {};
-    return (
+    const matchesSearch = (
       metadata.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       metadata.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       metadata.userEmail?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    
+    const matchesFilter = callRequestFilter === 'ALL' || request.type === callRequestFilter;
+    
+    return matchesSearch && matchesFilter;
   });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCallRequests.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCallRequests = filteredCallRequests.slice(startIndex, endIndex);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [callRequestFilter, searchTerm]);
 
   if (!isAdmin) {
     return (
@@ -422,7 +440,7 @@ export function AdminPanel() {
 
         {/* Search and Filters */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-6">
-          <div className="flex items-center space-x-4">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4 lg:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -433,9 +451,26 @@ export function AdminPanel() {
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
             </div>
+            
+            {/* Filter for Call Requests */}
+            {currentView === 'callRequests' && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter by:</span>
+                <select
+                  value={callRequestFilter}
+                  onChange={(e) => setCallRequestFilter(e.target.value as 'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST')}
+                  className="px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white"
+                >
+                  <option value="ALL">All Requests</option>
+                  <option value="TIER1_FOLLOWUP">Tier 1 Follow-up</option>
+                  <option value="TIER2_REQUEST">Tier 2 Assessment</option>
+                </select>
+              </div>
+            )}
+            
             <button
               onClick={currentView === 'companies' ? fetchCompanies : fetchCallRequests}
-              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200 whitespace-nowrap"
             >
               Refresh
             </button>
@@ -451,7 +486,7 @@ export function AdminPanel() {
             <p className="text-gray-600">
               {currentView === 'companies' 
                 ? 'Manage company settings and view associated users'
-                : 'View and manage all call requests from users'
+                : `View and manage all call requests from users ${currentView === 'callRequests' ? `(${filteredCallRequests.length} total, showing ${paginatedCallRequests.length})` : ''}`
               }
             </p>
           </div>
@@ -592,13 +627,14 @@ export function AdminPanel() {
                 )
               ) : (
                 // Call Requests View
-                filteredCallRequests.length === 0 ? (
+                paginatedCallRequests.length === 0 ? (
                   <div className="p-8 text-center">
                     <Phone className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No call requests found</p>
+                    <p className="text-gray-500">
+                      {filteredCallRequests.length === 0 ? 'No call requests found' : 'No requests on this page'}
+                    </p>
                   </div>
                 ) : (
-                  filteredCallRequests.map((request) => {
                     const metadata = request.metadata ? JSON.parse(request.metadata) : {};
                     const isExpanded = expandedCallRequests.has(request.id);
                     const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstanceId;
@@ -794,6 +830,72 @@ export function AdminPanel() {
                   })
                 )
               )}
+            </div>
+          )}
+          
+          {/* Pagination for Call Requests */}
+          {currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage && (
+            <div className="p-6 border-t border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                            currentPage === pageNumber
+                              ? 'bg-primary text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
