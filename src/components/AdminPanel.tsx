@@ -75,9 +75,22 @@ export function AdminPanel() {
         fetchCompanies();
       } else {
         fetchCallRequests();
+        loadTier1Questions();
       }
     }
   }, [isAdmin, currentView]);
+
+  const loadTier1Questions = async () => {
+    try {
+      const result = await questionsService.getQuestionsByTemplate(Tier1TemplateId);
+      if (result.success && result.data) {
+        const sortedQuestions = result.data.sort((a, b) => a.order - b.order);
+        setTier1Questions(sortedQuestions);
+      }
+    } catch (error) {
+      console.error('Error loading Tier 1 questions:', error);
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -197,6 +210,18 @@ export function AdminPanel() {
         newSet.delete(companyId);
       } else {
         newSet.add(companyId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleCallRequestExpansion = (requestId: string) => {
+    setExpandedCallRequests(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(requestId)) {
+        newSet.delete(requestId);
+      } else {
+        newSet.add(requestId);
       }
       return newSet;
     });
