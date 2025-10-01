@@ -7,6 +7,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAssessment } from "../hooks/useAssesment";
 import { useLoader } from "../hooks/useLoader";
 import { Tier1TemplateId } from "../services/defaultQuestions";
@@ -23,13 +24,12 @@ import { LoadingButton } from "./ui/LoadingButton";
 
 interface Tier1AssessmentProps {
   onComplete: (responses: Record<string, string>, questions: any[]) => void;
-  onScheduleCall?: () => void;
-  onRequestTier2?: () => void;
 }
 
 const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
 
-export function Tier1Assessment({ onComplete, onScheduleCall, onRequestTier2 }: Tier1AssessmentProps) {
+export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
+  const navigate = useNavigate();
   const { isLoading: questionsLoading, withLoading: withQuestionsLoading } =
     useLoader();
 
@@ -40,6 +40,14 @@ export function Tier1Assessment({ onComplete, onScheduleCall, onRequestTier2 }: 
   const [showRecommendations, setShowRecommendations] = useState(false);
   const { userTier1Assessments, submittingAssesment, setSubmittingAssesment } =
     useAssessment();
+
+  const handleScheduleCall = () => {
+    navigate('/tier1-results');
+  };
+
+  const handleRequestTier2 = () => {
+    navigate('/tier2');
+  };
 
   // Load questions from database on component mount
   useEffect(() => {
@@ -159,23 +167,17 @@ export function Tier1Assessment({ onComplete, onScheduleCall, onRequestTier2 }: 
     );
   }
 
-  return (
-    <main className="flex-1 p-8">
-      <div className="max-w-none mx-8">
-        {/* Previous Assessment Results */}
-        {/* Previous Attempt Score Card */}
-        {!!firstPreviousAssessment && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 shadow-sm border border-blue-200 mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
-                  style={{
-                    backgroundColor: getScoreColor(
-                      JSON.parse(firstPreviousAssessment.score).overallScore
-                    ),
-                  }}
+              {/* Schedule a follow-up call Button - only show if user has completed assessment */}
+              {!!firstPreviousAssessment && (
+                <button
+                  onClick={handleScheduleCall}
+                  className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
                 >
+                  <Calendar className="w-4 h-4" />
+                  <span>Schedule a follow-up call</span>
+                </button>
+              )}
+                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
                   {JSON.parse(firstPreviousAssessment.score).overallScore}
                 </div>
                 <div>
@@ -346,10 +348,16 @@ export function Tier1Assessment({ onComplete, onScheduleCall, onRequestTier2 }: 
               Tier 1 Assessment
             </h2>
             <p className="text-black mb-6">
-              Please click the cells that apply to your organization in the area
-              below. Once you have selected all your responses, please click
-              submit to continue.
-            </p>
+              {/* Request In-Depth Assessment Button - only show if user has completed assessment */}
+              {!!firstPreviousAssessment && (
+                <button
+                  onClick={handleRequestTier2}
+                  className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  <span>Request In-Depth Assessment</span>
+                </button>
+              )}
 
             <div className="flex justify-end mb-6">
               <LoadingButton
