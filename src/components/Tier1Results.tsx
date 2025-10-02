@@ -512,14 +512,12 @@ export function Tier1Results({
           </div>
         </div>
       )}
+      <CombinedScheduleForm
+        isOpen={showCombinedForm}
+        onClose={() => setShowCombinedForm(false)}
+        onSubmit={handleCombinedFormSubmit}
+        title="Schedule a Follow-up Call"
+      />
     </main>
-
-    {/* Combined Schedule Form Modal - For anonymous users */}
-    <CombinedScheduleForm
-      isOpen={showCombinedForm}
-      onClose={() => setShowCombinedForm(false)}
-      onSubmit={handleCombinedFormSubmit}
-      title="Schedule a Follow-up Call"
-    />
   );
 }
