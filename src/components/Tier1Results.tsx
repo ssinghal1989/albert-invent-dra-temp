@@ -340,6 +340,14 @@ export function Tier1Results({
           </div>
 
           {/* Priority Recommendation */}
+          <RecommendationsPanel
+            scoreData={score}
+            className="mb-8"
+            defaultExpanded={true}
+            showToggleButton={false}
+            maxRecommendations={10}
+          />
+
           {/* Action Buttons - 4 Buttons Layout Above Recommendations */}
           <div className="mb-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
@@ -379,15 +387,6 @@ export function Tier1Results({
               </button>
             </div>
           </div>
-
-          {/* Priority Recommendation */}
-          <RecommendationsPanel
-            scoreData={score}
-            className="mb-8"
-            defaultExpanded={true}
-            showToggleButton={false}
-            maxRecommendations={10}
-          />
 
           {/* Tier 2 Recommendation - Always Show */}
           <div className="mb-12">
