@@ -24,6 +24,7 @@ import { useAuthFlow } from "../hooks/useAuthFlow";
 import { LOGIN_NEXT_STEP } from "../context/AppContext";
 import { getDomainFromEmail } from "../utils/common";
 import { ifDomainAlloeded } from "../utils/domain";
+import { LocalSchema } from "../amplifyClient";
 
 interface Tier1ResultsProps {
   onNavigateToTier2: () => void;
