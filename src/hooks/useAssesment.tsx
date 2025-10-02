@@ -166,7 +166,9 @@ export function useAssessment() {
       }
 
       console.log("💾 [submitTier1Assessment] Creating assessment instance...");
-      const { data } = await client.models.AssessmentInstance.create(assessmentData);
+      const { data } = await client.models.AssessmentInstance.create(assessmentData, {
+        authMode: isAnonymous ? 'apiKey' : 'userPool'
+      });
       console.log("✅ [submitTier1Assessment] Assessment instance created", {
         assessmentId: data?.id,
         templateId: data?.templateId,
