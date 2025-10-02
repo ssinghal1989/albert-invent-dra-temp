@@ -219,6 +219,8 @@ export function useAssessment() {
         setSubmittingAssesment(false);
         return [];
       }
+    }
+  )
 
   const submitTier2Assessment = async (responses: Record<string, string>) => {
     setSubmittingAssesment(true);
