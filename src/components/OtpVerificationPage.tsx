@@ -111,22 +111,22 @@ export function OtpVerificationPage({
   const isOtpValid = otp.length === otpLenght;
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-white" />
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md">
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             Verify Your Email
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm sm:text-base">
             We've sent a {otpLenght}-digit verification code to
           </p>
-          <p className="text-gray-900 font-medium mt-1">{userEmail}</p>
+          <p className="text-gray-900 font-medium mt-1 text-sm sm:text-base break-all">{userEmail}</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* OTP Input */}
           <div>
             <label
@@ -140,16 +140,16 @@ export function OtpVerificationPage({
               id="otp"
               value={otp}
               onChange={(e) => handleOtpChange(e.target.value)}
-              className="block w-full px-4 py-4 text-center text-2xl font-mono border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 tracking-widest"
+              className="block w-full px-4 py-3 sm:py-4 text-center text-xl sm:text-2xl font-mono border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 tracking-widest"
               placeholder={otpLenght === 6 ? "000000" : "00000000"}
               maxLength={otpLenght}
             />
-            <p className="mt-2 text-sm text-gray-500 text-center">
+            <p className="mt-2 text-xs sm:text-sm text-gray-500 text-center">
               Enter the {otpLenght}-digit code sent to your email
             </p>
 
             {error && (
-              <p className="mt-2 text-sm text-red-600 text-center">{error}</p>
+              <p className="mt-2 text-xs sm:text-sm text-red-600 text-center">{error}</p>
             )}
           </div>
 
@@ -172,7 +172,7 @@ export function OtpVerificationPage({
               {state.loginFlow === "VIA_ASSESSMENT"
                 ? "Verify & See Results"
                 : "Verify"}
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </LoadingButton>
 
@@ -183,7 +183,7 @@ export function OtpVerificationPage({
                 type="button"
                 onClick={handleResendOtp}
                 disabled={isResending}
-                className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 flex items-center justify-center space-x-2 mx-auto"
+                className="text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200 flex items-center justify-center space-x-2 mx-auto text-sm sm:text-base"
               >
                 {isResending ? (
                   <>
@@ -198,7 +198,7 @@ export function OtpVerificationPage({
                 )}
               </button>
             ) : (
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-500 text-xs sm:text-sm">
                 Resend code in {countdown}s
               </p>
             )}
@@ -208,13 +208,13 @@ export function OtpVerificationPage({
           <button
             type="button"
             onClick={onCancel}
-            className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200"
+            className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 text-sm sm:text-base"
           >
             Back
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 sm:mt-6 text-center">
           <p className="text-xs text-gray-500">
             Didn't receive the code? Check your spam folder or try resending
           </p>

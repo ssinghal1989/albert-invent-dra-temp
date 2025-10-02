@@ -163,15 +163,15 @@ export function Tier1Results({
   };
 
   return (
-    <main className="flex-1 p-8">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-3xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Your Digital Readiness Score
             </h1>
-            <p className="text-gray-600 text-lg">Here's where you stand</p>
+            <p className="text-gray-600 text-base sm:text-lg">Here's where you stand</p>
           </div>
 
           {/* Score Display */}

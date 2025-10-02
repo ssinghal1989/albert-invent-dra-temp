@@ -146,19 +146,19 @@ export function LoginPage({
     (value) => value.trim() !== ""
   );
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="text-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
             {title}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm sm:text-base">
             {subtitle}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Name Field */}
           <div>
             <label
@@ -176,7 +176,7 @@ export function LoginPage({
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                   errors.name
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
@@ -207,7 +207,7 @@ export function LoginPage({
                 disabled={isUserLoggedIn}
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                   errors.email
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
@@ -239,7 +239,7 @@ export function LoginPage({
                 onChange={(e) =>
                   handleInputChange("companyName", e.target.value)
                 }
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                   errors.companyName
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
@@ -269,7 +269,7 @@ export function LoginPage({
                 id="jobTitle"
                 value={formData.jobTitle}
                 onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                   errors.jobTitle
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
@@ -297,7 +297,7 @@ export function LoginPage({
               }}
             >
               {buttonText}
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </LoadingButton>
 
@@ -305,13 +305,13 @@ export function LoginPage({
           <button
             type="button"
             onClick={onCancel}
-            className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 mt-3"
+            className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 mt-3 text-sm sm:text-base"
           >
             Cancel
           </button>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 sm:mt-6 text-center">
           <p className="text-xs text-gray-500">
             Your information is secure and will only be used for assessment
             purposes

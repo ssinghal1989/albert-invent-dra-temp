@@ -15,18 +15,24 @@ export function ScoreDisplay({ score, maturityLevel }: ScoreDisplayProps) {
   const scoreColor = getScoreColor(score);
 
   return (
-    <div className="flex justify-center mb-12">
+    <div className="flex justify-center mb-8 sm:mb-12">
       <div>
         <div className="relative">
-          <svg width="280" height="280" className="transform -rotate-90">
+          <svg 
+            width="240" 
+            height="240" 
+            className="transform -rotate-90 sm:w-[280px] sm:h-[280px]" 
+            viewBox="0 0 280 280"
+          >
             {/* Background circle */}
             <circle
               cx="140"
               cy="140"
               r={radius}
               stroke="#f3f4f6"
-              strokeWidth="16"
+              strokeWidth="12"
               fill="none"
+              className="sm:stroke-[16]"
             />
             {/* Progress circle */}
             <circle
@@ -34,12 +40,12 @@ export function ScoreDisplay({ score, maturityLevel }: ScoreDisplayProps) {
               cy="140"
               r={radius}
               stroke={scoreColor}
-              strokeWidth="16"
+              strokeWidth="12"
               fill="none"
               strokeLinecap="round"
               strokeDasharray={strokeDasharray}
               strokeDashoffset={strokeDashoffset}
-              className="transition-all duration-1000 ease-out"
+              className="transition-all duration-1000 ease-out sm:stroke-[16]"
               style={{
                 animation: "drawCircle 2s ease-out forwards",
               }}
@@ -47,15 +53,15 @@ export function ScoreDisplay({ score, maturityLevel }: ScoreDisplayProps) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <div
-              className="text-6xl font-bold"
+              className="text-4xl sm:text-6xl font-bold"
               style={{ color: scoreColor }}
             >
               {score}
             </div>
-            <div className="text-gray-500 text-lg font-medium mt-1">
+            <div className="text-gray-500 text-base sm:text-lg font-medium mt-1">
               {maturityLevel}
             </div>
-            <div className="text-gray-400 text-sm">(Maturity Level)</div>
+            <div className="text-gray-400 text-xs sm:text-sm">(Maturity Level)</div>
           </div>
         </div>
       </div>

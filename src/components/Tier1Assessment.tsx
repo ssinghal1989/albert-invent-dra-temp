@@ -226,30 +226,30 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
   }
 
   return (
-    <main className="flex-1 p-8">
-      <div className="max-w-none mx-8">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-none mx-2 sm:mx-4 lg:mx-8">
         {/* Previous Assessment Results */}
         {firstPreviousAssessment && (
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 mb-8 border border-blue-200">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8 border border-blue-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 space-y-4 lg:space-y-0">
+              <div className="flex items-center space-x-3 sm:space-x-4">
                 <div
                   style={{
                     backgroundColor: getScoreColor(
                       JSON.parse(firstPreviousAssessment.score).overallScore
                     ),
                   }}
-                  className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                  className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg flex-shrink-0"
                 >
                   {JSON.parse(firstPreviousAssessment.score).overallScore}
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-1">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">
                     Current Status:{" "}
                     {JSON.parse(firstPreviousAssessment.score).maturityLevel}{" "}
                     Level
                   </h3>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 text-xs sm:text-sm text-gray-600 space-y-1 sm:space-y-0">
                     <div className="flex items-center space-x-1">
                       <Calendar className="w-4 h-4" />
                       <span>
@@ -274,25 +274,25 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
                 {/* Schedule a follow-up call Button - only show if user has completed assessment */}
                 {!!firstPreviousAssessment && (
                   <button
                     onClick={handleScheduleCall}
-                    className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
+                    className="flex items-center justify-center space-x-2 bg-primary text-white py-2 px-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-sm sm:text-base"
                   >
                     <Calendar className="w-4 h-4" />
-                    <span>Schedule a follow-up call</span>
+                    <span className="whitespace-nowrap">Schedule a follow-up call</span>
                   </button>
                 )}
 
                 {/* Recommendations Toggle Button */}
                 <button
                   onClick={() => setShowRecommendations(!showRecommendations)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm"
+                  className="flex items-center justify-center space-x-2 px-3 sm:px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 shadow-sm text-sm sm:text-base"
                 >
                   <Lightbulb className="w-4 h-4 text-amber-600" />
-                  <span className="text-gray-700 font-medium">
+                  <span className="text-gray-700 font-medium whitespace-nowrap">
                     {showRecommendations ? "Hide" : "Show"} Recommendations
                   </span>
                   {showRecommendations ? (
@@ -498,25 +498,25 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
         )}
 
         {/* Current Assessment */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-200">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-black mb-4">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm border border-gray-200">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-black mb-4">
               {/* {previousAssessments && previousAssessments.length > 0
                 ? "Take Assessment Again"
                 : "Albert Invent | Digital Readiness Assessment Tier 1 Assessment"} */}
               Tier 1 Assessment
             </h2>
-            <p className="text-black mb-6">
+            <p className="text-black mb-4 sm:mb-6 text-sm sm:text-base">
               Please answer all questions to complete your assessment.
             </p>
 
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center mb-6 space-y-3 sm:space-y-0 sm:space-x-4">
               {/* Request In-Depth Assessment Button - only show if user has completed assessment */}
               <LoadingButton
                 onClick={handleRequestTier2}
                 loading={false}
                 loadingText="Submitting..."
-                size="md"
+                className="text-sm sm:text-base px-4 py-2 sm:py-3"
               >
                 Request In-Depth Assessment
               </LoadingButton>
@@ -526,7 +526,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 loading={submittingAssesment}
                 loadingText="Submitting..."
                 disabled={!isAllAnswered || !ifDataChanged}
-                size="md"
+                className="text-sm sm:text-base px-4 py-2 sm:py-3"
               >
                 Submit Assessment
               </LoadingButton>
@@ -534,17 +534,17 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
           </div>
 
           {/* Assessment Grid */}
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left p-4 font-semibold text-gray-700 border-b">
+                  <th className="text-left p-2 sm:p-4 font-semibold text-gray-700 border-b text-sm sm:text-base min-w-48">
                     Focus Areas
                   </th>
                   {maturityLabels.map((level: any) => (
                     <th
                       key={level}
-                      className="text-center p-4 font-semibold text-gray-700 border-b min-w-48"
+                      className="text-center p-2 sm:p-4 font-semibold text-gray-700 border-b min-w-32 sm:min-w-48 text-xs sm:text-base"
                     >
                       {level}
                     </th>
@@ -554,7 +554,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
               <tbody>
                 {questions.map((question) => (
                   <tr key={question.id} className="border-b border-gray-100">
-                    <td className="p-4 font-medium text-gray-800 bg-gray-50 align-top">
+                    <td className="p-2 sm:p-4 font-medium text-gray-800 bg-gray-50 align-top text-sm sm:text-base">
                       {question.prompt}
                     </td>
                     {getSortedOptions(question).map((option: any) => {
@@ -563,13 +563,13 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                       return (
                         <td
                           key={`${question.id}_${option.label}`}
-                          className="p-2 align-top"
+                          className="p-1 sm:p-2 align-top"
                         >
                           <div
                             onClick={() =>
                               handleOptionSelect(question, option.value)
                             }
-                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 text-sm leading-tight ${
+                            className={`p-2 sm:p-3 rounded-lg cursor-pointer transition-all duration-200 text-xs sm:text-sm leading-tight ${
                               isSelected
                                 ? "text-white bg-blue-500"
                                 : "text-black hover:bg-gray-100"
@@ -588,7 +588,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
 
           {/* Progress indicator */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-gray-600">
               Progress: {Object.keys(selectedResponses).length} of{" "}
               {questions.length} questions answered
             </p>

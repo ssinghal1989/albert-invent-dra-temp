@@ -13,16 +13,16 @@ interface HeaderProps {
 export function Header({ title, onLogin, onLogout, userName }: HeaderProps) {
   const { state } = useAppContext();
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-4">
+    <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-black">{title}</h1>
+        <h1 className="text-lg sm:text-xl font-semibold text-black truncate pr-4">{title}</h1>
         <div className="flex items-center space-x-4">
           {(!userName || state.isLoadingInitialData) && onLogin && (
             <LoadingButton
               disabled={state.isLoadingInitialData}
               loadingText="Loading ..."
               loading={state.isLoadingInitialData}
-              style={{ width: "100%" }}
+              className="text-sm px-3 py-2"
               onClick={onLogin}
             >
               <div
@@ -30,7 +30,6 @@ export function Header({ title, onLogin, onLogout, userName }: HeaderProps) {
                   display: "flex",
                   alignItems: "center",
                   gap: "0.5rem",
-                  width: "100%",
                 }}
               >
                 Login
@@ -47,15 +46,15 @@ export function Header({ title, onLogin, onLogout, userName }: HeaderProps) {
           )}
           {userName && !state.isLoadingInitialData && onLogout && (
             <>
-              <span className="text-secondary font-medium">
+              <span className="text-secondary font-medium hidden sm:inline">
                 Welcome, {userName}
               </span>
               <button
                 onClick={onLogout}
-                className="flex items-center space-x-2 text-secondary hover:text-gray-800 px-4 py-2 rounded-lg hover:bg-light transition-all duration-200"
+                className="flex items-center space-x-1 sm:space-x-2 text-secondary hover:text-gray-800 px-2 sm:px-4 py-2 rounded-lg hover:bg-light transition-all duration-200"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </>
           )}

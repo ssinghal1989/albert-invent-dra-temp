@@ -60,25 +60,25 @@ export function EmailLoginModal({ onCancel }: EmailLoginModalProps) {
   const isEmailValid = email.trim() !== '' && validateEmail(email);
 
   return (
-    <div className="flex-1 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md relative">
+    <div className="flex-1 flex items-center justify-center p-4 sm:p-6">
+      <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-md relative">
         {/* Close button */}
         <button
           onClick={onCancel}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-            <Mail className="w-8 h-8 text-white" />
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+            <Mail className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Login to Your Account</h1>
-          <p className="text-gray-600">Enter your email address to receive a verification code</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Login to Your Account</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Enter your email address to receive a verification code</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -93,7 +93,7 @@ export function EmailLoginModal({ onCancel }: EmailLoginModalProps) {
                 id="email"
                 value={email}
                 onChange={(e) => handleInputChange(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`block w-full pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
                   error ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
                 }`}
                 placeholder="Enter your email address"
@@ -106,12 +106,12 @@ export function EmailLoginModal({ onCancel }: EmailLoginModalProps) {
           <LoadingButton disabled={!isEmailValid} loadingText='Sending Verification Code ...' loading={loading} style={{width: '100%'}} >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
               Send Verification Code
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
           </LoadingButton>
         </form>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 sm:mt-6 text-center">
           <p className="text-xs text-gray-500">
             We'll send a verification code to your email
           </p>
