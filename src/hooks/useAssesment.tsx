@@ -141,6 +141,23 @@ export function useAssessment() {
 
       const { data } = await client.models.AssessmentInstance.create(assessmentData);
       
+      // Create tracking record for anonymous assessments
+      if (isAnonymous && data && deviceFingerprint) {
+        try {
+          await client.models.AnonymousAssessment.create({
+            deviceId: deviceFingerprint.fingerprint,
+            assessmentInstanceId: data.id,
+            deviceFingerprint: JSON.stringify(deviceFingerprint),
+            isLinked: false,
+          }, {
+            authMode: 'apiKey'
+          });
+        } catch (trackingError) {
+          console.error("Error creating anonymous assessment tracking record:", trackingError);
+          // Don't fail the whole operation if tracking fails
+        }
+      }
+      
       // Store anonymous assessment ID for later linking
       if (isAnonymous && data) {
         dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: data.id });
@@ -204,16 +221,39 @@ export function useAssessment() {
         const linkedAssessments = [];
         for (const anonymousAssessment of anonymousAssessments) {
           try {
-            const linked = await linkAnonymousAssessment(
-              anonymousAssessment.id, 
-              anonymousAssessment.assessmentInstanceId, 
-              userId, 
-              companyId
-            );
+            // Update the actual assessment instance
+            const { data: updatedAssessment } = await client.models.AssessmentInstance.update({
+              id: anonymousAssessment.assessmentInstanceId,
+              initiatorUserId: userId,
+              companyId: companyId,
+              metadata: JSON.stringify({
+                wasAnonymous: true,
+                linkedAt: new Date().toISOString(),
+                originalDeviceId: deviceFingerprint.fingerprint,
+              }),
+            });
+            
+            // Update the tracking record
+            await client.models.AnonymousAssessment.update({
+              id: anonymousAssessment.id,
+              isLinked: true,
+              linkedUserId: userId,
+              linkedCompanyId: companyId,
+              linkedAt: new Date().toISOString(),
+            }, {
+              authMode: 'apiKey'
+            });
+            
+            const linked = updatedAssessment;
             if (linked) linkedAssessments.push(linked);
           } catch (err) {
             console.error(`Failed to link anonymous assessment ${anonymousAssessment.id}:`, err);
           }
+        }
+
+        // Clear anonymous assessment ID after linking
+        if (linkedAssessments.length > 0) {
+          dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: null });
         }
 
         return linkedAssessments;
@@ -222,7 +262,8 @@ export function useAssessment() {
         return [];
       }
     }
-  )
+    [dispatch]
+  );
 
   const submitTier2Assessment = async (responses: Record<string, string>) => {
     setSubmittingAssesment(true);
