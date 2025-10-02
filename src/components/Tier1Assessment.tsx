@@ -538,32 +538,9 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
           </div>
 
           {/* Assessment Grid */}
-          {/* Mobile Submit Button - Fixed at bottom */}
-          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-30">
-            <div className="flex space-x-3">
-              <LoadingButton
-                onClick={handleRequestTier2}
-                loading={false}
-                loadingText="Submitting..."
-                variant="outline"
-                className="flex-1 text-sm py-3"
-              >
-                Request Tier 2
-              </LoadingButton>
-              <LoadingButton
-                onClick={handleSubmit}
-                loading={submittingAssesment}
-                loadingText="Submitting..."
-                disabled={!isAllAnswered || !ifDataChanged}
-                className="flex-1 text-sm py-3"
-              >
-                Submit Assessment
-              </LoadingButton>
-            </div>
-          </div>
 
           {/* Mobile Card Layout */}
-          <div className="lg:hidden space-y-4 pb-24">
+          <div className="lg:hidden space-y-4">
             {questions.map((question, questionIndex) => {
               const isAnswered = selectedResponses[question.id] !== undefined;
               return (
@@ -633,6 +610,28 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 </div>
               );
             })}
+
+            {/* Submit Buttons - After all questions on mobile */}
+            <div className="mt-6 space-y-3">
+              <LoadingButton
+                onClick={handleRequestTier2}
+                loading={false}
+                loadingText="Submitting..."
+                variant="outline"
+                className="w-full text-sm py-3"
+              >
+                Request In-Depth Assessment
+              </LoadingButton>
+              <LoadingButton
+                onClick={handleSubmit}
+                loading={submittingAssesment}
+                loadingText="Submitting..."
+                disabled={!isAllAnswered || !ifDataChanged}
+                className="w-full text-sm py-3"
+              >
+                Submit Assessment
+              </LoadingButton>
+            </div>
           </div>
 
           {/* Desktop Grid Layout */}
