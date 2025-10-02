@@ -351,14 +351,12 @@ function AppContent() {
         <Route
           path="/tier1-results"
           element={
-            state.tier1Score ? (
+            <ProtectedRoute requireAuth={false} redirectTo="/">
               <Tier1Results
-                score={state.tier1Score}
                 onNavigateToTier2={() => navigate("/tier2")}
                 onRetakeAssessment={handleRetakeAssessment}
               />
-            ) : // <Navigate to={"/"} state={{ from: location }} replace />
-            null
+            </ProtectedRoute>
           }
         />
         <Route

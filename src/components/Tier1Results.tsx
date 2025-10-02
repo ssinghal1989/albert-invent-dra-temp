@@ -13,26 +13,62 @@ import { ScheduleCallModal, ScheduleCallData } from "./ui/ScheduleCallModal";
 import { useAssessment } from "../hooks/useAssesment";
 import { useToast } from "../context/ToastContext";
 import { useCallRequest } from "../hooks/useCallRequest";
+import { useAssessment } from "../hooks/useAssesment";
+import { Navigate, useLocation } from "react-router-dom";
+import { Loader } from "./ui/Loader";
 
 interface Tier1ResultsProps {
-  score: Tier1ScoreResult;
   onNavigateToTier2: () => void;
   onRetakeAssessment: () => void;
 }
 
 export function Tier1Results({
-  score,
   onNavigateToTier2,
   onRetakeAssessment,
 }: Tier1ResultsProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const { state } = useAppContext();
-  const { userTier1Assessments } = useAssessment();
+  const { userTier1Assessments, fetchUserAssessments } = useAssessment();
   const { showToast } = useToast();
   const { scheduleRequest } = useCallRequest();
+  const location = useLocation();
+  const [loading, setLoading] = useState(true);
   
   // Check if user is logged in
   const isLoggedIn = !!state.loggedInUserDetails;
+
+  // Get score from state or user assessments
+  const score = state.tier1Score || 
+    (userTier1Assessments?.[0] ? JSON.parse(userTier1Assessments[0].score) : null);
+
+  // Load assessments if user is logged in and we don't have score
+  useEffect(() => {
+    const loadData = async () => {
+      if (isLoggedIn && !score) {
+        await fetchUserAssessments();
+      }
+      setLoading(false);
+    };
+    loadData();
+  }, [isLoggedIn, score, fetchUserAssessments]);
+
+  // Show loading while fetching data
+  if (loading) {
+    return (
+      <main className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <Loader text="Loading your results..." size="lg" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Redirect to home if no score available
+  if (!score) {
+    return <Navigate to="/" state={{ from: location }} replace />;
+  }
 
   const getRecommendations = (score: number): string[] => {
     if (score >= 85) {
