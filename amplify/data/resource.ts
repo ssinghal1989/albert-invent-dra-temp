@@ -106,11 +106,7 @@ export const schema = a.schema({
     .secondaryIndexes((index) => [
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
-    .authorization((allow) => [
-      allow.authenticated(),
-      allow.owner(),
-      allow.publicApiKey().to(["create", "read"])
-    ]),
+    .authorization((allow) => [allow.authenticated(), allow.owner(), allow.publicApiKey()]),
   AnonymousAssessment: a
     .model({
       id: a.id().required(),

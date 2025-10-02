@@ -166,9 +166,7 @@ export function useAssessment() {
       }
 
       console.log("💾 [submitTier1Assessment] Creating assessment instance...");
-      const { data } = await client.models.AssessmentInstance.create(assessmentData, {
-        authMode: isAnonymous ? 'apiKey' : 'userPool'
-      });
+      const { data } = await client.models.AssessmentInstance.create(assessmentData, {authMode: 'apiKey'});
       console.log("✅ [submitTier1Assessment] Assessment instance created", {
         assessmentId: data?.id,
         templateId: data?.templateId,
@@ -357,7 +355,7 @@ export function useAssessment() {
         console.error("❌ [findAndLinkAnonymousAssessments] Error finding and linking anonymous assessments:", err);
         return [];
       }
-    }
+    },
     [dispatch]
   );
 
@@ -381,7 +379,7 @@ export function useAssessment() {
         updatedAt: new Date().toISOString(),
       };
       
-      await client.models.AssessmentInstance.create(assessmentData);
+      await client.models.AssessmentInstance.create(assessmentData, {authMode: 'apiKey'});
       await fetchUserAssessments();
       setSubmittingAssesment(false);
     } catch (err) {
