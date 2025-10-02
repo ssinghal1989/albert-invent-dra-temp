@@ -187,36 +187,38 @@ export function useAssessment() {
       try {
         const deviceFingerprint = getDeviceFingerprint();
         
-        // Get all assessment instances to find anonymous ones with matching device fingerprint
-        const { data: allAssessments } = await client.models.AssessmentInstance.list();
+        // Efficiently search for anonymous assessments by deviceId
+        const { data: anonymousAssessments } = await client.models.AnonymousAssessment.list({
+          filter: {
+            deviceId: { eq: deviceFingerprint.fingerprint },
+            isLinked: { eq: false }
+          },
+          authMode: 'apiKey'
+        });
         
-        const anonymousAssessments = allAssessments?.filter(assessment => {
-          if (!assessment.metadata || assessment.initiatorUserId) return false;
-          
-          try {
-            const metadata = JSON.parse(assessment.metadata);
-            return metadata.isAnonymous && 
-                   metadata.deviceId === deviceFingerprint.fingerprint;
-          } catch {
-            return false;
-          }
-        }) || [];
+        if (!anonymousAssessments || anonymousAssessments.length === 0) {
+          return [];
+        }
 
-        // Link all matching anonymous assessments
+        // Link all unlinked anonymous assessments for this device
         const linkedAssessments = [];
-        for (const assessment of anonymousAssessments) {
+        for (const anonymousAssessment of anonymousAssessments) {
           try {
-            const linked = await linkAnonymousAssessment(assessment.id, userId, companyId);
+            const linked = await linkAnonymousAssessment(
+              anonymousAssessment.id, 
+              anonymousAssessment.assessmentInstanceId, 
+              userId, 
+              companyId
+            );
             if (linked) linkedAssessments.push(linked);
           } catch (err) {
-            console.error(`Failed to link assessment ${assessment.id}:`, err);
+            console.error(`Failed to link anonymous assessment ${anonymousAssessment.id}:`, err);
           }
         }
 
         return linkedAssessments;
       } catch (err) {
         console.error("Error finding and linking anonymous assessments:", err);
-        setSubmittingAssesment(false);
         return [];
       }
     }
