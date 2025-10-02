@@ -15,7 +15,7 @@ import { LoginPage } from "./components/LoginPage";
 import { OtpVerificationPage } from "./components/OtpVerificationPage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Tier1Assessment } from "./components/Tier1Assessment";
-import { ScheduleCallData, Tier1Results } from "./components/Tier1Results";
+import { Tier1Results } from "./components/Tier1Results";
 import { AdminPanel } from "./components/AdminPanel";
 import {
   AppProvider,
@@ -65,7 +65,7 @@ function AppContent() {
     if (state?.userData?.id) {
       await client.models.User.update({
         id: state.userData.id,
-        role: 'user',
+        role: 'admin',
       })
     }
   }
@@ -73,7 +73,7 @@ function AppContent() {
   useEffect(() => {
     checkIfUserAlreadyLoggedIn();
     // checkAndSetupQuestions();
-    updateUserRole();
+    // updateUserRole();
   }, []);
 
   const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {
@@ -196,11 +196,6 @@ function AppContent() {
     // Handle tier2 assessment request
   };
 
-  const handleScheduleCall = (data: ScheduleCallData) => {
-    // In a real app, this would open a calendar booking system
-    console.log("Calendar booking system would open here", data);
-  };
-
   const handleRetakeAssessment = () => {
     navigate("/tier1");
   };
@@ -293,7 +288,6 @@ function AppContent() {
                 <Tier1Results
                   score={state.tier1Score}
                   onNavigateToTier2={() => navigate("/tier2")}
-                  onScheduleCall={handleScheduleCall}
                   onRetakeAssessment={handleRetakeAssessment}
                 />
               </ProtectedRoute>

@@ -10,11 +10,12 @@ export function HomePage({ onNavigateToTier }: HomePageProps) {
     <main className="flex-1 p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">              
-          <p className="text-black text-lg leading-relaxed">
-            Welcome to the Albert Invent Digital Readiness Assessment, a strategic diagnostic that evaluates your R&D organization's 
-            maturity across digital infrastructure, culture, and value delivery. This assessment provides insight into where to focus 
-            investment to accelerate innovation, improve agility, and strengthen competitive advantage. The assessment is offered in two 
-            tiers, as described in the cards below.
+          <p className="text-black text-md leading-relaxed">
+            Welcome to the Albert Invent Digital Readiness Assessment, a strategic diagnostic that evaluates your R&D organization's maturity across digital infrastructure, culture, and value delivery. This assessment provides insight into where to focus investment to accelerate innovation, improve agility, and strengthen competitive advantage. The assessment is offered in two tiers, as described in the cards below.
+          </p>
+          <br/>
+          <p className="text-black text-md leading-relaxed">
+            Take the assessment, then sign up to get your results.
           </p>
         </div>
 

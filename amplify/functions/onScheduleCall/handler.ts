@@ -2,7 +2,7 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import type { DynamoDBStreamHandler } from "aws-lambda";
 import { DynamoDB, SES } from "aws-sdk";
 import { AddressList } from "aws-sdk/clients/ses";
-import { getHubSpotService } from "../../src/services/hubspotService";
+import { getHubSpotService } from "../../../src/services/HubspotService";
 
 const ses = new SES();
 
@@ -53,7 +53,7 @@ export const handler: DynamoDBStreamHandler = async (event) => {
               logger.error(`❌ HubSpot integration failed: ${hubspotResult.error}`);
             }
           } catch (hubspotError) {
-            logger.error("❌ HubSpot integration error:", hubspotError);
+            logger.error("❌ HubSpot integration error:", JSON.stringify(hubspotError));
           }
         } else {
           logger.info("⚠️ HubSpot integration skipped - no access token provided");
