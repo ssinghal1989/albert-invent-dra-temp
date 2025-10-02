@@ -16,6 +16,7 @@ import { useCallRequest } from "../hooks/useCallRequest";
 import { useAssessment } from "../hooks/useAssesment";
 import { Navigate, useLocation } from "react-router-dom";
 import { Loader } from "./ui/Loader";
+import { useEffect } from "react";
 
 interface Tier1ResultsProps {
   onNavigateToTier2: () => void;
@@ -40,6 +41,43 @@ export function Tier1Results({
   // Get score from state or user assessments
   const score = state.tier1Score || 
     (userTier1Assessments?.[0] ? JSON.parse(userTier1Assessments[0].score) : null);
+
+  // Calculate lowest scoring areas for recommendations
+  const getLowestScoringAreas = (scoreData: Tier1ScoreResult): string[] => {
+    if (!scoreData.focusAreaScores || scoreData.focusAreaScores.length === 0) {
+      return [];
+    }
+
+    // Priority order for tie-breaking
+    const priorityOrder = [
+      'Data Architecture and Integration',
+      'Data Governance and Trust', 
+      'Smart Lab and Workflow Automation',
+      'Leadership and Digital Culture',
+      'Analytics and AI-driven Discovery',
+      'Manufacturing and Scale-up Integration',
+      'Skills and Workforce Enablement',
+      'Customer and Market Feedback Integration',
+      'Sustainability and Regulatory Intelligence',
+      'Supplier Ecosystem Connectivity'
+    ];
+
+    // Sort focus areas by score (lowest first), then by priority order for ties
+    const sortedAreas = [...scoreData.focusAreaScores].sort((a, b) => {
+      if (a.score !== b.score) {
+        return a.score - b.score; // Lower scores first
+      }
+      // If scores are equal, use priority order
+      const aIndex = priorityOrder.indexOf(a.focusArea);
+      const bIndex = priorityOrder.indexOf(b.focusArea);
+      return aIndex - bIndex;
+    });
+
+    // Return the 3 lowest scoring areas
+    return sortedAreas.slice(0, 3).map(area => area.focusArea);
+  };
+
+  const lowestScoringAreas = score ? getLowestScoringAreas(score) : [];
 
   // Load assessments if user is logged in and we don't have score
   useEffect(() => {
