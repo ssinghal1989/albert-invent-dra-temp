@@ -37,8 +37,6 @@ export function Tier1Results({
 }: Tier1ResultsProps) {
   const navigate = useNavigate();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [showOtpModal, setShowOtpModal] = useState(false);
   const [showCombinedForm, setShowCombinedForm] = useState(false);
   const { state, dispatch } = useAppContext();
   const { userTier1Assessments, fetchUserAssessments } = useAssessment();
@@ -46,42 +44,17 @@ export function Tier1Results({
   const { scheduleRequest } = useCallRequest();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  const [signupUserData, setSignupUserData] = useState<UserData | null>(null);
   const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
-  const [pendingAuthEmail, setPendingAuthEmail] = useState<string | null>(null);
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [signupFormData, setSignupFormData] = useState<UserData | null>(null);
   const [showSignupOtp, setShowSignupOtp] = useState(false);
-  const [pendingSignupEmail, setPendingSignupEmail] = useState<string | null>(null);
   
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
-    console.log("🔐 [updateStateAndNavigateToOtp] Called with nextStep:", nextStep);
-    console.log("🔐 [updateStateAndNavigateToOtp] combinedFormData exists:", !!combinedFormData);
-    console.log("🔐 [updateStateAndNavigateToOtp] signupFormData exists:", !!signupFormData);
-    
-    if (combinedFormData) {
-      // For combined form flow, show OTP modal
-      console.log("🔐 [updateStateAndNavigateToOtp] Setting up combined OTP flow");
-      dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
-      dispatch({ type: "SET_LOGIN_EMAIL", payload: combinedFormData.email });
-      setShowCombinedForm(false);
-      setShowCombinedOtp(true);
-      console.log("🔐 [updateStateAndNavigateToOtp] Combined OTP modal should now be visible");
-    } else if (signupFormData) {
-      // For signup form flow, show OTP modal
-      console.log("🔐 [updateStateAndNavigateToOtp] Setting up signup OTP flow");
-      dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
-      dispatch({ type: "SET_LOGIN_EMAIL", payload: signupFormData.email });
-      setShowSignupForm(false);
-      setShowSignupOtp(true);
-      console.log("🔐 [updateStateAndNavigateToOtp] Signup OTP modal should now be visible");
-    } else {
-      console.log("🔐 [updateStateAndNavigateToOtp] No combinedFormData, using regular flow");
-    }
+    dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
+    dispatch({ type: "SET_LOGIN_EMAIL", payload: state.loginEmail });
+    navigate("/otp-login");
   };
-  
-  const { handleAuth, loading: authLoading } = useAuthFlow(updateStateAndNavigateToOtp);
   
   // Check if user is logged in
   const isLoggedIn = !!state.loggedInUserDetails;
@@ -138,50 +111,6 @@ export function Tier1Results({
     loadData();
   }, [isLoggedIn, score, fetchUserAssessments]);
 
-  // Handle auth flow after combinedFormData is set
-  useEffect(() => {
-    if (combinedFormData && pendingAuthEmail) {
-      console.log("🔄 [useEffect] combinedFormData is now available, triggering auth");
-      console.log("🔄 [useEffect] combinedFormData:", combinedFormData);
-      
-      const triggerAuth = async () => {
-        try {
-          await handleAuth(pendingAuthEmail);
-          setPendingAuthEmail(null); // Clear pending email
-        } catch (error) {
-          console.error("❌ [useEffect] Error in auth flow:", error);
-          setPendingAuthEmail(null);
-        }
-      };
-      
-      triggerAuth();
-    }
-  }, [combinedFormData, pendingAuthEmail, handleAuth]);
-
-  // Handle auth flow after signupFormData is set
-  useEffect(() => {
-    if (signupFormData && pendingSignupEmail) {
-      console.log("🔄 [useEffect] signupFormData is now available, triggering auth");
-      console.log("🔄 [useEffect] signupFormData:", {
-        name: signupFormData.name,
-        email: signupFormData.email,
-        companyName: signupFormData.companyName,
-        jobTitle: signupFormData.jobTitle
-      });
-      
-      const triggerSignupAuth = async () => {
-        try {
-          await handleAuth(pendingSignupEmail);
-          setPendingSignupEmail(null); // Clear pending email
-        } catch (error) {
-          console.error("❌ [useEffect] Error in signup auth flow:", error);
-          setPendingSignupEmail(null);
-        }
-      };
-      
-      triggerSignupAuth();
-    }
-  }, [signupFormData, pendingSignupEmail, handleAuth]);
   // Show loading while fetching data
   if (loading) {
     return (
@@ -207,271 +136,29 @@ export function Tier1Results({
     if (isLoggedIn) {
       setShowScheduleModal(true);
     } else {
-      // Show combined form for anonymous users
       setShowCombinedForm(true);
     }
   };
 
   const handleCombinedFormSubmit = async (data: CombinedScheduleData) => {
-    console.log("📋 [handleCombinedFormSubmit] Starting combined form submission");
-    console.log("📋 [handleCombinedFormSubmit] Form data:", {
-      name: data.name,
-      email: data.email,
-      companyName: data.companyName,
-      jobTitle: data.jobTitle,
-      selectedDate: data.selectedDate,
-      selectedTimesCount: data.selectedTimes.length
-    });
-    
-    try {
-      // Validate email domain
-      if (!ifDomainAlloeded(getDomainFromEmail(data.email)!)) {
-        console.log("❌ [handleCombinedFormSubmit] Invalid email domain:", getDomainFromEmail(data.email));
-        showToast({
-          type: "error",
-          title: "Invalid Email",
-          message: "Please use your work email address",
-          duration: 5000,
-        });
-        return;
-      }
-
-      // Store the form data for later use
-      console.log("💾 [handleCombinedFormSubmit] Storing form data in state");
-      setCombinedFormData(data);
-      
-      // Set pending email to trigger auth flow via useEffect
-      console.log("🔐 [handleCombinedFormSubmit] Triggering auth flow for email:", data.email);
-      setPendingAuthEmail(data.email);
-      
-    } catch (error) {
-      console.error("❌ [handleCombinedFormSubmit] Error during submission:", error);
+    // Validate email domain
+    if (!ifDomainAlloeded(getDomainFromEmail(data.email)!)) {
       showToast({
         type: "error",
-        title: "Error",
-        message: "Failed to process your request. Please try again.",
+        title: "Invalid Email",
+        message: "Please use your work email address",
         duration: 5000,
       });
+      return;
     }
-  };
 
-  const handleSignupOtpVerification = async (data: {
-    user?: LocalSchema["User"]["type"];
-    company?: LocalSchema["Company"]["type"];
-  }) => {
-    console.log("🔐 [handleSignupOtpVerification] Starting signup OTP verification");
-    console.log("🔐 [handleSignupOtpVerification] User exists:", !!data.user);
-    console.log("🔐 [handleSignupOtpVerification] Company exists:", !!data.company);
-    console.log("🔐 [handleSignupOtpVerification] signupFormData exists:", !!signupFormData);
-    
-    try {
-      if (!signupFormData) {
-        console.error("❌ [handleSignupOtpVerification] No signupFormData found");
-        showToast({
-          type: "error",
-          title: "Error",
-          message: "Signup data is missing. Please try again.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      const { user, company } = data;
-      
-      if (!user || !company) {
-        console.error("❌ [handleSignupOtpVerification] Missing user or company data");
-        showToast({
-          type: "error",
-          title: "Error",
-          message: "Account creation failed. Please try again.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      console.log("🔗 [handleSignupOtpVerification] Account created successfully, results are now saved");
-      
-      // Close the OTP modal and cleanup
-      console.log("🧹 [handleSignupOtpVerification] Cleaning up modals and data");
-      setShowSignupOtp(false);
-      setSignupFormData(null);
-      setPendingSignupEmail(null);
-
-      // Show success message
-      console.log("✅ [handleSignupOtpVerification] Signup completed successfully");
-      showToast({
-        type: "success",
-        title: "Account Created!",
-        message: "Your account has been created successfully and your results have been saved!",
-        duration: 6000,
-      });
-      
-      // Refresh assessments to show the linked data
-      await fetchUserAssessments();
-      
-    } catch (error) {
-      console.error("❌ [handleSignupOtpVerification] Error in signup OTP verification:", error);
-      setShowSignupOtp(false);
-      setSignupFormData(null);
-      setPendingSignupEmail(null);
-      
-      showToast({
-        type: "error",
-        title: "Error",
-        message: "There was an issue creating your account. Please try again.",
-        duration: 6000,
-      });
-    }
-  };
-  const handleCombinedOtpVerification = async (data: {
-  const handleSignupFormSubmit = async (userData: UserData) => {
-    console.log("📝 [handleSignupFormSubmit] Starting signup form submission");
-    console.log("📝 [handleSignupFormSubmit] User data:", {
-      name: userData.name,
-      email: userData.email,
-      companyName: userData.companyName,
-      jobTitle: userData.jobTitle
-    });
-    
-    try {
-      // Validate email domain
-      if (!ifDomainAlloeded(getDomainFromEmail(userData.email)!)) {
-        console.log("❌ [handleSignupFormSubmit] Invalid email domain:", getDomainFromEmail(userData.email));
-        showToast({
-          type: "error",
-          title: "Invalid Email",
-          message: "Please use your work email address",
-          duration: 5000,
-        });
-        return;
-      }
-
-      // Store the form data for later use
-      console.log("💾 [handleSignupFormSubmit] Storing form data in state");
-      setSignupFormData(userData);
-      
-      // Set pending email to trigger auth flow via useEffect
-      console.log("🔐 [handleSignupFormSubmit] Triggering auth flow for email:", userData.email);
-      setPendingSignupEmail(userData.email);
-      
-    } catch (error) {
-      console.error("❌ [handleSignupFormSubmit] Error during form submission:", error);
-      showToast({
-        type: "error",
-        title: "Error",
-        message: "Failed to process your signup. Please try again.",
-        duration: 5000,
-      });
-    }
-  };
-    user?: LocalSchema["User"]["type"];
-    company?: LocalSchema["Company"]["type"];
-  }) => {
-    console.log("🔐 [handleCombinedOtpVerification] Starting OTP verification");
-    console.log("🔐 [handleCombinedOtpVerification] User exists:", !!data.user);
-    console.log("🔐 [handleCombinedOtpVerification] Company exists:", !!data.company);
-    console.log("🔐 [handleCombinedOtpVerification] combinedFormData exists:", !!combinedFormData);
-    
-    try {
-      if (!combinedFormData) {
-        console.error("❌ [handleCombinedOtpVerification] No combinedFormData found");
-        showToast({
-          type: "error",
-          title: "Error",
-          message: "Form data is missing. Please try again.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      const { user, company } = data;
-      
-      if (!user || !company) {
-        console.error("❌ [handleCombinedOtpVerification] Missing user or company data");
-        showToast({
-          type: "error",
-          title: "Error",
-          message: "User verification failed. Please try again.",
-          duration: 5000,
-        });
-        return;
-      }
-
-      console.log("📞 [handleCombinedOtpVerification] Creating schedule request");
-      // Create the schedule request with the combined form data
-      const { data: result, errors } = await scheduleRequest({
-        preferredDate: new Date(combinedFormData.selectedDate!)
-          .toISOString()
-          .split("T")[0]!,
-        preferredTimes: combinedFormData.selectedTimes,
-        initiatorUserId: user.id,
-        companyId: company.id,
-        status: "PENDING",
-        type: "TIER1_FOLLOWUP",
-        remarks: combinedFormData.remarks,
-        assessmentInstanceId: userTier1Assessments?.[0]?.id,
-        metadata: JSON.stringify({
-          userEmail: combinedFormData.email,
-          userName: combinedFormData.name,
-          companyDomain: company.primaryDomain!,
-          companyName: combinedFormData.companyName,
-          userJobTitle: combinedFormData.jobTitle,
-          assessmentScore: score.overallScore,
-        }),
-      });
-
-      // Close the OTP modal
-      console.log("🧹 [handleCombinedOtpVerification] Cleaning up modals and data");
-      setShowCombinedOtp(false);
-      setCombinedFormData(null);
-
-      if (result) {
-        console.log("✅ [handleCombinedOtpVerification] Schedule request created successfully");
-        showToast({
-          type: "success",
-          title: "Success!",
-          message: "Your account has been created and follow-up call has been scheduled. We'll contact you soon!",
-          duration: 6000,
-        });
-      } else {
-        console.log("⚠️ [handleCombinedOtpVerification] Schedule request failed but account created");
-        showToast({
-          type: "warning",
-          title: "Partial Success",
-          message: "Your account was created successfully, but there was an issue scheduling the call. Please try scheduling again.",
-          duration: 6000,
-        });
-      }
-    } catch (error) {
-      console.error("Error in combined OTP verification:", error);
-      setShowCombinedOtp(false);
-      setCombinedFormData(null);
-      
-      showToast({
-        type: "error",
-        title: "Error",
-        message: "There was an issue processing your request. Your account may have been created - please try logging in.",
-        duration: 6000,
-      });
-    }
-  };
-  const handleSignupSubmit = (userData: UserData) => {
-    setSignupUserData(userData);
-    setShowSignupModal(false);
-    setShowOtpModal(true);
-  };
-
-  const handleOtpVerification = async (data: any) => {
-    // After successful verification, show schedule modal
-    setShowOtpModal(false);
-    setShowScheduleModal(true);
-    
-    showToast({
-      type: "success",
-      title: "Account Created!",
-      message: "Your account has been created successfully. You can now schedule your follow-up call.",
-      duration: 5000,
-    });
+    // Store form data and navigate to login flow
+    setCombinedFormData(data);
+    dispatch({ type: "SET_USER_FORM_DATA", payload: data });
+    dispatch({ type: "SET_LOGIN_EMAIL", payload: data.email });
+    dispatch({ type: "SET_LOGIN_FLOW", payload: "VIA_ASSESSMENT" });
+    dispatch({ type: "SET_REDIRECT_PATH_AFTER_LOGIN", payload: "/tier1-results" });
+    navigate("/email-login");
   };
 
   const handleSignUpToSave = () => {
@@ -483,8 +170,8 @@ export function Tier1Results({
         duration: 3000,
       });
     } else {
-      console.log("📝 [handleSignUpToSave] Opening signup form modal");
-      setShowSignupForm(true);
+      // Navigate to email login for signup
+      navigate("/email-login");
     }
   };
 
@@ -753,63 +440,7 @@ export function Tier1Results({
         title="Schedule a Follow-up Call"
       />
 
-      {/* Combined OTP Verification Modal */}
-      {showCombinedOtp && combinedFormData && (
-        <>
-          {console.log("🎭 [Render] Combined OTP Modal should be visible", {
-            showCombinedOtp,
-            hasCombinedFormData: !!combinedFormData,
-            email: combinedFormData?.email
-          })}
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <OtpVerificationPage
-              userEmail={combinedFormData.email}
-              onVerify={handleCombinedOtpVerification}
-              onCancel={() => {
-                console.log("❌ [Combined OTP] User cancelled OTP verification");
-                setShowCombinedOtp(false);
-                setCombinedFormData(null);
-                setShowCombinedForm(true); // Go back to form
-              }}
-            />
-          </div>
-        </div>
-        </>
-      )}
-
-      {/* Signup Form Modal for Anonymous Users */}
-      {showSignupForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <LoginPage 
-              onLogin={handleSignupFormSubmit} 
-              onCancel={() => {
-                console.log("❌ [Signup Form] User cancelled signup form");
-                setShowSignupForm(false);
-              }} 
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Signup OTP Verification Modal */}
-      {showSignupOtp && signupFormData && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <OtpVerificationPage
-              userEmail={signupFormData.email}
-              onVerify={handleSignupOtpVerification}
-              onCancel={() => {
-                console.log("❌ [Signup OTP] User cancelled OTP verification");
-                setShowSignupOtp(false);
-                setSignupFormData(null);
-                setShowSignupForm(true); // Go back to signup form
-              }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Combined Schedule Form Modal */}
       <CombinedScheduleForm
         isOpen={showCombinedForm}
         onClose={() => setShowCombinedForm(false)}
