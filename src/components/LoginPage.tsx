@@ -16,6 +16,9 @@ import { useAssessment } from "../hooks/useAssesment";
 interface LoginPageProps {
   onLogin: (userData: UserData) => void;
   onCancel: () => void;
+  buttonText?: string;
+  title?: string;
+  subtitle?: string;
 }
 
 export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
@@ -285,7 +288,7 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
           {/* Cancel Button */}
           <button
             type="button"
-            onClick={onCancel}
+                {buttonText}
             className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 mt-3"
           >
             Back to Assessment

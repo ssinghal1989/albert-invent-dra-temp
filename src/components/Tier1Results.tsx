@@ -765,7 +765,10 @@ export function Tier1Results({
               onCancel={() => {
                 console.log("❌ [Signup Form] User cancelled signup form");
                 setShowSignupForm(false);
-              }} 
+              }}
+              buttonText="Create Account"
+              title="Create Your Account"
+              subtitle="Sign up to save your assessment results"
             />
           </div>
         </div>
