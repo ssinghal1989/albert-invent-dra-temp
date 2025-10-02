@@ -50,10 +50,15 @@ export function Tier1Results({
   const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
   const [pendingAuthEmail, setPendingAuthEmail] = useState<string | null>(null);
+  const [showSignupForm, setShowSignupForm] = useState(false);
+  const [signupFormData, setSignupFormData] = useState<UserData | null>(null);
+  const [showSignupOtp, setShowSignupOtp] = useState(false);
+  const [pendingSignupEmail, setPendingSignupEmail] = useState<string | null>(null);
   
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
     console.log("🔐 [updateStateAndNavigateToOtp] Called with nextStep:", nextStep);
     console.log("🔐 [updateStateAndNavigateToOtp] combinedFormData exists:", !!combinedFormData);
+    console.log("🔐 [updateStateAndNavigateToOtp] signupFormData exists:", !!signupFormData);
     
     if (combinedFormData) {
       // For combined form flow, show OTP modal
@@ -63,6 +68,14 @@ export function Tier1Results({
       setShowCombinedForm(false);
       setShowCombinedOtp(true);
       console.log("🔐 [updateStateAndNavigateToOtp] Combined OTP modal should now be visible");
+    } else if (signupFormData) {
+      // For signup form flow, show OTP modal
+      console.log("🔐 [updateStateAndNavigateToOtp] Setting up signup OTP flow");
+      dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
+      dispatch({ type: "SET_LOGIN_EMAIL", payload: signupFormData.email });
+      setShowSignupForm(false);
+      setShowSignupOtp(true);
+      console.log("🔐 [updateStateAndNavigateToOtp] Signup OTP modal should now be visible");
     } else {
       console.log("🔐 [updateStateAndNavigateToOtp] No combinedFormData, using regular flow");
     }
@@ -144,6 +157,26 @@ export function Tier1Results({
       triggerAuth();
     }
   }, [combinedFormData, pendingAuthEmail, handleAuth]);
+
+  // Handle auth flow after signupFormData is set
+  useEffect(() => {
+    if (signupFormData && pendingSignupEmail) {
+      console.log("🔄 [useEffect] signupFormData is now available, triggering auth");
+      console.log("🔄 [useEffect] signupFormData:", signupFormData);
+      
+      const triggerAuth = async () => {
+        try {
+          await handleAuth(pendingSignupEmail);
+          setPendingSignupEmail(null); // Clear pending email
+        } catch (error) {
+          console.error("❌ [useEffect] Error in signup auth flow:", error);
+          setPendingSignupEmail(null);
+        }
+      };
+      
+      triggerAuth();
+    }
+  }, [signupFormData, pendingSignupEmail, handleAuth]);
 
   // Show loading while fetching data
   if (loading) {
@@ -338,7 +371,8 @@ export function Tier1Results({
         duration: 3000,
       });
     } else {
-      navigate("/email-login");
+      // Show combined form for signup (without schedule details)
+      setShowSignupForm(true);
     }
   };
 
