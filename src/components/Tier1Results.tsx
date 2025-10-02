@@ -699,6 +699,36 @@ export function Tier1Results({
         onSubmit={handleCombinedFormSubmit}
         title="Schedule a Follow-up Call"
       />
+
+      {/* Signup Form Modal */}
+      {showSignupForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <LoginPage 
+              onLogin={handleSignupFormSubmit} 
+              onCancel={() => setShowSignupForm(false)} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Signup OTP Verification Modal */}
+      {showSignupOtp && signupFormData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <OtpVerificationPage
+              userEmail={signupFormData.email}
+              onVerify={handleSignupOtpVerification}
+              onCancel={() => {
+                console.log("❌ [Signup OTP] User cancelled OTP verification");
+                setShowSignupOtp(false);
+                setSignupFormData(null);
+                setShowSignupForm(true); // Go back to form
+              }}
+            />
+          </div>
+        </div>
+      )}
     </main>
   );
 }
