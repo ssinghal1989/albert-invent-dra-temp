@@ -14,7 +14,7 @@ interface HeaderProps {
 export function Header({ title, onLogin, onLogout, userName, onToggleSidebar }: HeaderProps) {
   const { state } = useAppContext();
   return (
-    <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 relative z-50">
+    <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 lg:py-4 relative z-30">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
           {/* Mobile menu button */}
