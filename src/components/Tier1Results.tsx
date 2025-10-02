@@ -351,7 +351,7 @@ export function Tier1Results({
         duration: 3000,
       });
     } else {
-      // Show combined form for signup (without schedule details)
+      console.log("📝 [handleSignUpToSave] Opening signup form modal");
       setShowSignupForm(true);
     }
   };
@@ -646,28 +646,33 @@ export function Tier1Results({
         </>
       )}
 
-      {/* Signup Modal for Anonymous Users */}
-      {showSignupModal && (
+      {/* Signup Form Modal for Anonymous Users */}
+      {showSignupForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <LoginPage 
-              onLogin={handleSignupSubmit} 
-              onCancel={() => setShowSignupModal(false)} 
+              onLogin={handleSignupFormSubmit} 
+              onCancel={() => {
+                console.log("❌ [Signup Form] User cancelled signup form");
+                setShowSignupForm(false);
+              }} 
             />
           </div>
         </div>
       )}
 
-      {/* OTP Verification Modal */}
-      {showOtpModal && signupUserData && (
+      {/* Signup OTP Verification Modal */}
+      {showSignupOtp && signupFormData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <OtpVerificationPage
-              userEmail={signupUserData.email}
-              onVerify={handleOtpVerification}
+              userEmail={signupFormData.email}
+              onVerify={handleSignupOtpVerification}
               onCancel={() => {
-                setShowOtpModal(false);
-                setSignupUserData(null);
+                console.log("❌ [Signup OTP] User cancelled OTP verification");
+                setShowSignupOtp(false);
+                setSignupFormData(null);
+                setShowSignupForm(true); // Go back to signup form
               }}
             />
           </div>
