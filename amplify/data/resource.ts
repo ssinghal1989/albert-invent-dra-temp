@@ -107,6 +107,24 @@ export const schema = a.schema({
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
     .authorization((allow) => [allow.authenticated(), allow.owner()]),
+  AnonymousAssessment: a
+    .model({
+      id: a.id().required(),
+      deviceId: a.string().required(),
+      assessmentInstanceId: a.id().required(),
+      deviceFingerprint: a.json(),
+      isLinked: a.boolean().default(false),
+      linkedUserId: a.id(),
+      linkedCompanyId: a.id(),
+      linkedAt: a.datetime(),
+      assessmentInstance: a.belongsTo("AssessmentInstance", "assessmentInstanceId"),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
+    })
+    .secondaryIndexes((index) => [
+      index("deviceId").sortKeys(["createdAt"]),
+    ])
+    .authorization((allow) => [allow.publicApiKey()]),
   ScheduleRequest: a
     .model({
       type: a.enum(["TIER1_FOLLOWUP", "TIER2_REQUEST"]),
