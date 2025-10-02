@@ -121,7 +121,6 @@ export const schema = a.schema({
       linkedUserId: a.id(),
       linkedCompanyId: a.id(),
       linkedAt: a.datetime(),
-      assessmentInstance: a.belongsTo("AssessmentInstance", "assessmentInstanceId"),
       createdAt: a.datetime().default(new Date().toISOString()),
       updatedAt: a.datetime().default(new Date().toISOString()),
     })
