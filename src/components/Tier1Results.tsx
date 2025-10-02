@@ -534,7 +534,7 @@ export function Tier1Results({
 
           {/* Action Buttons - 4 Buttons Layout Above Recommendations */}
           <div className="mb-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+            <div className={`grid grid-cols-1 sm:grid-cols-2 ${isLoggedIn ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4 max-w-5xl mx-auto`}>
               <button
                 onClick={handleScheduleClick}
                 className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
@@ -553,14 +553,16 @@ export function Tier1Results({
                 <span className="leading-tight">Request In-Depth Assessment</span>
               </button>
 
-              <button
-                onClick={handleSignUpToSave}
-                className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
-                style={{ backgroundColor: "#05f" }}
-              >
-                <Save className="w-5 h-5 flex-shrink-0" />
-                <span className="leading-tight">Sign up to save your results</span>
-              </button>
+              {!isLoggedIn && (
+                <button
+                  onClick={handleSignUpToSave}
+                  className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
+                  style={{ backgroundColor: "#05f" }}
+                >
+                  <Save className="w-5 h-5 flex-shrink-0" />
+                  <span className="leading-tight">Sign up to save your results</span>
+                </button>
+              )}
 
               <button
                 onClick={onRetakeAssessment}
