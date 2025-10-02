@@ -47,9 +47,14 @@ export function Tier1Results({
   const [loading, setLoading] = useState(true);
   const [signupUserData, setSignupUserData] = useState<UserData | null>(null);
   const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
+  const [showCombinedOtp, setShowCombinedOtp] = useState(false);
   
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
-    // We'll handle this inline since we're not navigating
+    if (combinedFormData) {
+      // For combined form flow, show OTP modal
+      setShowCombinedForm(false);
+      setShowCombinedOtp(true);
+    }
   };
   
   const { handleAuth, loading: authLoading } = useAuthFlow(updateStateAndNavigateToOtp);
@@ -157,14 +162,6 @@ export function Tier1Results({
       
       // Trigger auth flow
       await handleAuth(data.email);
-      
-      // The auth flow will handle the rest through the existing OTP flow
-      showToast({
-        type: "info",
-        title: "Verification Required",
-        message: "Please check your email for the verification code",
-        duration: 5000,
-      });
       
     } catch (error) {
       showToast({
