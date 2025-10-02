@@ -1,188 +1,429 @@
-// Device fingerprinting utility for anonymous user tracking
-export interface DeviceFingerprint {
-  userAgent: string;
-  screenResolution: string;
-  timezone: string;
-  language: string;
-  platform: string;
-  cookieEnabled: boolean;
-  localStorage: boolean;
-  sessionStorage: boolean;
-  canvas?: string;
-  webgl?: string;
-  fingerprint: string;
-}
+import { useCallback, useEffect, useState } from "react";
+import { client, LocalSchema } from "../amplifyClient";
+import { useAppContext } from "../context/AppContext"; // adjust path
+import { Tier1TemplateId, Tier2TemplateId } from "../services/defaultQuestions";
+import { Tier1ScoreResult } from "../utils/scoreCalculator";
+import { getDeviceFingerprint } from "../utils/deviceFingerprint";
 
-// Generate a simple canvas fingerprint
-function getCanvasFingerprint(): string {
-  try {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return '';
-    
-    canvas.width = 200;
-    canvas.height = 50;
-    
-    ctx.textBaseline = 'top';
-    ctx.font = '14px Arial';
-    ctx.fillStyle = '#f60';
-    ctx.fillRect(125, 1, 62, 20);
-    ctx.fillStyle = '#069';
-    ctx.fillText('Albert Invent DRA', 2, 15);
-    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
-    ctx.fillText('Device Fingerprint', 4, 35);
-    
-    return canvas.toDataURL();
-  } catch (e) {
-    return '';
-  }
-}
+type Tier1AssessmentRequest = {
+  user?: LocalSchema["User"]["type"];
+  company?: LocalSchema["Company"]["type"];
+  tier1Score?: Tier1ScoreResult;
+  tier1Responses?: Record<string, string>;
+  isAnonymous?: boolean;
+};
 
-// Generate WebGL fingerprint
-function getWebGLFingerprint(): string {
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-    if (!gl) return '';
-    
-    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!debugInfo) return '';
-    
-    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
-    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-    
-    return `${vendor}~${renderer}`;
-  } catch (e) {
-    return '';
-  }
-}
+export function useAssessment() {
+  const [userAssessments, setUserAssessments] = useState<Record<string, any>[]>(
+    []
+  );
+  const [userTier1Assessments, setUserTier1Assessments] = useState<
+    Record<string, any>[]
+  >([]);
+  const [userTier2Assessments, setUserTier2Assessments] = useState<
+    Record<string, any>[]
+  >([]);
+  const [submittingAssesment, setSubmittingAssesment] =
+    useState<boolean>(false);
+  const { dispatch, state } = useAppContext();
 
-// Simple hash function
-function simpleHash(str: string): string {
-  let hash = 0;
-  if (str.length === 0) return hash.toString();
-  
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  return Math.abs(hash).toString(36);
-}
+  useEffect(() => {
+    if (!!state.loggedInUserDetails?.userId) {
+      fetchUserAssessments();
+    }
+  }, [state.loggedInUserDetails?.userId]);
 
-// Generate device fingerprint
-export function generateDeviceFingerprint(): DeviceFingerprint {
-  const userAgent = navigator.userAgent;
-  const screenResolution = `${screen.width}x${screen.height}`;
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const language = navigator.language;
-  const platform = navigator.platform;
-  const cookieEnabled = navigator.cookieEnabled;
-  
-  // Check storage availability
-  let localStorage = false;
-  let sessionStorage = false;
-  
-  try {
-    localStorage = typeof window.localStorage !== 'undefined';
-    sessionStorage = typeof window.sessionStorage !== 'undefined';
-  } catch (e) {
-    // Storage might be disabled
-  }
-  
-  const canvas = getCanvasFingerprint();
-  const webgl = getWebGLFingerprint();
-  
-  // Create a combined fingerprint string
-  const combinedString = [
-    userAgent,
-    screenResolution,
-    timezone,
-    language,
-    platform,
-    cookieEnabled.toString(),
-    localStorage.toString(),
-    sessionStorage.toString(),
-    canvas,
-    webgl
-  ].join('|');
-  
-  const fingerprint = simpleHash(combinedString);
-  
-  return {
-    userAgent,
-    screenResolution,
-    timezone,
-    language,
-    platform,
-    cookieEnabled,
-    localStorage,
-    sessionStorage,
-    canvas,
-    webgl,
-    fingerprint
-  };
-}
+  useEffect(() => {
+    if (userAssessments.length > 0) {
+      const tier1Instances = (userAssessments ?? []).filter(
+        (instance) => instance?.assessmentType === "TIER1"
+      );
+      setUserTier1Assessments(tier1Instances);
+      
+      const tier2Instances = (userAssessments ?? []).filter(
+        (instance) => instance?.assessmentType === "TIER2"
+      );
+      setUserTier2Assessments(tier2Instances);
+      
+      if (tier1Instances.length > 0) {
+        dispatch({
+          type: "SET_TIER1_SCORE",
+          payload:
+            typeof tier1Instances[0]?.score === "string"
+              ? (JSON.parse(tier1Instances[0]?.score) as Tier1ScoreResult)
+              : null,
+        });
+      }
+    }
+  }, [userAssessments]);
 
-// Store fingerprint in localStorage for persistence
-export function storeDeviceFingerprint(fingerprint: DeviceFingerprint): void {
-  try {
-    localStorage.setItem('device_fingerprint', JSON.stringify(fingerprint));
-    localStorage.setItem('device_id', fingerprint.fingerprint);
-  } catch (e) {
-    console.warn('Could not store device fingerprint:', e);
-  }
-}
+  const fetchUserAssessments = useCallback(async () => {
+    if (!state.loggedInUserDetails?.userId) return;
 
-// Retrieve stored fingerprint
-export function getStoredDeviceFingerprint(): DeviceFingerprint | null {
-  try {
-    const stored = localStorage.getItem('device_fingerprint');
-    return stored ? JSON.parse(stored) : null;
-  } catch (e) {
-    return null;
-  }
-}
+    try {
+      const { data } =
+        await client.models.AssessmentInstance.listAssessmentInstanceByInitiatorUserIdAndCreatedAt(
+          {
+            initiatorUserId: state.loggedInUserDetails?.userId,
+          }
+        );
+      setUserAssessments(
+        data.sort(
+          (a, b) =>
+            new Date(b.createdAt ?? 0).getTime() -
+            new Date(a.createdAt ?? 0).getTime()
+        ) || []
+      );
+    } catch (error) {
+      console.error("Error fetching user assessments:", error);
+    }
+  }, [dispatch, state.loggedInUserDetails?.userId]);
 
-// Get or generate device fingerprint
-export function getDeviceFingerprint(): DeviceFingerprint {
-  console.log("🔍 [getDeviceFingerprint] Getting device fingerprint...");
-  const stored = getStoredDeviceFingerprint();
-  if (stored) {
-    console.log("✅ [getDeviceFingerprint] Using stored fingerprint", {
-      deviceId: stored.fingerprint,
-      userAgent: stored.userAgent.substring(0, 50) + "...",
-      screenResolution: stored.screenResolution
+  const submitTier1Assessment = async ({
+    user,
+    company,
+    tier1Score,
+    tier1Responses,
+    isAnonymous = false,
+  }: Tier1AssessmentRequest) => {
+    console.log("🚀 [submitTier1Assessment] Starting assessment submission", {
+      isAnonymous,
+      hasUser: !!user,
+      hasCompany: !!company,
+      hasTier1Score: !!tier1Score,
+      hasTier1Responses: !!tier1Responses,
+      stateUserId: state.userData?.id,
+      stateCompanyId: state.company?.id
     });
-    return stored;
-  }
-  
-  console.log("🆕 [getDeviceFingerprint] Generating new fingerprint...");
-  const fingerprint = generateDeviceFingerprint();
-  console.log("📱 [getDeviceFingerprint] Generated fingerprint", {
-    deviceId: fingerprint.fingerprint,
-    userAgent: fingerprint.userAgent.substring(0, 50) + "...",
-    screenResolution: fingerprint.screenResolution,
-    timezone: fingerprint.timezone,
-    language: fingerprint.language,
-    platform: fingerprint.platform
-  });
-  storeDeviceFingerprint(fingerprint);
-  console.log("💾 [getDeviceFingerprint] Stored fingerprint in localStorage");
-  return fingerprint;
-}
 
-// Get device ID (short fingerprint)
-export function getDeviceId(): string {
-  try {
-    const stored = localStorage.getItem('device_id');
-    if (stored) return stored;
-    
-    const fingerprint = getDeviceFingerprint();
-    return fingerprint.fingerprint;
-  } catch (e) {
-    // Fallback to session-based ID
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+    setSubmittingAssesment(true);
+    try {
+      // For anonymous assessments, we don't need user/company data
+      if (!isAnonymous) {
+        console.log("📝 [submitTier1Assessment] Processing authenticated assessment");
+        if (
+          (!state.tier1Responses && !tier1Score) ||
+          (!state.tier1Score && !tier1Responses) ||
+          (!state.userData && !user) ||
+          (!state.company && !company)
+        ) {
+          console.error("Data missing for submitting Tier 1 assessment");
+          setSubmittingAssesment(false);
+          return;
+        }
+      } else {
+        console.log("👤 [submitTier1Assessment] Processing anonymous assessment");
+        // For anonymous, we just need score and responses
+        if ((!state.tier1Responses && !tier1Responses) || (!state.tier1Score && !tier1Score)) {
+          console.error("Score and responses missing for anonymous assessment");
+          setSubmittingAssesment(false);
+          return;
+        }
+      }
+
+      // Get device fingerprint for anonymous users
+      let deviceFingerprint = null;
+      if (isAnonymous) {
+        deviceFingerprint = getDeviceFingerprint();
+        console.log("🔍 [submitTier1Assessment] Generated device fingerprint", {
+          deviceId: deviceFingerprint.fingerprint,
+          userAgent: deviceFingerprint.userAgent.substring(0, 50) + "...",
+          screenResolution: deviceFingerprint.screenResolution,
+          timezone: deviceFingerprint.timezone
+        });
+      }
+
+      // Create assessment data
+      const assessmentData: any = {
+        templateId: Tier1TemplateId,
+        assessmentType: "TIER1" as "TIER1",
+        score: JSON.stringify(tier1Score || state.tier1Score),
+        responses: JSON.stringify(tier1Responses || state.tier1Responses),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Add user/company data for authenticated users
+      if (!isAnonymous) {
+        assessmentData.companyId = state.userData?.companyId || company?.id;
+        assessmentData.initiatorUserId = state?.userData?.id || user?.id;
+        console.log("🔐 [submitTier1Assessment] Added authenticated user data", {
+          companyId: assessmentData.companyId,
+          initiatorUserId: assessmentData.initiatorUserId
+        });
+      } else {
+        // Add device fingerprint metadata for anonymous users
+        assessmentData.metadata = JSON.stringify({
+          isAnonymous: true,
+          deviceFingerprint: deviceFingerprint,
+          deviceId: deviceFingerprint?.fingerprint,
+          timestamp: new Date().toISOString(),
+        });
+        console.log("📱 [submitTier1Assessment] Added anonymous metadata", {
+          deviceId: deviceFingerprint?.fingerprint,
+          metadataSize: JSON.stringify(assessmentData.metadata).length
+        });
+      }
+
+      console.log("💾 [submitTier1Assessment] Creating assessment instance...");
+      const { data } = await client.models.AssessmentInstance.create(assessmentData);
+      console.log("✅ [submitTier1Assessment] Assessment instance created", {
+        assessmentId: data?.id,
+        templateId: data?.templateId,
+        assessmentType: data?.assessmentType
+      });
+      
+      // Create tracking record for anonymous assessments
+      if (isAnonymous && data && deviceFingerprint) {
+        console.log("🔗 [submitTier1Assessment] Creating anonymous tracking record...");
+        try {
+          const trackingData = {
+            deviceId: deviceFingerprint.fingerprint,
+            assessmentInstanceId: data.id,
+            deviceFingerprint: JSON.stringify(deviceFingerprint),
+            isLinked: false,
+          };
+          console.log("📊 [submitTier1Assessment] Tracking data prepared", trackingData);
+          
+          const trackingResult = await client.models.AnonymousAssessment.create(trackingData, {
+            authMode: 'apiKey'
+          });
+          console.log("✅ [submitTier1Assessment] Anonymous tracking record created", {
+            trackingId: trackingResult.data?.id,
+            deviceId: trackingResult.data?.deviceId,
+            isLinked: trackingResult.data?.isLinked
+          });
+        } catch (trackingError) {
+          console.error("❌ [submitTier1Assessment] Error creating anonymous assessment tracking record:", trackingError);
+          // Don't fail the whole operation if tracking fails
+        }
+      }
+      
+      // Store anonymous assessment ID for later linking
+      if (isAnonymous && data) {
+        dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: data.id });
+        console.log("🔄 [submitTier1Assessment] Stored anonymous assessment ID in state", {
+          assessmentId: data.id
+        });
+      }
+
+      console.log("🎉 [submitTier1Assessment] Assessment submission completed successfully");
+      setSubmittingAssesment(false);
+      return data;
+    } catch (err) {
+      console.error("❌ [submitTier1Assessment] Assessment submission failed:", err);
+      setSubmittingAssesment(false);
+      console.error("Error in submitting assessment:", err);
+      throw err;
+    }
+  };
+
+  // New method to link anonymous assessment with user after signup
+  const linkAnonymousAssessment = useCallback(
+    async (assessmentId: string, userId: string, companyId: string) => {
+      try {
+        const { data } = await client.models.AssessmentInstance.update({
+          id: assessmentId,
+          initiatorUserId: userId,
+          companyId: companyId,
+          metadata: JSON.stringify({
+            wasAnonymous: true,
+            linkedAt: new Date().toISOString(),
+          }),
+        });
+        
+        // Clear anonymous assessment ID after linking
+        dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: null });
+        
+        return data;
+      } catch (err) {
+        console.error("Error linking anonymous assessment:", err);
+        throw err;
+      }
+    },
+    [dispatch]
+  );
+
+  // Enhanced method to find and link anonymous assessments by device fingerprint
+  const findAndLinkAnonymousAssessments = useCallback(
+    async (userId: string, companyId: string) => {
+      console.log("🔍 [findAndLinkAnonymousAssessments] Starting search for anonymous assessments", {
+        userId,
+        companyId
+      });
+      
+      try {
+        const deviceFingerprint = getDeviceFingerprint();
+        console.log("📱 [findAndLinkAnonymousAssessments] Got device fingerprint", {
+          deviceId: deviceFingerprint.fingerprint,
+          userAgent: deviceFingerprint.userAgent.substring(0, 50) + "...",
+          screenResolution: deviceFingerprint.screenResolution
+        });
+        
+        // Efficiently search for anonymous assessments by deviceId
+        console.log("🔎 [findAndLinkAnonymousAssessments] Searching for unlinked anonymous assessments...");
+        const { data: anonymousAssessments } = await client.models.AnonymousAssessment.list({
+          filter: {
+            deviceId: { eq: deviceFingerprint.fingerprint },
+            isLinked: { eq: false }
+          },
+          authMode: 'apiKey'
+        });
+        console.log("📊 [findAndLinkAnonymousAssessments] Search results", {
+          foundCount: anonymousAssessments?.length || 0,
+          assessments: anonymousAssessments?.map(a => ({
+            id: a.id,
+            deviceId: a.deviceId,
+            assessmentInstanceId: a.assessmentInstanceId,
+            isLinked: a.isLinked
+          }))
+        });
+        
+        if (!anonymousAssessments || anonymousAssessments.length === 0) {
+          console.log("ℹ️ [findAndLinkAnonymousAssessments] No unlinked anonymous assessments found");
+          return [];
+        }
+
+        // Link all unlinked anonymous assessments for this device
+        console.log("🔗 [findAndLinkAnonymousAssessments] Starting linking process for", anonymousAssessments.length, "assessments");
+        const linkedAssessments = [];
+        for (const anonymousAssessment of anonymousAssessments) {
+          console.log("🔄 [findAndLinkAnonymousAssessments] Processing assessment", {
+            trackingId: anonymousAssessment.id,
+            assessmentInstanceId: anonymousAssessment.assessmentInstanceId
+          });
+          
+          try {
+            // Update the actual assessment instance
+            console.log("📝 [findAndLinkAnonymousAssessments] Updating assessment instance...");
+            const { data: updatedAssessment } = await client.models.AssessmentInstance.update({
+              id: anonymousAssessment.assessmentInstanceId,
+              initiatorUserId: userId,
+              companyId: companyId,
+              metadata: JSON.stringify({
+                wasAnonymous: true,
+                linkedAt: new Date().toISOString(),
+                originalDeviceId: deviceFingerprint.fingerprint,
+              }),
+            });
+            console.log("✅ [findAndLinkAnonymousAssessments] Assessment instance updated", {
+              assessmentId: updatedAssessment?.id,
+              newInitiatorUserId: updatedAssessment?.initiatorUserId,
+              newCompanyId: updatedAssessment?.companyId
+            });
+            
+            // Update the tracking record
+            console.log("📊 [findAndLinkAnonymousAssessments] Updating tracking record...");
+            await client.models.AnonymousAssessment.update({
+              id: anonymousAssessment.id,
+              isLinked: true,
+              linkedUserId: userId,
+              linkedCompanyId: companyId,
+              linkedAt: new Date().toISOString(),
+            }, {
+              authMode: 'apiKey'
+            });
+            console.log("✅ [findAndLinkAnonymousAssessments] Tracking record updated", {
+              trackingId: anonymousAssessment.id,
+              isLinked: true,
+              linkedUserId: userId
+            });
+            
+            const linked = updatedAssessment;
+            if (linked) {
+              linkedAssessments.push(linked);
+              console.log("📋 [findAndLinkAnonymousAssessments] Added to linked assessments list");
+            }
+          } catch (err) {
+            console.error(`❌ [findAndLinkAnonymousAssessments] Failed to link anonymous assessment ${anonymousAssessment.id}:`, err);
+          }
+        }
+
+        // Clear anonymous assessment ID after linking
+        if (linkedAssessments.length > 0) {
+          dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: null });
+          console.log("🔄 [findAndLinkAnonymousAssessments] Cleared anonymous assessment ID from state");
+        }
+
+        console.log("🎉 [findAndLinkAnonymousAssessments] Linking process completed", {
+          totalProcessed: anonymousAssessments.length,
+          successfullyLinked: linkedAssessments.length,
+          linkedAssessmentIds: linkedAssessments.map(a => a.id)
+        });
+        return linkedAssessments;
+      } catch (err) {
+        console.error("❌ [findAndLinkAnonymousAssessments] Error finding and linking anonymous assessments:", err);
+        return [];
+      }
+    }
+    [dispatch]
+  );
+
+  const submitTier2Assessment = async (responses: Record<string, string>) => {
+    setSubmittingAssesment(true);
+    try {
+      if (!state.userData || !state.company) {
+        console.error("User data missing for submitting Tier 2 assessment");
+        setSubmittingAssesment(false);
+        return;
+      }
+      
+      // Create a new assessment instance for user
+      const assessmentData = {
+        templateId: Tier2TemplateId,
+        companyId: state.userData?.companyId,
+        initiatorUserId: state?.userData?.id,
+        assessmentType: "TIER2" as "TIER2",
+        responses: JSON.stringify(responses),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      
+      await client.models.AssessmentInstance.create(assessmentData);
+      await fetchUserAssessments();
+      setSubmittingAssesment(false);
+    } catch (err) {
+      setSubmittingAssesment(false);
+      console.error("Error in submitting Tier 2 assessment:", err);
+    }
+  };
+  const updateTier1AssessmentResponse = useCallback(
+    async ({
+      assessmentId,
+      updatedResponses,
+      updatedScores,
+    }: {
+      assessmentId: string;
+      updatedResponses: any;
+      updatedScores: Tier1ScoreResult;
+    }) => {
+      try {
+        setSubmittingAssesment(true);
+        await client.models.AssessmentInstance.update({
+          id: assessmentId,
+          responses: JSON.stringify(updatedResponses),
+          score: JSON.stringify(updatedScores),
+        });
+        await fetchUserAssessments();
+        setSubmittingAssesment(false);
+      } catch (err) {
+        setSubmittingAssesment(false);
+      }
+    },
+    [dispatch]
+  );
+
+  return {
+    submitTier1Assessment,
+    submitTier2Assessment,
+    fetchUserAssessments,
+    updateTier1AssessmentResponse,
+    linkAnonymousAssessment,
+    findAndLinkAnonymousAssessments,
+    userAssessments,
+    userTier1Assessments,
+    userTier2Assessments,
+    submittingAssesment,
+    setSubmittingAssesment,
+  };
 }
