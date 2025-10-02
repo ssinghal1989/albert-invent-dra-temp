@@ -49,25 +49,40 @@ function AppContent() {
 
   const checkIfUserAlreadyLoggedIn = async () => {
     try {
+      console.log("🔐 [checkIfUserAlreadyLoggedIn] Checking user authentication status...");
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: true });
       const currentUser = await getCurrentUser();
       if (currentUser) {
+        console.log("✅ [checkIfUserAlreadyLoggedIn] User is authenticated", {
+          userId: currentUser.userId,
+          username: currentUser.username
+        });
         dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
         const result = await setUserData({ loggedInUserDetails: currentUser! });
+        console.log("📊 [checkIfUserAlreadyLoggedIn] User data set", {
+          userId: result.user?.id,
+          companyId: result.company?.id
+        });
         
         // Try to link any anonymous assessments after user login
         if (result.user && result.company) {
+          console.log("🔗 [checkIfUserAlreadyLoggedIn] Attempting to link anonymous assessments...");
           try {
-            await findAndLinkAnonymousAssessments(result.user.id, result.company.id);
+            const linkedAssessments = await findAndLinkAnonymousAssessments(result.user.id, result.company.id);
+            console.log("✅ [checkIfUserAlreadyLoggedIn] Anonymous assessments linking completed", {
+              linkedCount: linkedAssessments.length
+            });
           } catch (err) {
-            console.error("Error linking anonymous assessments:", err);
+            console.error("❌ [checkIfUserAlreadyLoggedIn] Error linking anonymous assessments:", err);
           }
         }
+      } else {
+        console.log("ℹ️ [checkIfUserAlreadyLoggedIn] No authenticated user found");
       }
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
     } catch (error) {
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
-      console.error("Error checking if user is logged in:", error);
+      console.error("❌ [checkIfUserAlreadyLoggedIn] Error checking if user is logged in:", error);
     }
   };
 
@@ -155,15 +170,26 @@ function AppContent() {
     user?: LocalSchema["User"]["type"];
     company?: LocalSchema["Company"]["type"];
   }) => {
+    console.log("🔐 [handleLoginOtpVerification] Processing OTP verification", {
+      hasUser: !!data.user,
+      hasCompany: !!data.company,
+      userId: data.user?.id,
+      companyId: data.company?.id
+    });
+    
     const { user, company } = data;
     dispatch({ type: "SET_LOGIN_EMAIL", payload: "" });
     
     // Try to link anonymous assessments after successful login
     if (user && company) {
+      console.log("🔗 [handleLoginOtpVerification] Attempting to link anonymous assessments after login...");
       try {
-        await findAndLinkAnonymousAssessments(user.id, company.id);
+        const linkedAssessments = await findAndLinkAnonymousAssessments(user.id, company.id);
+        console.log("✅ [handleLoginOtpVerification] Anonymous assessments linking completed", {
+          linkedCount: linkedAssessments.length
+        });
       } catch (err) {
-        console.error("Error linking anonymous assessments:", err);
+        console.error("❌ [handleLoginOtpVerification] Error linking anonymous assessments:", err);
       }
     }
     
@@ -232,7 +258,20 @@ function AppContent() {
     responses: Record<string, string>,
     questions: any[]
   ) => {
+    console.log("🎯 [handleTier1Complete] Processing Tier 1 assessment completion", {
+      responseCount: Object.keys(responses).length,
+      questionCount: questions.length,
+      hasCompleteProfile,
+      isLoggedIn: !!state.loggedInUserDetails
+    });
+    
     const score = calculateTier1Score(responses, questions);
+    console.log("📊 [handleTier1Complete] Calculated assessment score", {
+      overallScore: score.overallScore,
+      maturityLevel: score.maturityLevel,
+      totalQuestions: score.totalQuestions
+    });
+    
     dispatch({ type: "SET_TIER1_RESPONSES", payload: responses });
     dispatch({
       type: "SET_TIER1_SCORE",
@@ -240,13 +279,18 @@ function AppContent() {
     });
     
     // Always submit assessment (anonymous if not logged in)
+    console.log("💾 [handleTier1Complete] Submitting assessment", {
+      isAnonymous: !hasCompleteProfile
+    });
     await submitTier1Assessment({
       tier1Score: score,
       tier1Responses: responses,
       isAnonymous: !hasCompleteProfile,
     });
+    console.log("✅ [handleTier1Complete] Assessment submitted successfully");
     
     // Always show results immediately
+    console.log("🚀 [handleTier1Complete] Navigating to results page");
     navigate("/tier1-results");
   };
 
