@@ -19,9 +19,18 @@ interface LoginPageProps {
   buttonText?: string;
   title?: string;
   subtitle?: string;
+  buttonText?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
+export function LoginPage({ 
+  onLogin, 
+  onCancel, 
+  buttonText = "See Results",
+  title = "Complete Your Information",
+  subtitle = "Please provide your details to continue"
+}: LoginPageProps) {
   const navigate = useNavigate();
   const { state, dispatch } = useAppContext();
   const [formData, setFormData] = useState<UserData>({
@@ -142,6 +151,16 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
   return (
     <div className="flex-1 flex items-center justify-center p-6">
       <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {title}
+          </h2>
+          <p className="text-gray-600">
+            {subtitle}
+          </p>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Field */}
           <div>
@@ -280,7 +299,7 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
                 width: "100%",
               }}
             >
-              See Results
+              {buttonText}
               <ArrowRight className="w-5 h-5" />
             </div>
           </LoadingButton>
@@ -288,10 +307,10 @@ export function LoginPage({ onLogin, onCancel }: LoginPageProps) {
           {/* Cancel Button */}
           <button
             type="button"
-                {buttonText}
+            onClick={onCancel}
             className="w-full py-3 px-6 rounded-xl font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 transition-all duration-200 mt-3"
           >
-            Back to Assessment
+            Cancel
           </button>
         </form>
 
