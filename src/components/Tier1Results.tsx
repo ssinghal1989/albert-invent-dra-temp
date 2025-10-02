@@ -49,6 +49,7 @@ export function Tier1Results({
   const [signupUserData, setSignupUserData] = useState<UserData | null>(null);
   const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
+  const [pendingAuthEmail, setPendingAuthEmail] = useState<string | null>(null);
   
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
     console.log("🔐 [updateStateAndNavigateToOtp] Called with nextStep:", nextStep);
@@ -124,6 +125,26 @@ export function Tier1Results({
     loadData();
   }, [isLoggedIn, score, fetchUserAssessments]);
 
+  // Handle auth flow after combinedFormData is set
+  useEffect(() => {
+    if (combinedFormData && pendingAuthEmail) {
+      console.log("🔄 [useEffect] combinedFormData is now available, triggering auth");
+      console.log("🔄 [useEffect] combinedFormData:", combinedFormData);
+      
+      const triggerAuth = async () => {
+        try {
+          await handleAuth(pendingAuthEmail);
+          setPendingAuthEmail(null); // Clear pending email
+        } catch (error) {
+          console.error("❌ [useEffect] Error in auth flow:", error);
+          setPendingAuthEmail(null);
+        }
+      };
+      
+      triggerAuth();
+    }
+  }, [combinedFormData, pendingAuthEmail, handleAuth]);
+
   // Show loading while fetching data
   if (loading) {
     return (
@@ -182,10 +203,9 @@ export function Tier1Results({
       console.log("💾 [handleCombinedFormSubmit] Storing form data in state");
       setCombinedFormData(data);
       
-      // Trigger auth flow
+      // Set pending email to trigger auth flow via useEffect
       console.log("🔐 [handleCombinedFormSubmit] Triggering auth flow for email:", data.email);
-      await handleAuth(data.email);
-      console.log("✅ [handleCombinedFormSubmit] Auth flow completed");
+      setPendingAuthEmail(data.email);
       
     } catch (error) {
       console.error("❌ [handleCombinedFormSubmit] Error during submission:", error);
