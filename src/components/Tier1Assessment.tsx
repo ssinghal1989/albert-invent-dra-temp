@@ -587,12 +587,14 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                           }`}
                         >
                           <div className="flex items-center space-x-3">
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
                               isSelected 
                                 ? 'border-primary bg-primary' 
-                                : 'border-gray-300'
+                                : 'border-gray-300 bg-white'
                             }`}>
-                              {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                              {isSelected && (
+                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                              )}
                             </div>
                             <span className={`text-sm font-medium ${
                               isSelected ? 'text-primary' : 'text-gray-900'
