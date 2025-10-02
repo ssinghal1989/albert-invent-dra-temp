@@ -189,18 +189,8 @@ export function Sidebar({
               </div>}
             </nav>
           </div>
-         </div>
--      </div>
--    </aside>
-+      </aside>
-+      
-+      {/* Mobile Overlay */}
-+      {!sidebarCollapsed && (
-+        <div 
-+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-+          onClick={toggleSidebar}
-+        />
-+      )}
-+    </>
-   );
- }
+        </div>
+      </aside>
+    </>
+  );
+}
