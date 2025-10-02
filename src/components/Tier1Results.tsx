@@ -12,6 +12,7 @@ import { getMaturityLevel, getScoreColor } from "../utils/common";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { RecommendationsPanel } from "./ui/RecommendationsPanel";
 import { ScheduleCallModal, ScheduleCallData } from "./ui/ScheduleCallModal";
+import { CombinedScheduleForm, CombinedScheduleData } from "./ui/CombinedScheduleForm";
 import { useAssessment } from "../hooks/useAssesment";
 import { useToast } from "../context/ToastContext";
 import { useCallRequest } from "../hooks/useCallRequest";
@@ -19,6 +20,10 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Loader } from "./ui/Loader";
 import { UserData } from "../context/AppContext";
 import { OtpVerificationPage } from "./OtpVerificationPage";
+import { useAuthFlow } from "../hooks/useAuthFlow";
+import { LOGIN_NEXT_STEP } from "../context/AppContext";
+import { getDomainFromEmail } from "../utils/common";
+import { ifDomainAlloeded } from "../utils/domain";
 
 interface Tier1ResultsProps {
   onNavigateToTier2: () => void;
@@ -33,6 +38,7 @@ export function Tier1Results({
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showCombinedForm, setShowCombinedForm] = useState(false);
   const { state } = useAppContext();
   const { userTier1Assessments, fetchUserAssessments } = useAssessment();
   const { showToast } = useToast();
@@ -40,6 +46,13 @@ export function Tier1Results({
   const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [signupUserData, setSignupUserData] = useState<UserData | null>(null);
+  const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
+  
+  const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
+    // We'll handle this inline since we're not navigating
+  };
+  
+  const { handleAuth, loading: authLoading } = useAuthFlow(updateStateAndNavigateToOtp);
   
   // Check if user is logged in
   const isLoggedIn = !!state.loggedInUserDetails;
@@ -121,8 +134,45 @@ export function Tier1Results({
     if (isLoggedIn) {
       setShowScheduleModal(true);
     } else {
-      // Show signup modal for anonymous users
-      setShowSignupModal(true);
+      // Show combined form for anonymous users
+      setShowCombinedForm(true);
+    }
+  };
+
+  const handleCombinedFormSubmit = async (data: CombinedScheduleData) => {
+    try {
+      // Validate email domain
+      if (!ifDomainAlloeded(getDomainFromEmail(data.email)!)) {
+        showToast({
+          type: "error",
+          title: "Invalid Email",
+          message: "Please use your work email address",
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Store the form data for later use
+      setCombinedFormData(data);
+      
+      // Trigger auth flow
+      await handleAuth(data.email);
+      
+      // The auth flow will handle the rest through the existing OTP flow
+      showToast({
+        type: "info",
+        title: "Verification Required",
+        message: "Please check your email for the verification code",
+        duration: 5000,
+      });
+      
+    } catch (error) {
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "Failed to process your request. Please try again.",
+        duration: 5000,
+      });
     }
   };
 
