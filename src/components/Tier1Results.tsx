@@ -2,10 +2,12 @@ import {
   BarChart3,
   Calendar,
   TrendingUp,
-  UserPlus,
+  Save,
+  User,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppContext } from "../context/AppContext";
+import { LoginPage } from "./LoginPage";
 import { getMaturityLevel, getScoreColor } from "../utils/common";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { RecommendationsPanel } from "./ui/RecommendationsPanel";
@@ -14,9 +16,10 @@ import { useAssessment } from "../hooks/useAssesment";
 import { useToast } from "../context/ToastContext";
 import { useCallRequest } from "../hooks/useCallRequest";
 import { useAssessment } from "../hooks/useAssesment";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Loader } from "./ui/Loader";
-import { useEffect } from "react";
+import { UserData } from "../context/AppContext";
+import { OtpVerificationPage } from "./OtpVerificationPage";
 
 interface Tier1ResultsProps {
   onNavigateToTier2: () => void;
@@ -27,13 +30,17 @@ export function Tier1Results({
   onNavigateToTier2,
   onRetakeAssessment,
 }: Tier1ResultsProps) {
+  const navigate = useNavigate();
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
   const { state } = useAppContext();
   const { userTier1Assessments, fetchUserAssessments } = useAssessment();
   const { showToast } = useToast();
   const { scheduleRequest } = useCallRequest();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+  const [signupUserData, setSignupUserData] = useState<UserData | null>(null);
   
   // Check if user is logged in
   const isLoggedIn = !!state.loggedInUserDetails;
@@ -108,35 +115,6 @@ export function Tier1Results({
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  const getRecommendations = (score: number): string[] => {
-    if (score >= 85) {
-      return [
-        "Continue to innovate and lead in digital transformation",
-        "Share best practices across the organization",
-        "Explore advanced AI and automation opportunities",
-      ];
-    }
-    if (score >= 70) {
-      return [
-        "Focus on scaling successful digital initiatives",
-        "Strengthen data governance and integration",
-        "Invest in advanced analytics capabilities",
-      ];
-    }
-    if (score >= 50) {
-      return [
-        "Prioritize foundational digital infrastructure",
-        "Develop digital skills across teams",
-        "Establish clear data governance frameworks",
-      ];
-    }
-    return [
-      "Begin with basic digital transformation initiatives",
-      "Focus on data standardization and integration",
-      "Build digital culture and leadership support",
-    ];
-  };
-
   const maturityLevel = getMaturityLevel(score.overallScore);
   const scoreColor = getScoreColor(score.overallScore);
 
@@ -144,13 +122,40 @@ export function Tier1Results({
     if (isLoggedIn) {
       setShowScheduleModal(true);
     } else {
-      // Redirect to login for scheduling
+      // Show signup modal for anonymous users
+      setShowSignupModal(true);
+    }
+  };
+
+  const handleSignupSubmit = (userData: UserData) => {
+    setSignupUserData(userData);
+    setShowSignupModal(false);
+    setShowOtpModal(true);
+  };
+
+  const handleOtpVerification = async (data: any) => {
+    // After successful verification, show schedule modal
+    setShowOtpModal(false);
+    setShowScheduleModal(true);
+    
+    showToast({
+      type: "success",
+      title: "Account Created!",
+      message: "Your account has been created successfully. You can now schedule your follow-up call.",
+      duration: 5000,
+    });
+  };
+
+  const handleSignUpToSave = () => {
+    if (isLoggedIn) {
       showToast({
         type: "info",
-        title: "Login Required",
-        message: "Please log in to schedule a follow-up call.",
-        duration: 4000,
+        title: "Already Logged In",
+        message: "Your results are already saved to your account.",
+        duration: 3000,
       });
+    } else {
+      navigate("/email-login");
     }
   };
 
@@ -344,38 +349,41 @@ export function Tier1Results({
             maxRecommendations={10}
           />
 
-          {/* Action Buttons */}
+          {/* Tier 2 Recommendation - Always Show */}
+          <div className="mb-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-3xl mx-auto">
+              <p className="text-blue-800 text-base font-medium mb-4">
+                Your Tier 1 results show that the following Focus Areas stand out as key opportunities:
+              </p>
+              <ul className="text-blue-700 text-base mb-4 space-y-2">
+                {lowestScoringAreas.map((area, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-blue-600 mr-2">•</span>
+                    <span>{area}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-blue-800 text-base font-medium">
+                We'd recommend a Tier 2 assessment to dive deeper into these dimensions and 
+                uncover concrete opportunities to advance your digital transformation.
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons - 4 Buttons Layout */}
           <div className="flex justify-center gap-4 mb-8 flex-wrap">
-            {isLoggedIn ? (
-              <button
-                onClick={handleScheduleClick}
-                className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[320px] whitespace-nowrap"
-                style={{ backgroundColor: "#05f" }}
-              >
-                <Calendar className="w-5 h-5" />
-                <span>Schedule a follow-up call</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => {
-                  showToast({
-                    type: "info",
-                    title: "Login to Schedule",
-                    message: "Create an account to schedule follow-up calls and access advanced features.",
-                    duration: 5000,
-                  });
-                }}
-                className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[320px] whitespace-nowrap"
-                style={{ backgroundColor: "#05f" }}
-              >
-                <UserPlus className="w-5 h-5" />
-                <span>Sign up to schedule calls</span>
-              </button>
-            )}
+            <button
+              onClick={handleScheduleClick}
+              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
+              style={{ backgroundColor: "#05f" }}
+            >
+              <Calendar className="w-5 h-5" />
+              <span>Schedule a follow-up call</span>
+            </button>
 
             <button
               onClick={onNavigateToTier2}
-              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[320px] whitespace-nowrap"
+              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
               style={{ backgroundColor: "#05f" }}
             >
               <TrendingUp className="w-5 h-5" />
@@ -383,57 +391,60 @@ export function Tier1Results({
             </button>
 
             <button
+              onClick={handleSignUpToSave}
+              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
+              style={{ backgroundColor: "#05f" }}
+            >
+              <Save className="w-5 h-5" />
+              <span>Sign up to save your results</span>
+            </button>
+
+            <button
               onClick={onRetakeAssessment}
-              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 min-w-[320px] whitespace-nowrap"
+              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 min-w-[200px] whitespace-nowrap"
             >
               <BarChart3 className="w-5 h-5" />
               <span>Retake Assessment</span>
             </button>
           </div>
 
-          {/* Additional Info */}
-          <div className="mt-8 text-center">
-            {isLoggedIn ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-3xl mx-auto">
-                <p className="text-blue-800 text-base font-medium mb-4">
-                  Your Tier 1 results show that the following Focus Areas stand out as key opportunities:
-                </p>
-                <ul className="text-blue-700 text-base mb-4 space-y-2">
-                  {lowestScoringAreas.map((area, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-blue-600 mr-2">•</span>
-                      <span>{area}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="text-blue-800 text-base font-medium">
-                  We'd recommend a Tier 2 assessment to dive deeper into these dimensions and 
-                  uncover concrete opportunities to advance your digital transformation.
-                </p>
-              </div>
-            ) : (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-blue-800 text-sm font-medium mb-2">
-                  🎉 Great job completing the assessment!
-                </p>
-                <p className="text-blue-700 text-sm">
-                  Sign up to save your results, schedule follow-up calls, and access our in-depth Tier 2 assessment.
-                  Your results will be automatically linked to your account.
-                </p>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 
-      {/* Schedule Call Modal */}
-      {isLoggedIn && (
-        <ScheduleCallModal
-          isOpen={showScheduleModal}
-          onClose={() => setShowScheduleModal(false)}
-          onSubmit={handleScheduleSubmit}
-          title="Schedule a Follow-up Call"
-        />
+      {/* Schedule Call Modal - For both logged in and newly signed up users */}
+      <ScheduleCallModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        onSubmit={handleScheduleSubmit}
+        title="Schedule a Follow-up Call"
+      />
+
+      {/* Signup Modal for Anonymous Users */}
+      {showSignupModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <LoginPage 
+              onLogin={handleSignupSubmit} 
+              onCancel={() => setShowSignupModal(false)} 
+            />
+          </div>
+        </div>
+      )}
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && signupUserData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <OtpVerificationPage
+              userEmail={signupUserData.email}
+              onVerify={handleOtpVerification}
+              onCancel={() => {
+                setShowOtpModal(false);
+                setSignupUserData(null);
+              }}
+            />
+          </div>
+        </div>
       )}
     </main>
   );
