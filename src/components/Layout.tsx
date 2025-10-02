@@ -36,7 +36,7 @@ export function Layout({
         userName={userName}
         onToggleSidebar={toggleSidebar}
       />
-      <div className="flex min-h-[calc(100vh-60px)] sm:min-h-[calc(100vh-72px)] lg:min-h-[calc(100vh-80px)]">
+      <div className="flex min-h-[calc(100vh-60px)] sm:min-h-[calc(100vh-72px)] lg:min-h-[calc(100vh-80px)] relative">
         <Sidebar
           currentView={currentView}
           sidebarCollapsed={sidebarCollapsed}
@@ -45,9 +45,19 @@ export function Layout({
           onNavigateToTier={onNavigateToTier}
           onNavigateToAdmin={onNavigateToAdmin}
         />
-        <div className="flex-1 min-w-0">
+        <div className={`flex-1 min-w-0 transition-all duration-300 ${
+          !sidebarCollapsed ? 'lg:ml-0' : ''
+        }`}>
           {children}
         </div>
+        
+        {/* Mobile overlay when sidebar is open */}
+        {!sidebarCollapsed && (
+          <div 
+            className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+            onClick={toggleSidebar}
+          />
+        )}
       </div>
     </div>
   );
