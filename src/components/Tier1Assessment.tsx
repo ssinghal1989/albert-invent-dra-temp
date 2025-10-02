@@ -538,17 +538,89 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
           </div>
 
           {/* Assessment Grid */}
-          <div className="overflow-x-auto -mx-3 sm:-mx-4 lg:-mx-6 xl:-mx-8 px-3 sm:px-4 lg:px-6 xl:px-8">
+          {/* Mobile Card Layout */}
+          <div className="lg:hidden space-y-4">
+            {questions.map((question, questionIndex) => {
+              const isAnswered = selectedResponses[question.id] !== undefined;
+              return (
+                <div key={question.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+                  {/* Question Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ${
+                        isAnswered ? 'bg-green-500' : 'bg-gray-400'
+                      }`}>
+                        {questionIndex + 1}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-gray-900 leading-tight mb-2">
+                          {question.prompt}
+                        </h3>
+                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                          <span>Question {questionIndex + 1} of {questions.length}</span>
+                          {isAnswered && (
+                            <>
+                              <span>•</span>
+                              <div className="flex items-center space-x-1 text-green-600">
+                                <CheckCircle className="w-3 h-3" />
+                                <span>Answered</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Options */}
+                  <div className="space-y-2">
+                    {getSortedOptions(question).map((option: any) => {
+                      const isSelected = selectedResponses[question.id] === option.value;
+                      return (
+                        <button
+                          key={`${question.id}_${option.value}`}
+                          onClick={() => handleOptionSelect(question, option.value)}
+                          className={`w-full text-left p-3 rounded-lg border-2 transition-all duration-200 ${
+                            isSelected
+                              ? 'border-primary bg-blue-50 text-primary'
+                              : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              isSelected 
+                                ? 'border-primary bg-primary' 
+                                : 'border-gray-300'
+                            }`}>
+                              {isSelected && <CheckCircle className="w-3 h-3 text-white" />}
+                            </div>
+                            <span className={`text-sm font-medium ${
+                              isSelected ? 'text-primary' : 'text-gray-900'
+                            }`}>
+                              {option.label}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Grid Layout */}
+          <div className="hidden lg:block overflow-x-auto -mx-6 xl:-mx-8 px-6 xl:px-8">
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="text-left p-2 sm:p-3 lg:p-4 font-semibold text-gray-700 border-b text-xs sm:text-sm lg:text-base min-w-32 sm:min-w-40 lg:min-w-48 sticky left-0 bg-white">
+                  <th className="text-left p-4 font-semibold text-gray-700 border-b text-base min-w-48 sticky left-0 bg-white">
                     Focus Areas
                   </th>
                   {maturityLabels.map((level: any) => (
                     <th
                       key={level}
-                      className="text-center p-1 sm:p-2 lg:p-3 xl:p-4 font-semibold text-gray-700 border-b min-w-24 sm:min-w-32 lg:min-w-40 xl:min-w-48 text-xs sm:text-sm lg:text-base"
+                      className="text-center p-4 font-semibold text-gray-700 border-b min-w-48 text-base"
                     >
                       {level}
                     </th>
@@ -558,7 +630,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
               <tbody>
                 {questions.map((question) => (
                   <tr key={question.id} className="border-b border-gray-100">
-                    <td className="p-2 sm:p-3 lg:p-4 font-medium text-gray-800 bg-gray-50 align-top text-xs sm:text-sm lg:text-base min-w-32 sm:min-w-40 lg:min-w-48 sticky left-0">
+                    <td className="p-4 font-medium text-gray-800 bg-gray-50 align-top text-base min-w-48 sticky left-0">
                       {question.prompt}
                     </td>
                     {getSortedOptions(question).map((option: any) => {
@@ -567,13 +639,13 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                       return (
                         <td
                           key={`${question.id}_${option.label}`}
-                          className="p-1 sm:p-2 lg:p-3 align-top"
+                          className="p-2 align-top"
                         >
                           <div
                             onClick={() =>
                               handleOptionSelect(question, option.value)
                             }
-                            className={`p-1.5 sm:p-2 lg:p-3 rounded-md sm:rounded-lg cursor-pointer transition-all duration-200 text-xs leading-tight min-h-12 sm:min-h-16 lg:min-h-20 flex items-center ${
+                            className={`p-3 rounded-lg cursor-pointer transition-all duration-200 text-sm leading-tight ${
                               isSelected
                                 ? "text-white bg-blue-500"
                                 : "text-black hover:bg-gray-100"

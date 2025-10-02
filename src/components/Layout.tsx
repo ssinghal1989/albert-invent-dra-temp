@@ -34,8 +34,9 @@ export function Layout({
         onLogin={onLogin}
         onLogout={onLogout}
         userName={userName}
+        onToggleSidebar={toggleSidebar}
       />
-      <div className="flex min-h-[calc(100vh-80px)]">
+      <div className="flex min-h-[calc(100vh-60px)] sm:min-h-[calc(100vh-72px)] lg:min-h-[calc(100vh-80px)]">
         <Sidebar
           currentView={currentView}
           sidebarCollapsed={sidebarCollapsed}
@@ -44,7 +45,9 @@ export function Layout({
           onNavigateToTier={onNavigateToTier}
           onNavigateToAdmin={onNavigateToAdmin}
         />
-        {children}
+        <div className="flex-1 min-w-0">
+          {children}
+        </div>
       </div>
     </div>
   );
