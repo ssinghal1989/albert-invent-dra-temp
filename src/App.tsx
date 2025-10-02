@@ -31,6 +31,7 @@ import { calculateTier1Score } from "./utils/scoreCalculator";
 import { ToastProvider, useToast } from "./context/ToastContext";
 import { useCallRequest } from "./hooks/useCallRequest";
 import { Tier2AssessmentOld } from "./components/Tier2AssessmentOld";
+import { getDeviceFingerprint } from "./utils/deviceFingerprint";
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -38,7 +39,11 @@ function AppContent() {
   const location = useLocation();
   const hasCompleteProfile = useHasCompleteProfile();
   const { setUserData } = useSetUserData();
-  const { submitTier1Assessment, fetchUserAssessments } = useAssessment();
+  const { 
+    submitTier1Assessment, 
+    fetchUserAssessments, 
+    findAndLinkAnonymousAssessments 
+  } = useAssessment();
   const { scheduleRequest, fetchUserCallRequests } = useCallRequest();
   const { showToast } = useToast();
 
@@ -48,7 +53,16 @@ function AppContent() {
       const currentUser = await getCurrentUser();
       if (currentUser) {
         dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
-        setUserData({ loggedInUserDetails: currentUser! });
+        const result = await setUserData({ loggedInUserDetails: currentUser! });
+        
+        // Try to link any anonymous assessments after user login
+        if (result.user && result.company) {
+          try {
+            await findAndLinkAnonymousAssessments(result.user.id, result.company.id);
+          } catch (err) {
+            console.error("Error linking anonymous assessments:", err);
+          }
+        }
       }
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
     } catch (error) {
@@ -74,6 +88,10 @@ function AppContent() {
     checkIfUserAlreadyLoggedIn();
     // checkAndSetupQuestions();
     // updateUserRole();
+    
+    // Initialize device fingerprint
+    const deviceFingerprint = getDeviceFingerprint();
+    dispatch({ type: "SET_DEVICE_ID", payload: deviceFingerprint.fingerprint });
   }, []);
 
   const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {
@@ -139,6 +157,16 @@ function AppContent() {
   }) => {
     const { user, company } = data;
     dispatch({ type: "SET_LOGIN_EMAIL", payload: "" });
+    
+    // Try to link anonymous assessments after successful login
+    if (user && company) {
+      try {
+        await findAndLinkAnonymousAssessments(user.id, company.id);
+      } catch (err) {
+        console.error("Error linking anonymous assessments:", err);
+      }
+    }
+    
     if (state.redirectPathAfterLogin?.includes("tier1-results")) {
       await submitTier1Assessment(data);
       await fetchUserAssessments();
@@ -210,20 +238,16 @@ function AppContent() {
       type: "SET_TIER1_SCORE",
       payload: score,
     });
-    if (hasCompleteProfile) {
-      await submitTier1Assessment({
-        tier1Score: score,
-        tier1Responses: responses,
-      });
-      await fetchUserAssessments();
-      navigate("/tier1-results");
-    } else {
-      dispatch({
-        type: "SET_REDIRECT_PATH_AFTER_LOGIN",
-        payload: "/tier1-results",
-      });
-      navigate("/login");
-    }
+    
+    // Always submit assessment (anonymous if not logged in)
+    await submitTier1Assessment({
+      tier1Score: score,
+      tier1Responses: responses,
+      isAnonymous: !hasCompleteProfile,
+    });
+    
+    // Always show results immediately
+    navigate("/tier1-results");
   };
 
   return (
@@ -284,13 +308,11 @@ function AppContent() {
           path="/tier1-results"
           element={
             state.tier1Score ? (
-              <ProtectedRoute requireAuth={true} redirectTo="/">
-                <Tier1Results
-                  score={state.tier1Score}
-                  onNavigateToTier2={() => navigate("/tier2")}
-                  onRetakeAssessment={handleRetakeAssessment}
-                />
-              </ProtectedRoute>
+              <Tier1Results
+                score={state.tier1Score}
+                onNavigateToTier2={() => navigate("/tier2")}
+                onRetakeAssessment={handleRetakeAssessment}
+              />
             ) : // <Navigate to={"/"} state={{ from: location }} replace />
             null
           }

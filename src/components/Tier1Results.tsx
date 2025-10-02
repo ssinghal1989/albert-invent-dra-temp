@@ -2,13 +2,14 @@ import {
   BarChart3,
   Calendar,
   TrendingUp,
+  UserPlus,
 } from "lucide-react";
 import { useState } from "react";
+import { useAppContext } from "../context/AppContext";
 import { getMaturityLevel, getScoreColor } from "../utils/common";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { RecommendationsPanel } from "./ui/RecommendationsPanel";
 import { ScheduleCallModal, ScheduleCallData } from "./ui/ScheduleCallModal";
-import { useAppContext } from "../context/AppContext";
 import { useAssessment } from "../hooks/useAssesment";
 import { useToast } from "../context/ToastContext";
 import { useCallRequest } from "../hooks/useCallRequest";
@@ -29,6 +30,9 @@ export function Tier1Results({
   const { userTier1Assessments } = useAssessment();
   const { showToast } = useToast();
   const { scheduleRequest } = useCallRequest();
+  
+  // Check if user is logged in
+  const isLoggedIn = !!state.loggedInUserDetails;
 
   const getRecommendations = (score: number): string[] => {
     if (score >= 85) {
@@ -63,10 +67,30 @@ export function Tier1Results({
   const scoreColor = getScoreColor(score.overallScore);
 
   const handleScheduleClick = () => {
-    setShowScheduleModal(true);
+    if (isLoggedIn) {
+      setShowScheduleModal(true);
+    } else {
+      // Redirect to login for scheduling
+      showToast({
+        type: "info",
+        title: "Login Required",
+        message: "Please log in to schedule a follow-up call.",
+        duration: 4000,
+      });
+    }
   };
 
   const handleScheduleSubmit = async (data: ScheduleCallData) => {
+    if (!isLoggedIn) {
+      showToast({
+        type: "error",
+        title: "Authentication Required",
+        message: "Please log in to schedule a call.",
+        duration: 4000,
+      });
+      return;
+    }
+    
     try {
       const { data: result, errors } = await scheduleRequest({
         preferredDate: new Date(data.selectedDate!)
@@ -248,14 +272,32 @@ export function Tier1Results({
 
           {/* Action Buttons */}
           <div className="flex justify-center gap-4 mb-8 flex-wrap">
-            <button
-              onClick={handleScheduleClick}
-              className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[320px] whitespace-nowrap"
-              style={{ backgroundColor: "#05f" }}
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Schedule a follow-up call</span>
-            </button>
+            {isLoggedIn ? (
+              <button
+                onClick={handleScheduleClick}
+                className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[320px] whitespace-nowrap"
+                style={{ backgroundColor: "#05f" }}
+              >
+                <Calendar className="w-5 h-5" />
+                <span>Schedule a follow-up call</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  showToast({
+                    type: "info",
+                    title: "Login to Schedule",
+                    message: "Create an account to schedule follow-up calls and access advanced features.",
+                    duration: 5000,
+                  });
+                }}
+                className="flex items-center justify-center space-x-2 bg-white border-2 border-gray-200 text-white py-4 px-6 rounded-xl font-semibold hover:border-gray-300 hover:shadow-md transition-all duration-200 min-w-[320px] whitespace-nowrap"
+                style={{ backgroundColor: "#05f" }}
+              >
+                <UserPlus className="w-5 h-5" />
+                <span>Sign up to schedule calls</span>
+              </button>
+            )}
 
             <button
               onClick={onNavigateToTier2}
@@ -277,22 +319,36 @@ export function Tier1Results({
 
           {/* Additional Info */}
           <div className="mt-8 text-center">
-            <p className="text-gray-500 text-sm">
-              This assessment provides a high-level overview. For detailed
-              insights and strategic planning, consider our Tier 2 in-depth
-              assessment.
-            </p>
+            {isLoggedIn ? (
+              <p className="text-gray-500 text-sm">
+                This assessment provides a high-level overview. For detailed
+                insights and strategic planning, consider our Tier 2 in-depth
+                assessment.
+              </p>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-blue-800 text-sm font-medium mb-2">
+                  🎉 Great job completing the assessment!
+                </p>
+                <p className="text-blue-700 text-sm">
+                  Sign up to save your results, schedule follow-up calls, and access our in-depth Tier 2 assessment.
+                  Your results will be automatically linked to your account.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Schedule Call Modal */}
-      <ScheduleCallModal
-        isOpen={showScheduleModal}
-        onClose={() => setShowScheduleModal(false)}
-        onSubmit={handleScheduleSubmit}
-        title="Schedule a Follow-up Call"
-      />
+      {isLoggedIn && (
+        <ScheduleCallModal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          onSubmit={handleScheduleSubmit}
+          title="Schedule a Follow-up Call"
+        />
+      )}
     </main>
   );
 }

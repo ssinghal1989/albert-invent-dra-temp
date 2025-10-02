@@ -34,6 +34,10 @@ export interface AppState {
   loginEmail: string;
   loggedInUserDetails: GetCurrentUserOutput | null;
   isLoadingInitialData: boolean;
+  
+  // Anonymous user tracking
+  deviceId: string | null;
+  anonymousAssessmentId: string | null;
 
   // Company data
   company: LocalSchema["Company"]["type"] | null;
@@ -69,6 +73,8 @@ export type AppAction =
   | { type: "SET_LOGIN_FLOW"; payload: "DIRECT" | "VIA_ASSESSMENT" | null }
   | { type: "SET_REDIRECT_PATH_AFTER_LOGIN"; payload: string | undefined }
   | { type: "SET_IS_LOADING_INITIAL_DATA"; payload: boolean }
+  | { type: "SET_DEVICE_ID"; payload: string }
+  | { type: "SET_ANONYMOUS_ASSESSMENT_ID"; payload: string | null }
   | { type: "RESET_STATE" };
 
 const initialState: AppState = {
@@ -76,6 +82,8 @@ const initialState: AppState = {
   company: null,
   userFormData: null,
   loginEmail: "",
+  deviceId: null,
+  anonymousAssessmentId: null,
   tier1Score: null,
   tier1Responses: {},
   sidebarCollapsed: true,
@@ -112,6 +120,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, redirectPathAfterLogin: action.payload };
     case "SET_IS_LOADING_INITIAL_DATA":
       return { ...state, isLoadingInitialData: action.payload };
+    case "SET_DEVICE_ID":
+      return { ...state, deviceId: action.payload };
+    case "SET_ANONYMOUS_ASSESSMENT_ID":
+      return { ...state, anonymousAssessmentId: action.payload };
     case "RESET_STATE":
       return { ...initialState };
     default:

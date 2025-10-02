@@ -3,12 +3,14 @@ import { client, LocalSchema } from "../amplifyClient";
 import { useAppContext } from "../context/AppContext"; // adjust path
 import { Tier1TemplateId, Tier2TemplateId } from "../services/defaultQuestions";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
+import { getDeviceFingerprint } from "../utils/deviceFingerprint";
 
 type Tier1AssessmentRequest = {
   user?: LocalSchema["User"]["type"];
   company?: LocalSchema["Company"]["type"];
   tier1Score?: Tier1ScoreResult;
   tier1Responses?: Record<string, string>;
+  isAnonymous?: boolean;
 };
 
 export function useAssessment() {
@@ -82,37 +84,141 @@ export function useAssessment() {
     company,
     tier1Score,
     tier1Responses,
+    isAnonymous = false,
   }: Tier1AssessmentRequest) => {
     setSubmittingAssesment(true);
     try {
-      if (
-        (!state.tier1Responses && !tier1Score) ||
-        (!state.tier1Score && !tier1Responses) ||
-        (!state.userData && !user) ||
-        (!state.company && !company)
-      ) {
-        console.error("Data missing for submitting Tier 1 assessment");
-        setSubmittingAssesment(false);
-        return;
+      // For anonymous assessments, we don't need user/company data
+      if (!isAnonymous) {
+        if (
+          (!state.tier1Responses && !tier1Score) ||
+          (!state.tier1Score && !tier1Responses) ||
+          (!state.userData && !user) ||
+          (!state.company && !company)
+        ) {
+          console.error("Data missing for submitting Tier 1 assessment");
+          setSubmittingAssesment(false);
+          return;
+        }
+      } else {
+        // For anonymous, we just need score and responses
+        if ((!state.tier1Responses && !tier1Responses) || (!state.tier1Score && !tier1Score)) {
+          console.error("Score and responses missing for anonymous assessment");
+          setSubmittingAssesment(false);
+          return;
+        }
       }
-      // Create a new assessment instance for user
-      const assessmentData = {
-        templateId: Tier1TemplateId, // Assuming a fixed template ID for Tier 1
-        companyId: state.userData?.companyId || company?.id,
-        initiatorUserId: state?.userData?.id || user?.id,
+
+      // Get device fingerprint for anonymous users
+      let deviceFingerprint = null;
+      if (isAnonymous) {
+        deviceFingerprint = getDeviceFingerprint();
+      }
+
+      // Create assessment data
+      const assessmentData: any = {
+        templateId: Tier1TemplateId,
         assessmentType: "TIER1" as "TIER1",
-        score: JSON.stringify(tier1Score || state.tier1Score), // Store the score as JSON
-        responses: JSON.stringify(tier1Responses || state.tier1Responses), // Store the responses as JSON
+        score: JSON.stringify(tier1Score || state.tier1Score),
+        responses: JSON.stringify(tier1Responses || state.tier1Responses),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      await client.models.AssessmentInstance.create(assessmentData);
+
+      // Add user/company data for authenticated users
+      if (!isAnonymous) {
+        assessmentData.companyId = state.userData?.companyId || company?.id;
+        assessmentData.initiatorUserId = state?.userData?.id || user?.id;
+      } else {
+        // Add device fingerprint metadata for anonymous users
+        assessmentData.metadata = JSON.stringify({
+          isAnonymous: true,
+          deviceFingerprint: deviceFingerprint,
+          deviceId: deviceFingerprint?.fingerprint,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      const { data } = await client.models.AssessmentInstance.create(assessmentData);
+      
+      // Store anonymous assessment ID for later linking
+      if (isAnonymous && data) {
+        dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: data.id });
+      }
+
       setSubmittingAssesment(false);
+      return data;
     } catch (err) {
       setSubmittingAssesment(false);
-      console.error("Error in submitting assessment");
+      console.error("Error in submitting assessment:", err);
+      throw err;
     }
   };
+
+  // New method to link anonymous assessment with user after signup
+  const linkAnonymousAssessment = useCallback(
+    async (assessmentId: string, userId: string, companyId: string) => {
+      try {
+        const { data } = await client.models.AssessmentInstance.update({
+          id: assessmentId,
+          initiatorUserId: userId,
+          companyId: companyId,
+          metadata: JSON.stringify({
+            wasAnonymous: true,
+            linkedAt: new Date().toISOString(),
+          }),
+        });
+        
+        // Clear anonymous assessment ID after linking
+        dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: null });
+        
+        return data;
+      } catch (err) {
+        console.error("Error linking anonymous assessment:", err);
+        throw err;
+      }
+    },
+    [dispatch]
+  );
+
+  // Enhanced method to find and link anonymous assessments by device fingerprint
+  const findAndLinkAnonymousAssessments = useCallback(
+    async (userId: string, companyId: string) => {
+      try {
+        const deviceFingerprint = getDeviceFingerprint();
+        
+        // Get all assessment instances to find anonymous ones with matching device fingerprint
+        const { data: allAssessments } = await client.models.AssessmentInstance.list();
+        
+        const anonymousAssessments = allAssessments?.filter(assessment => {
+          if (!assessment.metadata || assessment.initiatorUserId) return false;
+          
+          try {
+            const metadata = JSON.parse(assessment.metadata);
+            return metadata.isAnonymous && 
+                   metadata.deviceId === deviceFingerprint.fingerprint;
+          } catch {
+            return false;
+          }
+        }) || [];
+
+        // Link all matching anonymous assessments
+        const linkedAssessments = [];
+        for (const assessment of anonymousAssessments) {
+          try {
+            const linked = await linkAnonymousAssessment(assessment.id, userId, companyId);
+            if (linked) linkedAssessments.push(linked);
+          } catch (err) {
+            console.error(`Failed to link assessment ${assessment.id}:`, err);
+          }
+        }
+
+        return linkedAssessments;
+      } catch (err) {
+        console.error("Error finding and linking anonymous assessments:", err);
+        setSubmittingAssesment(false);
+        return [];
+      }
 
   const submitTier2Assessment = async (responses: Record<string, string>) => {
     setSubmittingAssesment(true);
@@ -173,6 +279,8 @@ export function useAssessment() {
     submitTier2Assessment,
     fetchUserAssessments,
     updateTier1AssessmentResponse,
+    linkAnonymousAssessment,
+    findAndLinkAnonymousAssessments,
     userAssessments,
     userTier1Assessments,
     userTier2Assessments,
