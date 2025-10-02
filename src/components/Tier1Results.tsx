@@ -51,10 +51,19 @@ export function Tier1Results({
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
   
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
+    console.log("🔐 [updateStateAndNavigateToOtp] Called with nextStep:", nextStep);
+    console.log("🔐 [updateStateAndNavigateToOtp] combinedFormData exists:", !!combinedFormData);
+    
     if (combinedFormData) {
       // For combined form flow, show OTP modal
+      console.log("🔐 [updateStateAndNavigateToOtp] Setting up combined OTP flow");
+      dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
+      dispatch({ type: "SET_LOGIN_EMAIL", payload: combinedFormData.email });
       setShowCombinedForm(false);
       setShowCombinedOtp(true);
+      console.log("🔐 [updateStateAndNavigateToOtp] Combined OTP modal should now be visible");
+    } else {
+      console.log("🔐 [updateStateAndNavigateToOtp] No combinedFormData, using regular flow");
     }
   };
   
@@ -146,9 +155,20 @@ export function Tier1Results({
   };
 
   const handleCombinedFormSubmit = async (data: CombinedScheduleData) => {
+    console.log("📋 [handleCombinedFormSubmit] Starting combined form submission");
+    console.log("📋 [handleCombinedFormSubmit] Form data:", {
+      name: data.name,
+      email: data.email,
+      companyName: data.companyName,
+      jobTitle: data.jobTitle,
+      selectedDate: data.selectedDate,
+      selectedTimesCount: data.selectedTimes.length
+    });
+    
     try {
       // Validate email domain
       if (!ifDomainAlloeded(getDomainFromEmail(data.email)!)) {
+        console.log("❌ [handleCombinedFormSubmit] Invalid email domain:", getDomainFromEmail(data.email));
         showToast({
           type: "error",
           title: "Invalid Email",
@@ -159,12 +179,16 @@ export function Tier1Results({
       }
 
       // Store the form data for later use
+      console.log("💾 [handleCombinedFormSubmit] Storing form data in state");
       setCombinedFormData(data);
       
       // Trigger auth flow
+      console.log("🔐 [handleCombinedFormSubmit] Triggering auth flow for email:", data.email);
       await handleAuth(data.email);
+      console.log("✅ [handleCombinedFormSubmit] Auth flow completed");
       
     } catch (error) {
+      console.error("❌ [handleCombinedFormSubmit] Error during submission:", error);
       showToast({
         type: "error",
         title: "Error",
@@ -178,8 +202,14 @@ export function Tier1Results({
     user?: LocalSchema["User"]["type"];
     company?: LocalSchema["Company"]["type"];
   }) => {
+    console.log("🔐 [handleCombinedOtpVerification] Starting OTP verification");
+    console.log("🔐 [handleCombinedOtpVerification] User exists:", !!data.user);
+    console.log("🔐 [handleCombinedOtpVerification] Company exists:", !!data.company);
+    console.log("🔐 [handleCombinedOtpVerification] combinedFormData exists:", !!combinedFormData);
+    
     try {
       if (!combinedFormData) {
+        console.error("❌ [handleCombinedOtpVerification] No combinedFormData found");
         showToast({
           type: "error",
           title: "Error",
@@ -192,6 +222,7 @@ export function Tier1Results({
       const { user, company } = data;
       
       if (!user || !company) {
+        console.error("❌ [handleCombinedOtpVerification] Missing user or company data");
         showToast({
           type: "error",
           title: "Error",
@@ -201,6 +232,7 @@ export function Tier1Results({
         return;
       }
 
+      console.log("📞 [handleCombinedOtpVerification] Creating schedule request");
       // Create the schedule request with the combined form data
       const { data: result, errors } = await scheduleRequest({
         preferredDate: new Date(combinedFormData.selectedDate!)
@@ -224,10 +256,12 @@ export function Tier1Results({
       });
 
       // Close the OTP modal
+      console.log("🧹 [handleCombinedOtpVerification] Cleaning up modals and data");
       setShowCombinedOtp(false);
       setCombinedFormData(null);
 
       if (result) {
+        console.log("✅ [handleCombinedOtpVerification] Schedule request created successfully");
         showToast({
           type: "success",
           title: "Success!",
@@ -235,6 +269,7 @@ export function Tier1Results({
           duration: 6000,
         });
       } else {
+        console.log("⚠️ [handleCombinedOtpVerification] Schedule request failed but account created");
         showToast({
           type: "warning",
           title: "Partial Success",
@@ -552,12 +587,19 @@ export function Tier1Results({
 
       {/* Combined OTP Verification Modal */}
       {showCombinedOtp && combinedFormData && (
+        <>
+          {console.log("🎭 [Render] Combined OTP Modal should be visible", {
+            showCombinedOtp,
+            hasCombinedFormData: !!combinedFormData,
+            email: combinedFormData?.email
+          })}
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <OtpVerificationPage
               userEmail={combinedFormData.email}
               onVerify={handleCombinedOtpVerification}
               onCancel={() => {
+                console.log("❌ [Combined OTP] User cancelled OTP verification");
                 setShowCombinedOtp(false);
                 setCombinedFormData(null);
                 setShowCombinedForm(true); // Go back to form
@@ -565,6 +607,7 @@ export function Tier1Results({
             />
           </div>
         </div>
+        </>
       )}
 
       {/* Signup Modal for Anonymous Users */}
