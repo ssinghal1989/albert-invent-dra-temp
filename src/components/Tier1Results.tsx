@@ -391,6 +391,48 @@ export function Tier1Results({
       });
     }
   };
+
+  const handleSignupFormSubmit = async (userData: UserData) => {
+    console.log("📝 [handleSignupFormSubmit] Starting signup form submission");
+    console.log("📝 [handleSignupFormSubmit] Form data:", {
+      name: userData.name,
+      email: userData.email,
+      companyName: userData.companyName,
+      jobTitle: userData.jobTitle
+    });
+    
+    try {
+      // Validate email domain
+      if (!ifDomainAlloeded(getDomainFromEmail(userData.email)!)) {
+        console.log("❌ [handleSignupFormSubmit] Invalid email domain:", getDomainFromEmail(userData.email));
+        showToast({
+          type: "error",
+          title: "Invalid Email",
+          message: "Please use your work email address",
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Store the form data for later use
+      console.log("💾 [handleSignupFormSubmit] Storing form data in state");
+      setSignupFormData(userData);
+      
+      // Set pending email to trigger auth flow via useEffect
+      console.log("🔐 [handleSignupFormSubmit] Triggering auth flow for email:", userData.email);
+      setPendingSignupEmail(userData.email);
+      
+    } catch (error) {
+      console.error("❌ [handleSignupFormSubmit] Error during submission:", error);
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "Failed to process your request. Please try again.",
+        duration: 5000,
+      });
+    }
+  };
+
   const handleSignupSubmit = (userData: UserData) => {
     setSignupUserData(userData);
     setShowSignupModal(false);
