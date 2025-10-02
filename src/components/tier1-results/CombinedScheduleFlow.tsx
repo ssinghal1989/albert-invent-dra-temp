@@ -7,7 +7,7 @@ interface CombinedScheduleFlowProps {
   showCombinedForm: boolean;
   showCombinedOtp: boolean;
   combinedFormData: CombinedScheduleData | null;
-  onCombinedFormSubmit: (data: CombinedScheduleData) => void;
+  onCombinedFormSubmit: (data: CombinedScheduleData) => Promise<void>;
   onCombinedOtpVerification: (data: { user?: LocalSchema["User"]["type"]; company?: LocalSchema["Company"]["type"] }) => void;
   onCancelCombinedForm: () => void;
   onCancelCombinedOtp: () => void;
