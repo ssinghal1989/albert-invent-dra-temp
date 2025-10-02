@@ -231,6 +231,74 @@ export function Tier1Results({
     }
   };
 
+  const handleSignupOtpVerification = async (data: {
+    user?: LocalSchema["User"]["type"];
+    company?: LocalSchema["Company"]["type"];
+  }) => {
+    console.log("🔐 [handleSignupOtpVerification] Starting signup OTP verification");
+    console.log("🔐 [handleSignupOtpVerification] User exists:", !!data.user);
+    console.log("🔐 [handleSignupOtpVerification] Company exists:", !!data.company);
+    console.log("🔐 [handleSignupOtpVerification] signupFormData exists:", !!signupFormData);
+    
+    try {
+      if (!signupFormData) {
+        console.error("❌ [handleSignupOtpVerification] No signupFormData found");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Signup data is missing. Please try again.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      const { user, company } = data;
+      
+      if (!user || !company) {
+        console.error("❌ [handleSignupOtpVerification] Missing user or company data");
+        showToast({
+          type: "error",
+          title: "Error",
+          message: "Account creation failed. Please try again.",
+          duration: 5000,
+        });
+        return;
+      }
+
+      console.log("🔗 [handleSignupOtpVerification] Account created successfully, results are now saved");
+      
+      // Close the OTP modal and cleanup
+      console.log("🧹 [handleSignupOtpVerification] Cleaning up modals and data");
+      setShowSignupOtp(false);
+      setSignupFormData(null);
+      setPendingSignupEmail(null);
+
+      // Show success message
+      console.log("✅ [handleSignupOtpVerification] Signup completed successfully");
+      showToast({
+        type: "success",
+        title: "Account Created!",
+        message: "Your account has been created successfully and your results have been saved!",
+        duration: 6000,
+      });
+      
+      // Refresh assessments to show the linked data
+      await fetchUserAssessments();
+      
+    } catch (error) {
+      console.error("❌ [handleSignupOtpVerification] Error in signup OTP verification:", error);
+      setShowSignupOtp(false);
+      setSignupFormData(null);
+      setPendingSignupEmail(null);
+      
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "There was an issue creating your account. Please try again.",
+        duration: 6000,
+      });
+    }
+  };
   const handleCombinedOtpVerification = async (data: {
     user?: LocalSchema["User"]["type"];
     company?: LocalSchema["Company"]["type"];
