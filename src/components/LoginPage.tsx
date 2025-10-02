@@ -19,9 +19,6 @@ interface LoginPageProps {
   buttonText?: string;
   title?: string;
   subtitle?: string;
-  buttonText?: string;
-  title?: string;
-  subtitle?: string;
 }
 
 export function LoginPage({ 
