@@ -356,11 +356,23 @@ export function Tier1Results({
           {/* Additional Info */}
           <div className="mt-8 text-center">
             {isLoggedIn ? (
-              <p className="text-gray-500 text-sm">
-                This assessment provides a high-level overview. For detailed
-                insights and strategic planning, consider our Tier 2 in-depth
-                assessment.
-              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-3xl mx-auto">
+                <p className="text-blue-800 text-base font-medium mb-4">
+                  Your Tier 1 results show that the following Focus Areas stand out as key opportunities:
+                </p>
+                <ul className="text-blue-700 text-base mb-4 space-y-2">
+                  {lowestScoringAreas.map((area, index) => (
+                    <li key={index} className="flex items-start">
+                      <span className="text-blue-600 mr-2">•</span>
+                      <span>{area}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-blue-800 text-base font-medium">
+                  We'd recommend a Tier 2 assessment to dive deeper into these dimensions and 
+                  uncover concrete opportunities to advance your digital transformation.
+                </p>
+              </div>
             ) : (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
                 <p className="text-blue-800 text-sm font-medium mb-2">
