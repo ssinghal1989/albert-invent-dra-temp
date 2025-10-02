@@ -499,5 +499,13 @@ export function Tier1Results({
         </div>
       )}
     </main>
+
+    {/* Combined Schedule Form Modal - For anonymous users */}
+    <CombinedScheduleForm
+      isOpen={showCombinedForm}
+      onClose={() => setShowCombinedForm(false)}
+      onSubmit={handleCombinedFormSubmit}
+      title="Schedule a Follow-up Call"
+    />
   );
 }
