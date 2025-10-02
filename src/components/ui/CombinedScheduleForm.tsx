@@ -374,7 +374,7 @@ export function CombinedScheduleForm({
                     </span>
                   </div>
                 </button>
-                {errors.selectedDate && <p className="mt-1 text-sm text-red-600">{errors.selectedDate}</p>}
+                {/* {errors.selectedDate && <p className="mt-1 text-sm text-red-600">{errors.selectedDate}</p>} */}
 
                 {showCalendar && !showTimeSlots && (
                   <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
