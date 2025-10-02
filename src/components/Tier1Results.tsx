@@ -15,7 +15,6 @@ import { ScheduleCallModal, ScheduleCallData } from "./ui/ScheduleCallModal";
 import { useAssessment } from "../hooks/useAssesment";
 import { useToast } from "../context/ToastContext";
 import { useCallRequest } from "../hooks/useCallRequest";
-import { useAssessment } from "../hooks/useAssesment";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Loader } from "./ui/Loader";
 import { UserData } from "../context/AppContext";
@@ -341,16 +340,57 @@ export function Tier1Results({
           </div>
 
           {/* Priority Recommendation */}
+          {/* Action Buttons - 4 Buttons Layout Above Recommendations */}
+          <div className="mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+              <button
+                onClick={handleScheduleClick}
+                className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
+                style={{ backgroundColor: "#05f" }}
+              >
+                <Calendar className="w-5 h-5 flex-shrink-0" />
+                <span className="leading-tight">Schedule a follow-up call</span>
+              </button>
+
+              <button
+                onClick={onNavigateToTier2}
+                className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
+                style={{ backgroundColor: "#05f" }}
+              >
+                <TrendingUp className="w-5 h-5 flex-shrink-0" />
+                <span className="leading-tight">Request In-Depth Assessment</span>
+              </button>
+
+              <button
+                onClick={handleSignUpToSave}
+                className="flex items-center justify-center space-x-2 text-white py-4 px-4 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 text-center"
+                style={{ backgroundColor: "#05f" }}
+              >
+                <Save className="w-5 h-5 flex-shrink-0" />
+                <span className="leading-tight">Sign up to save your results</span>
+              </button>
+
+              <button
+                onClick={onRetakeAssessment}
+                className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-4 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 text-center"
+              >
+                <BarChart3 className="w-5 h-5 flex-shrink-0" />
+                <span className="leading-tight">Retake Assessment</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Priority Recommendation */}
           <RecommendationsPanel
             scoreData={score}
-            className="mb-12"
+            className="mb-8"
             defaultExpanded={true}
             showToggleButton={false}
             maxRecommendations={10}
           />
 
           {/* Tier 2 Recommendation - Always Show */}
-          <div className="mb-8">
+          <div className="mb-12">
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 max-w-3xl mx-auto">
               <p className="text-blue-800 text-base font-medium mb-4">
                 Your Tier 1 results show that the following Focus Areas stand out as key opportunities:
@@ -370,43 +410,6 @@ export function Tier1Results({
             </div>
           </div>
 
-          {/* Action Buttons - 4 Buttons Layout */}
-          <div className="flex justify-center gap-4 mb-8 flex-wrap">
-            <button
-              onClick={handleScheduleClick}
-              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
-              style={{ backgroundColor: "#05f" }}
-            >
-              <Calendar className="w-5 h-5" />
-              <span>Schedule a follow-up call</span>
-            </button>
-
-            <button
-              onClick={onNavigateToTier2}
-              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
-              style={{ backgroundColor: "#05f" }}
-            >
-              <TrendingUp className="w-5 h-5" />
-              <span>Request In-Depth Assessment</span>
-            </button>
-
-            <button
-              onClick={handleSignUpToSave}
-              className="flex items-center justify-center space-x-2 text-white py-4 px-6 rounded-xl font-semibold hover:opacity-90 hover:shadow-lg transition-all duration-200 min-w-[200px] whitespace-nowrap"
-              style={{ backgroundColor: "#05f" }}
-            >
-              <Save className="w-5 h-5" />
-              <span>Sign up to save your results</span>
-            </button>
-
-            <button
-              onClick={onRetakeAssessment}
-              className="flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 py-4 px-6 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 min-w-[200px] whitespace-nowrap"
-            >
-              <BarChart3 className="w-5 h-5" />
-              <span>Retake Assessment</span>
-            </button>
-          </div>
 
         </div>
       </div>
