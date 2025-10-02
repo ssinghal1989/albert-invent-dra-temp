@@ -158,6 +158,30 @@ export function Tier1Results({
     }
   }, [combinedFormData, pendingAuthEmail, handleAuth]);
 
+  // Handle auth flow after signupFormData is set
+  useEffect(() => {
+    if (signupFormData && pendingSignupEmail) {
+      console.log("🔄 [useEffect] signupFormData is now available, triggering auth");
+      console.log("🔄 [useEffect] signupFormData:", {
+        name: signupFormData.name,
+        email: signupFormData.email,
+        companyName: signupFormData.companyName,
+        jobTitle: signupFormData.jobTitle
+      });
+      
+      const triggerSignupAuth = async () => {
+        try {
+          await handleAuth(pendingSignupEmail);
+          setPendingSignupEmail(null); // Clear pending email
+        } catch (error) {
+          console.error("❌ [useEffect] Error in signup auth flow:", error);
+          setPendingSignupEmail(null);
+        }
+      };
+      
+      triggerSignupAuth();
+    }
+  }, [signupFormData, pendingSignupEmail, handleAuth]);
   // Show loading while fetching data
   if (loading) {
     return (
@@ -300,6 +324,46 @@ export function Tier1Results({
     }
   };
   const handleCombinedOtpVerification = async (data: {
+  const handleSignupFormSubmit = async (userData: UserData) => {
+    console.log("📝 [handleSignupFormSubmit] Starting signup form submission");
+    console.log("📝 [handleSignupFormSubmit] User data:", {
+      name: userData.name,
+      email: userData.email,
+      companyName: userData.companyName,
+      jobTitle: userData.jobTitle
+    });
+    
+    try {
+      // Validate email domain
+      if (!ifDomainAlloeded(getDomainFromEmail(userData.email)!)) {
+        console.log("❌ [handleSignupFormSubmit] Invalid email domain:", getDomainFromEmail(userData.email));
+        showToast({
+          type: "error",
+          title: "Invalid Email",
+          message: "Please use your work email address",
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Store the form data for later use
+      console.log("💾 [handleSignupFormSubmit] Storing form data in state");
+      setSignupFormData(userData);
+      
+      // Set pending email to trigger auth flow via useEffect
+      console.log("🔐 [handleSignupFormSubmit] Triggering auth flow for email:", userData.email);
+      setPendingSignupEmail(userData.email);
+      
+    } catch (error) {
+      console.error("❌ [handleSignupFormSubmit] Error during form submission:", error);
+      showToast({
+        type: "error",
+        title: "Error",
+        message: "Failed to process your signup. Please try again.",
+        duration: 5000,
+      });
+    }
+  };
     user?: LocalSchema["User"]["type"];
     company?: LocalSchema["Company"]["type"];
   }) => {
