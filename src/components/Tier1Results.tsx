@@ -40,7 +40,7 @@ export function Tier1Results({
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [showCombinedForm, setShowCombinedForm] = useState(false);
-  const { state } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { userTier1Assessments, fetchUserAssessments } = useAssessment();
   const { showToast } = useToast();
   const { scheduleRequest } = useCallRequest();
