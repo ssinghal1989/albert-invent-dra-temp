@@ -50,7 +50,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
     useAssessment();
 
   const handleRequestTier2 = () => {
-    navigate('/tier2');
+    navigate("/tier2");
   };
 
   const handleScheduleCall = () => {
@@ -76,8 +76,8 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
           companyDomain: state.company?.primaryDomain!,
           companyName: state.company?.name!,
           userJobTitle: state.userData?.jobTitle!,
-          assessmentScore: userTier1Assessments?.[0] 
-            ? JSON.parse(userTier1Assessments[0].score).overallScore 
+          assessmentScore: userTier1Assessments?.[0]
+            ? JSON.parse(userTier1Assessments[0].score).overallScore
             : 0,
         }),
       });
@@ -348,7 +348,11 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                             </div>
                             <div>
                               <h5 className="font-semibold text-gray-900 mb-1">
-                                Priority Focus ({formatStringToTitle(recommendations[0].pillar || '')})
+                                Priority Focus (
+                                {formatStringToTitle(
+                                  recommendations[0].pillar || ""
+                                )}
+                                )
                               </h5>
                               <p className="text-gray-700 text-sm leading-relaxed">
                                 {recommendations[0].text}
@@ -368,8 +372,12 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                             {recommendations
                               .splice(1, 10)
                               .sort((a, b) => {
-                                const aIndex = a.maturityLevel ? maturityOrder.indexOf(a.maturityLevel) : 999;
-                                const bIndex = b.maturityLevel ? maturityOrder.indexOf(b.maturityLevel) : 999;
+                                const aIndex = a.maturityLevel
+                                  ? maturityOrder.indexOf(a.maturityLevel)
+                                  : 999;
+                                const bIndex = b.maturityLevel
+                                  ? maturityOrder.indexOf(b.maturityLevel)
+                                  : 999;
                                 return aIndex - bIndex;
                               })
                               .map((recommendation, index) => (
@@ -416,49 +424,61 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
             {showRecommendations && firstPreviousAssessment && (
               <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
                 <p className="text-blue-800 text-base font-medium mb-4">
-                  Your Tier 1 results show that the following Focus Areas stand out as key opportunities:
+                  Your Tier 1 results show that the following Focus Areas stand
+                  out as key opportunities:
                 </p>
                 <ul className="text-blue-700 text-base mb-4 space-y-2">
                   {(() => {
-                    const scoreData = JSON.parse(firstPreviousAssessment.score) as Tier1ScoreResult;
-                    
+                    const scoreData = JSON.parse(
+                      firstPreviousAssessment.score
+                    ) as Tier1ScoreResult;
+
                     // Calculate lowest scoring areas (same logic as in Tier1Results)
-                    const getLowestScoringAreas = (scoreData: Tier1ScoreResult): string[] => {
-                      if (!scoreData.focusAreaScores || scoreData.focusAreaScores.length === 0) {
+                    const getLowestScoringAreas = (
+                      scoreData: Tier1ScoreResult
+                    ): string[] => {
+                      if (
+                        !scoreData.focusAreaScores ||
+                        scoreData.focusAreaScores.length === 0
+                      ) {
                         return [];
                       }
 
                       // Priority order for tie-breaking
                       const priorityOrder = [
-                        'Data Architecture and Integration',
-                        'Data Governance and Trust', 
-                        'Smart Lab and Workflow Automation',
-                        'Leadership and Digital Culture',
-                        'Analytics and AI-driven Discovery',
-                        'Manufacturing and Scale-up Integration',
-                        'Skills and Workforce Enablement',
-                        'Customer and Market Feedback Integration',
-                        'Sustainability and Regulatory Intelligence',
-                        'Supplier Ecosystem Connectivity'
+                        "Data Architecture and Integration",
+                        "Data Governance and Trust",
+                        "Smart Lab and Workflow Automation",
+                        "Leadership and Digital Culture",
+                        "Analytics and AI-driven Discovery",
+                        "Manufacturing and Scale-up Integration",
+                        "Skills and Workforce Enablement",
+                        "Customer and Market Feedback Integration",
+                        "Sustainability and Regulatory Intelligence",
+                        "Supplier Ecosystem Connectivity",
                       ];
 
                       // Sort focus areas by score (lowest first), then by priority order for ties
-                      const sortedAreas = [...scoreData.focusAreaScores].sort((a, b) => {
-                        if (a.score !== b.score) {
-                          return a.score - b.score; // Lower scores first
+                      const sortedAreas = [...scoreData.focusAreaScores].sort(
+                        (a, b) => {
+                          if (a.score !== b.score) {
+                            return a.score - b.score; // Lower scores first
+                          }
+                          // If scores are equal, use priority order
+                          const aIndex = priorityOrder.indexOf(a.focusArea);
+                          const bIndex = priorityOrder.indexOf(b.focusArea);
+                          return aIndex - bIndex;
                         }
-                        // If scores are equal, use priority order
-                        const aIndex = priorityOrder.indexOf(a.focusArea);
-                        const bIndex = priorityOrder.indexOf(b.focusArea);
-                        return aIndex - bIndex;
-                      });
+                      );
 
                       // Return the 3 lowest scoring areas
-                      return sortedAreas.slice(0, 3).map(area => area.focusArea);
+                      return sortedAreas
+                        .slice(0, 3)
+                        .map((area) => area.focusArea);
                     };
 
                     const lowestScoringAreas = getLowestScoringAreas(scoreData);
-                    
+
                     return lowestScoringAreas.map((area, index) => (
                       <li key={index} className="flex items-start">
                         <span className="text-blue-600 mr-2">•</span>
@@ -468,8 +488,9 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                   })()}
                 </ul>
                 <p className="text-blue-800 text-base font-medium">
-                  We'd recommend a Tier 2 assessment to dive deeper into these dimensions and 
-                  uncover concrete opportunities to advance your digital transformation.
+                  We'd recommend a Tier 2 assessment to dive deeper into these
+                  dimensions and uncover concrete opportunities to advance your
+                  digital transformation.
                 </p>
               </div>
             )}
@@ -491,15 +512,14 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
 
             <div className="flex justify-between items-center mb-6">
               {/* Request In-Depth Assessment Button - only show if user has completed assessment */}
-              {!!firstPreviousAssessment && (
-                <button
-                  onClick={handleRequestTier2}
-                  className="flex items-center space-x-2 bg-primary text-white py-2 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200"
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  <span>Request In-Depth Assessment</span>
-                </button>
-              )}
+              <LoadingButton
+                onClick={handleRequestTier2}
+                loading={false}
+                loadingText="Submitting..."
+                size="md"
+              >
+                Request In-Depth Assessment
+              </LoadingButton>
 
               <LoadingButton
                 onClick={handleSubmit}
