@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, TrendingUp, ArrowRight } from 'lucide-react';
+import { CheckCircle, TrendingUp, ArrowRight, ExternalLink } from 'lucide-react';
 
 interface HomePageProps {
   onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
@@ -17,6 +17,19 @@ export function HomePage({ onNavigateToTier }: HomePageProps) {
           <p className="text-black text-sm sm:text-base leading-relaxed">
             Take the assessment, then sign up to get your results.
           </p>
+          
+          {/* Blog Post Link */}
+          <div className="mt-4 sm:mt-6">
+            <a
+              href="https://www.albertinvent.com/resources/digital-readiness-assessment"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-2 text-primary hover:text-blue-700 font-medium text-sm sm:text-base transition-colors duration-200 group"
+            >
+              <span>Learn more about the Digital Readiness Assessment</span>
+              <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
+            </a>
+          </div>
         </div>
 
         {/* Assessment Cards */}
