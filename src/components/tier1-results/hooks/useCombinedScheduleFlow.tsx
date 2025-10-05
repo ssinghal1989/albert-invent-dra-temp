@@ -14,8 +14,7 @@ export function useCombinedScheduleFlow(score: any) {
   
   const [showCombinedForm, setShowCombinedForm] = useState(false);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
-  const [combinedFormData, setCombinedFormData] =
-    useState<CombinedScheduleData | null>(null);
+  const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
   const [isAuthInProgress, setIsAuthInProgress] = useState(false);
 
   // Log state changes
@@ -29,9 +28,13 @@ export function useCombinedScheduleFlow(score: any) {
   }, [showCombinedForm, showCombinedOtp, combinedFormData, isAuthInProgress]);
 
   const { showToast } = useToast();
-  const { dispatch } = useAppContext();
+  const { state, dispatch } = useAppContext();
   const { scheduleRequest } = useCallRequest();
-  const { userTier1Assessments, linkAnonymousAssessment, findAndLinkAnonymousAssessments } = useAssessment();
+  const { 
+    userTier1Assessments, 
+    linkAnonymousAssessment, 
+    findAndLinkAnonymousAssessments 
+  } = useAssessment();
 
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
     console.log("🔐 [updateStateAndNavigateToOtp] Called with nextStep:", nextStep);
@@ -92,6 +95,7 @@ export function useCombinedScheduleFlow(score: any) {
       console.log("🚀 [handleCombinedFormSubmit] Starting auth flow");
       setIsAuthInProgress(true);
       console.log("🔄 [handleCombinedFormSubmit] Set isAuthInProgress to true");
+      
       try {
         dispatch({ type: "SET_LOGIN_EMAIL", payload: data.email });
         console.log("📧 [handleCombinedFormSubmit] Dispatched SET_LOGIN_EMAIL:", data.email);
@@ -101,7 +105,8 @@ export function useCombinedScheduleFlow(score: any) {
       } catch (error) {
         console.error("❌ [handleCombinedFormSubmit] Error in auth flow:", error);
         setIsAuthInProgress(false);
-        console.log("🔄 [handleCombinedFormSubmit] Reset isAuthInProgress to false due to error");
+        setCombinedFormData(null);
+        console.log("🔄 [handleCombinedFormSubmit] Reset state due to auth error");
         showToast({
           type: "error",
           title: "Authentication Error",
@@ -112,7 +117,8 @@ export function useCombinedScheduleFlow(score: any) {
     } catch (error) {
       console.error("❌ [handleCombinedFormSubmit] Error during combined form submission:", error);
       setIsAuthInProgress(false);
-      console.log("🔄 [handleCombinedFormSubmit] Reset isAuthInProgress to false due to outer error");
+      setCombinedFormData(null);
+      console.log("🔄 [handleCombinedFormSubmit] Reset state due to outer error");
       showToast({
         type: "error",
         title: "Error",
@@ -194,11 +200,12 @@ export function useCombinedScheduleFlow(score: any) {
           console.error("❌ [handleCombinedOtpVerification] Error linking assessments via device fingerprint:", linkError);
         }
       }
+
       console.log("📅 [handleCombinedOtpVerification] Creating schedule request", {
         userId: user.id,
         companyId: company.id,
         preferredDate: combinedFormData.selectedDate,
-        timesCount: combinedFormData.selectedTimes.length
+        timesCount: combinedFormData.selectedTimes.length,
         linkedAssessmentId
       });
       
