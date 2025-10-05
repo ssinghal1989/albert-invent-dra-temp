@@ -1035,136 +1035,140 @@ export function AdminPanel() {
                     </p>
                   </div>
                 ) : (
-                  paginatedUsers.map((user) => {
-                    const isAlbertInventUser = user.email.includes('@albertinvent.com');
-                    const isCurrentUser = user.id === state.userData?.id;
-                    
-                    return (
-                      <div key={user.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
-                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
-                          <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              isAlbertInventUser ? 'bg-primary' : 'bg-gray-100'
-                            }`}>
-                              <Users className={`w-5 h-5 sm:w-6 sm:h-6 ${
-                                isAlbertInventUser ? 'text-white' : 'text-gray-600'
-                              }`} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
-                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                                  {user.name || 'No name'}
-                                  {isCurrentUser && (
-                                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                      You
+                  <div className="p-4 sm:p-6">
+                    <div className="space-y-4">
+                      {paginatedUsers.map((user) => {
+                        const isCurrentUser = user.id === state.userData?.id;
+                        const isAlbertInventUser = user.email?.includes('@albertinvent.com');
+                        
+                        return (
+                          <div key={user.id} className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
+                              {/* User Info Section - Takes up 8 columns on large screens */}
+                              <div className="lg:col-span-8 flex items-start space-x-4 min-w-0">
+                                <div className="flex-shrink-0">
+                                  <Users className={`w-8 h-8 sm:w-10 sm:h-10 ${isAlbertInventUser ? 'text-primary' : 'text-gray-400'}`} />
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  {/* User Name and Role Badge */}
+                                  <div className="flex items-center space-x-2 mb-3">
+                                    <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                      {user.name || 'No Name'}
+                                    </h3>
+                                    {isCurrentUser && (
+                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                        You
+                                      </span>
+                                    )}
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      user.role === 'superAdmin' 
+                                        ? 'bg-red-100 text-red-800'
+                                        : user.role === 'admin'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
                                     </span>
-                                  )}
-                                </h3>
-                                <div className="flex items-center space-x-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                    user.role === 'superAdmin' ? 'bg-red-100 text-red-800' :
-                                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                    'bg-gray-100 text-gray-800'
+                                    {isAlbertInventUser && (
+                                      <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
+                                        Albert Invent
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* User Details in 2 columns */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                                    {/* Left Column */}
+                                    <div className="space-y-2">
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Mail className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">{user.email}</span>
+                                      </div>
+                                      {user.jobTitle && (
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                          <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                          <span className="truncate">{user.jobTitle}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Right Column */}
+                                    <div className="space-y-2">
+                                      {user.company?.name && (
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                          <Building className="w-4 h-4 flex-shrink-0" />
+                                          {user.company.primaryDomain ? (
+                                            <button
+                                              onClick={() => window.open(getCompanyUrl(user.company!.primaryDomain!), '_blank', 'noopener,noreferrer')}
+                                              className="text-primary hover:text-blue-700 hover:underline truncate text-left"
+                                            >
+                                              {user.company.name}
+                                            </button>
+                                          ) : (
+                                            <span className="truncate">{user.company.name}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                                        <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                                          month: 'short', 
+                                          day: 'numeric', 
+                                          year: 'numeric' 
+                                        })}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Role Management Section - Takes up 4 columns on large screens */}
+                              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-0 lg:space-y-2">
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <span className="text-gray-600 font-medium">Current Role:</span>
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    user.role === 'superAdmin' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : user.role === 'admin'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-gray-100 text-gray-800'
                                   }`}>
-                                    {user.role === 'superAdmin' ? 'Super Admin' : 
-                                     user.role === 'admin' ? 'Admin' : 'User'}
+                                    {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
                                   </span>
                                 </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
-                                <div className="flex items-center space-x-2">
-                                  <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                  <span className="truncate">{user.email}</span>
-                                </div>
-                                {user.jobTitle && (
+                                
+                                {!isCurrentUser && (
                                   <div className="flex items-center space-x-2">
-                                    <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span className="truncate">{user.jobTitle}</span>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="mt-3 space-y-2">
-                                {user.company?.name && (
-                                  <div className="flex items-center space-x-2">
-                                    <Building className="w-4 h-4 flex-shrink-0" />
-                                    {user.company.primaryDomain ? (
-                                      <a
-                                        href={getCompanyUrl(user.company.primaryDomain)}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
-                                      >
-                                        {user.company.name}
-                                      </a>
-                                    ) : (
-                                      <span className="truncate">{user.company.name}</span>
+                                    <label className="text-sm font-medium text-gray-600">Change to:</label>
+                                    <select
+                                      value={user.role || 'user'}
+                                      onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
+                                      disabled={updatingRoles[user.id]}
+                                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                                    >
+                                      <option value="user">User</option>
+                                      <option value="admin">Admin</option>
+                                      <option value="superAdmin">Super Admin</option>
+                                    </select>
+                                    {updatingRoles[user.id] && (
+                                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
                                     )}
                                   </div>
                                 )}
-                                <div className="flex items-center space-x-2">
-                                  <Calendar className="w-4 h-4 flex-shrink-0" />
-                                  <span className="text-xs text-gray-500">
-                                    Joined {new Date(user.createdAt || '').toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric'
-                                    })}
-                                  </span>
-                                </div>
+                                
+                                {isCurrentUser && (
+                                  <div className="text-sm text-gray-500 italic">
+                                    Cannot change own role
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
-
-                          {/* Role Management */}
-                          {!isCurrentUser && (
-                            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
-                              {/* Current Role Badge */}
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-700">Current Role:</span>
-                                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
-                                  user.role === 'superAdmin' 
-                                    ? 'bg-red-100 text-red-800'
-                                    : user.role === 'admin'
-                                    ? 'bg-purple-100 text-purple-800'
-                                    : 'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
-                                </span>
-                              </div>
-                              
-                              {/* Role Selector */}
-                              <div className="flex items-center space-x-2">
-                                <span className="text-sm font-medium text-gray-700">Change to:</span>
-                                <select
-                                  value={user.role || 'user'}
-                                  onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
-                                  disabled={isCurrentUser || updatingRoles[user.id]}
-                                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                >
-                                  <option value="user">User</option>
-                                  <option value="admin">Admin</option>
-                                  <option value="superAdmin">Super Admin</option>
-                                </select>
-                              </div>
-                              
-                              {updatingRoles[user.id] && (
-                                <div className="flex items-center space-x-2 text-primary">
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span className="text-sm">Updating...</span>
-                                </div>
-                              )}
-                              
-                              {updatingUser === user.id && (
-                                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+                        );
+                      })}
+                    </div>
+                  </div>
                 )
               )}
             </div>
