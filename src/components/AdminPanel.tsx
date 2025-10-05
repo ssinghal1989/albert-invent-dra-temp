@@ -493,7 +493,11 @@ export function AdminPanel() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
               <input
                 type="text"
-                placeholder={currentView === 'companies' ? "Search companies..." : "Search call requests..."}
+                placeholder={
+                  currentView === 'companies' ? "Search companies..." : 
+                  currentView === 'callRequests' ? "Search call requests..." : 
+                  "Search users..."
+                }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
@@ -516,8 +520,27 @@ export function AdminPanel() {
               </div>
             )}
             
+            {/* Filter for Users */}
+            {currentView === 'users' && isSuperAdmin && (
+              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</span>
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value as 'ALL' | 'ALBERTINVENT')}
+                  className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-sm sm:text-base"
+                >
+                  <option value="ALL">All Users</option>
+                  <option value="ALBERTINVENT">Albert Invent Only</option>
+                </select>
+              </div>
+            )}
+            
             <button
-              onClick={currentView === 'companies' ? fetchCompanies : fetchCallRequests}
+              onClick={
+                currentView === 'companies' ? fetchCompanies : 
+                currentView === 'callRequests' ? fetchCallRequests : 
+                fetchUsers
+              }
               className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-200 transition-colors duration-200 whitespace-nowrap text-sm sm:text-base"
             >
               Refresh
@@ -529,19 +552,21 @@ export function AdminPanel() {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              {currentView === 'companies' ? 'Companies Management' : 'Call Requests'}
+              {currentView === 'companies' ? 'Companies Management' : 
+               currentView === 'callRequests' ? 'Call Requests' : 
+               'User Management'}
             </h2>
             <p className="text-gray-600 text-sm sm:text-base">
-              {currentView === 'companies' 
-                ? 'Manage company settings and view associated users'
-                : `View and manage call requests ${currentView === 'callRequests' ? `(${filteredCallRequests.length} total)` : ''}`
+              {currentView === 'companies' ? 'Manage company settings and view associated users' :
+               currentView === 'callRequests' ? `View and manage call requests (${filteredCallRequests.length} total)` :
+               `Manage user roles and permissions (${filteredUsers.length} total)`
               }
             </p>
           </div>
 
           {loading ? (
             <div className="p-6 sm:p-8">
-              <Loader text={`Loading ${currentView}...`} size="lg" />
+              <Loader text={`Loading ${currentView === 'callRequests' ? 'call requests' : currentView}...`} size="lg" />
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
@@ -679,7 +704,7 @@ export function AdminPanel() {
                   })
                 )
                 */
-              ) : (
+              ) : currentView === 'callRequests' ? (
                 // Call Requests View
                 paginatedCallRequests.length === 0 ? (
                   <div className="p-6 sm:p-8 text-center">
@@ -888,17 +913,135 @@ export function AdminPanel() {
                       </div>
                     );
                   })
+              ) : (
+                // Users View - Super Admin Only
+                filteredUsers.length === 0 ? (
+                  <div className="p-6 sm:p-8 text-center">
+                    <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      {users.length === 0 ? 'No users found' : 'No users match your search'}
+                    </p>
+                  </div>
+                ) : (
+                  paginatedUsers.map((user) => {
+                    const isAlbertInventUser = user.email.includes('@albertinvent.com');
+                    const isCurrentUser = user.id === state.userData?.id;
+                    
+                    return (
+                      <div key={user.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                          <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              isAlbertInventUser ? 'bg-primary' : 'bg-gray-100'
+                            }`}>
+                              <Users className={`w-5 h-5 sm:w-6 sm:h-6 ${
+                                isAlbertInventUser ? 'text-white' : 'text-gray-600'
+                              }`} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                  {user.name || 'No name'}
+                                  {isCurrentUser && (
+                                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                      You
+                                    </span>
+                                  )}
+                                </h3>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    user.role === 'superAdmin' ? 'bg-red-100 text-red-800' :
+                                    user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {user.role === 'superAdmin' ? 'Super Admin' : 
+                                     user.role === 'admin' ? 'Admin' : 'User'}
+                                  </span>
+                                  {isAlbertInventUser && (
+                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                      Albert Invent
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="truncate">{user.email}</span>
+                                  </div>
+                                  {user.jobTitle && (
+                                    <div className="flex items-center space-x-2">
+                                      <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                      <span className="truncate">{user.jobTitle}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  {user.company && (
+                                    <div className="flex items-center space-x-2">
+                                      <Building className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                      <button
+                                        onClick={() => openCompanyDomain(user.company.primaryDomain)}
+                                        className="text-primary hover:text-blue-700 hover:underline transition-colors duration-200 truncate text-left"
+                                      >
+                                        {user.company.name || user.company.primaryDomain}
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span>Joined {formatDate(user.createdAt)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Role Management - Only for Super Admin and not for current user */}
+                          {isSuperAdmin && !isCurrentUser && (
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+                                <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Role:</span>
+                                <select
+                                  value={user.role}
+                                  onChange={(e) => updateUserRole(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
+                                  disabled={updatingUser === user.id}
+                                  className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-xs sm:text-sm"
+                                >
+                                  <option value="user">User</option>
+                                  <option value="admin">Admin</option>
+                                  <option value="superAdmin">Super Admin</option>
+                                </select>
+                              </div>
+                              
+                              {updatingUser === user.id && (
+                                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
                 )
               )}
             </div>
           )}
           
           {/* Pagination for Call Requests */}
-          {currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage && (
+          {((currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage) ||
+            (currentView === 'users' && filteredUsers.length > itemsPerPage)) && (
             <div className="p-4 sm:p-6 border-t border-gray-200">
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                  Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests
+                  {currentView === 'callRequests' ? (
+                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests</>
+                  ) : (
+                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users</>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-center space-x-2">
@@ -915,14 +1058,15 @@ export function AdminPanel() {
                   </button>
                   
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    {Array.from({ length: Math.min(5, currentView === 'callRequests' ? totalPages : totalUserPages) }, (_, i) => {
                       let pageNumber;
-                      if (totalPages <= 5) {
+                      const pages = currentView === 'callRequests' ? totalPages : totalUserPages;
+                      if (pages <= 5) {
                         pageNumber = i + 1;
                       } else if (currentPage <= 3) {
                         pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
+                      } else if (currentPage >= pages - 2) {
+                        pageNumber = pages - 4 + i;
                       } else {
                         pageNumber = currentPage - 2 + i;
                       }
@@ -944,10 +1088,10 @@ export function AdminPanel() {
                   </div>
                   
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, currentView === 'callRequests' ? totalPages : totalUserPages))}
+                    disabled={currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)}
                     className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                      currentPage === totalPages
+                      currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
