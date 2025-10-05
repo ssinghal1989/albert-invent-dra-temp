@@ -13,7 +13,7 @@ export function useCombinedScheduleFlow(score: any) {
   const [showCombinedForm, setShowCombinedForm] = useState(false);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
   const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
-  const [pendingAuthEmail, setPendingAuthEmail] = useState<string | null>(null);
+  const [isAuthInProgress, setIsAuthInProgress] = useState(false);
   
   const { showToast } = useToast();
   const { dispatch } = useAppContext();
@@ -26,29 +26,21 @@ export function useCombinedScheduleFlow(score: any) {
       dispatch({ type: "SET_LOGIN_EMAIL", payload: combinedFormData.email });
       setShowCombinedForm(false);
       setShowCombinedOtp(true);
+      setIsAuthInProgress(false);
     }
   };
 
   const { handleAuth } = useAuthFlow(updateStateAndNavigateToOtp);
 
-  // Handle auth flow after combinedFormData is set
-  useEffect(() => {
-    if (combinedFormData && pendingAuthEmail) {
-      const triggerAuth = async () => {
-        try {
-          await handleAuth(pendingAuthEmail);
-          setPendingAuthEmail(null);
-        } catch (error) {
-          console.error("Error in auth flow:", error);
-          setPendingAuthEmail(null);
-        }
-      };
-      triggerAuth();
-    }
-  }, [combinedFormData, pendingAuthEmail, handleAuth]);
 
   const handleCombinedFormSubmit = async (data: CombinedScheduleData) => {
     try {
+      // Prevent multiple submissions
+      if (isAuthInProgress) {
+        console.log("Auth already in progress, skipping...");
+        return;
+      }
+
       // Validate email domain
       if (!ifDomainAlloeded(getDomainFromEmail(data.email)!)) {
         showToast({
@@ -63,11 +55,24 @@ export function useCombinedScheduleFlow(score: any) {
       // Store the form data for later use
       setCombinedFormData(data);
       
-      // Set pending email to trigger auth flow via useEffect
-      setPendingAuthEmail(data.email);
+      // Trigger auth flow directly
+      setIsAuthInProgress(true);
+      try {
+        await handleAuth(data.email);
+      } catch (error) {
+        console.error("Error in auth flow:", error);
+        setIsAuthInProgress(false);
+        showToast({
+          type: "error",
+          title: "Authentication Error",
+          message: "Failed to send verification code. Please try again.",
+          duration: 5000,
+        });
+      }
       
     } catch (error) {
       console.error("Error during combined form submission:", error);
+      setIsAuthInProgress(false);
       showToast({
         type: "error",
         title: "Error",
@@ -129,6 +134,7 @@ export function useCombinedScheduleFlow(score: any) {
       // Close the OTP modal
       setShowCombinedOtp(false);
       setCombinedFormData(null);
+      setIsAuthInProgress(false);
 
       if (result) {
         showToast({
@@ -149,6 +155,7 @@ export function useCombinedScheduleFlow(score: any) {
       console.error("Error in combined OTP verification:", error);
       setShowCombinedOtp(false);
       setCombinedFormData(null);
+      setIsAuthInProgress(false);
       
       showToast({
         type: "error",
@@ -165,11 +172,13 @@ export function useCombinedScheduleFlow(score: any) {
 
   const handleCancelCombinedForm = () => {
     setShowCombinedForm(false);
+    setIsAuthInProgress(false);
   };
 
   const handleCancelCombinedOtp = () => {
     setShowCombinedOtp(false);
     setCombinedFormData(null);
+    setIsAuthInProgress(false);
     setShowCombinedForm(true); // Go back to form
   };
 
