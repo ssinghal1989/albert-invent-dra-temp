@@ -242,6 +242,48 @@ export function AdminPanel() {
     }
   };
 
+  const updateUserRole = async (userId: string, newRole: 'user' | 'admin' | 'superAdmin') => {
+    try {
+      setUpdatingUser(userId);
+      
+      const { data } = await client.models.User.update({
+        id: userId,
+        role: newRole
+      });
+
+      if (data) {
+        // Update local state
+        setUsers(prev => 
+          prev.map(u => 
+            u.id === userId 
+              ? { ...u, role: newRole }
+              : u
+          )
+        );
+
+        showToast({
+          type: 'success',
+          title: 'Role Updated',
+          message: `User role updated to ${newRole}`
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      showToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Failed to update user role'
+      });
+    } finally {
+      setUpdatingUser(null);
+    }
+  };
+
+  const openCompanyDomain = (domain: string) => {
+    const url = domain.startsWith('http') ? domain : `https://${domain}`;
+    window.open(url, '_blank');
+  };
+
   const toggleCompanyExpansion = (companyId: string) => {
     setExpandedCompanies(prev => {
       const newSet = new Set(prev);
@@ -385,16 +427,31 @@ export function AdminPanel() {
     return matchesSearch && matchesFilter;
   });
 
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = (
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const matchesFilter = userFilter === 'ALL' || 
+      (userFilter === 'ALBERTINVENT' && user.email.includes('@albertinvent.com'));
+    
+    return matchesSearch && matchesFilter;
+  });
+
   // Pagination logic
   const totalPages = Math.ceil(filteredCallRequests.length / itemsPerPage);
+  const totalUserPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedCallRequests = filteredCallRequests.slice(startIndex, endIndex);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   // Reset to first page when filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [callRequestFilter, searchTerm]);
+  }, [callRequestFilter, searchTerm, userFilter]);
 
   if (!isAdmin) {
     return (
@@ -913,6 +970,7 @@ export function AdminPanel() {
                       </div>
                     );
                   })
+                )
               ) : (
                 // Users View - Super Admin Only
                 filteredUsers.length === 0 ? (
