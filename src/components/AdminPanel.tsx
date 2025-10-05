@@ -727,7 +727,18 @@ export function AdminPanel() {
                                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                               >
                                 {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                              {metadata.companyDomain ? (
+                                <a
+                                  href={getCompanyUrl(metadata.companyDomain)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
+                                >
+                                  {metadata.companyName}
+                                </a>
+                              ) : (
+                                <span className="truncate">{metadata.companyName}</span>
+                              )}
                                 ) : (
                                   <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                                 )}
@@ -1007,14 +1018,14 @@ export function AdminPanel() {
                       <div key={user.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
                         <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
                           <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                               isAlbertInventUser ? 'bg-primary' : 'bg-gray-100'
-                            }`}>
+                            <div className="flex items-start space-x-3 flex-1 min-w-0">
                               <Users className={`w-5 h-5 sm:w-6 sm:h-6 ${
                                 isAlbertInventUser ? 'text-white' : 'text-gray-600'
                               }`} />
                             </div>
-                            <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
                               <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                                   {user.name || 'No name'}
@@ -1031,18 +1042,9 @@ export function AdminPanel() {
                                     'bg-gray-100 text-gray-800'
                                   }`}>
                                     {user.role === 'superAdmin' ? 'Super Admin' : 
-                                     user.role === 'admin' ? 'Admin' : 'User'}
-                                  </span>
-                                  {isAlbertInventUser && (
-                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                      Albert Invent
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
                               
                               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                                <div className="space-y-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
                                   <div className="flex items-center space-x-2">
                                     <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                     <span className="truncate">{user.email}</span>
@@ -1055,43 +1057,64 @@ export function AdminPanel() {
                                   )}
                                 </div>
                                 
-                                <div className="space-y-1">
-                                  {user.company && (
+                                <div className="mt-3 space-y-2">
+                                  {user.company?.name && (
                                     <div className="flex items-center space-x-2">
-                                      <Building className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                      <button
-                                        onClick={() => openCompanyDomain(user.company.primaryDomain)}
-                                        className="text-primary hover:text-blue-700 hover:underline transition-colors duration-200 truncate text-left"
-                                      >
-                                        {user.company.name || user.company.primaryDomain}
-                                      </button>
+                                      <Building className="w-4 h-4 flex-shrink-0" />
+                                      {user.company.primaryDomain ? (
+                                        <a
+                                          href={getCompanyUrl(user.company.primaryDomain)}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
+                                        >
+                                          {user.company.name}
+                                        </a>
+                                      ) : (
+                                        <span className="truncate">{user.company.name}</span>
+                                      )}
                                     </div>
                                   )}
                                   <div className="flex items-center space-x-2">
-                                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span>Joined {formatDate(user.createdAt)}</span>
-                                  </div>
-                                </div>
+                                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                                    <span className="text-xs text-gray-500">
+                                      Joined {new Date(user.createdAt || '').toLocaleDateString('en-US', {
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+                              {/* Current Role Badge */}
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-gray-700">Current Role:</span>
+                                <span className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                  user.role === 'superAdmin' 
+                                    ? 'bg-red-100 text-red-800'
+                                    : user.role === 'admin'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
+                                </span>
                               </div>
-                            </div>
-                          </div>
-
-                          {/* Role Management - Only for Super Admin and not for current user */}
-                          {isSuperAdmin && !isCurrentUser && (
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
-                                <span className="text-xs sm:text-sm font-medium text-gray-700 whitespace-nowrap">Role:</span>
+                              
+                              {/* Role Selector */}
+                              <div className="flex items-center space-x-2">
+                                <span className="text-sm font-medium text-gray-700">Change to:</span>
                                 <select
-                                  value={user.role}
-                                  onChange={(e) => updateUserRole(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
-                                  disabled={updatingUser === user.id}
-                                  className="px-2 sm:px-3 py-1 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-xs sm:text-sm"
+                                  value={user.role || 'user'}
+                                  onChange={(e) => handleRoleChange(user.id, e.target.value as any)}
+                                  disabled={isCurrentUser || updatingRoles[user.id]}
+                                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                                 >
                                   <option value="user">User</option>
                                   <option value="admin">Admin</option>
                                   <option value="superAdmin">Super Admin</option>
                                 </select>
                               </div>
+                              
+                              {updatingRoles[user.id] && (
+                                <div className="flex items-center space-x-2 text-primary">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span className="text-sm">Updating...</span>
+                                </select>
+                              )}
                               
                               {updatingUser === user.id && (
                                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
