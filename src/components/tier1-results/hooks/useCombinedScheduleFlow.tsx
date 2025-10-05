@@ -1,40 +1,38 @@
-import { useState, useEffect } from 'react';
-import { useToast } from '../../../context/ToastContext';
-import { useAuthFlow } from '../../../hooks/useAuthFlow';
-import { useCallRequest } from '../../../hooks/useCallRequest';
-import { useAssessment } from '../../../hooks/useAssesment';
-import { LOGIN_NEXT_STEP, useAppContext } from '../../../context/AppContext';
-import { CombinedScheduleData } from '../../ui/CombinedScheduleForm';
-import { getDomainFromEmail } from '../../../utils/common';
-import { ifDomainAlloeded } from '../../../utils/domain';
-import { LocalSchema } from '../../../amplifyClient';
+import { useState, useEffect } from "react";
+import { useToast } from "../../../context/ToastContext";
+import { useAuthFlow } from "../../../hooks/useAuthFlow";
+import { useCallRequest } from "../../../hooks/useCallRequest";
+import { useAssessment } from "../../../hooks/useAssesment";
+import { LOGIN_NEXT_STEP, useAppContext } from "../../../context/AppContext";
+import { CombinedScheduleData } from "../../ui/CombinedScheduleForm";
+import { getDomainFromEmail } from "../../../utils/common";
+import { ifDomainAlloeded } from "../../../utils/domain";
+import { LocalSchema } from "../../../amplifyClient";
 
 export function useCombinedScheduleFlow(score: any) {
   const [showCombinedForm, setShowCombinedForm] = useState(false);
   const [showCombinedOtp, setShowCombinedOtp] = useState(false);
-  const [combinedFormData, setCombinedFormData] = useState<CombinedScheduleData | null>(null);
+  const [combinedFormData, setCombinedFormData] =
+    useState<CombinedScheduleData | null>(null);
   const [isAuthInProgress, setIsAuthInProgress] = useState(false);
-  
+
   const { showToast } = useToast();
   const { dispatch } = useAppContext();
   const { scheduleRequest } = useCallRequest();
   const { userTier1Assessments } = useAssessment();
 
   const updateStateAndNavigateToOtp = (nextStep: LOGIN_NEXT_STEP) => {
-    if (combinedFormData) {
-      dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
-      dispatch({ type: "SET_LOGIN_EMAIL", payload: combinedFormData.email });
-      // Set OTP screen to show and hide form
-      setTimeout(() => {
-        setShowCombinedForm(false);
-        setShowCombinedOtp(true);
-        setIsAuthInProgress(false);
-      }, 100);
-    }
+    console.log("updateStateAndNavigateToOtp", updateStateAndNavigateToOtp);
+    dispatch({ type: "LOGIN_NEXT_STEP", payload: nextStep });
+    // Set OTP screen to show and hide form
+    setTimeout(() => {
+      setShowCombinedForm(false);
+      setShowCombinedOtp(true);
+      setIsAuthInProgress(false);
+    }, 100);
   };
 
   const { handleAuth } = useAuthFlow(updateStateAndNavigateToOtp);
-
 
   const handleCombinedFormSubmit = async (data: CombinedScheduleData) => {
     try {
@@ -57,10 +55,11 @@ export function useCombinedScheduleFlow(score: any) {
 
       // Store the form data for later use
       setCombinedFormData(data);
-      
+
       // Trigger auth flow directly
       setIsAuthInProgress(true);
       try {
+        dispatch({ type: "SET_LOGIN_EMAIL", payload: data.email });
         await handleAuth(data.email);
       } catch (error) {
         console.error("Error in auth flow:", error);
@@ -72,7 +71,6 @@ export function useCombinedScheduleFlow(score: any) {
           duration: 5000,
         });
       }
-      
     } catch (error) {
       console.error("Error during combined form submission:", error);
       setIsAuthInProgress(false);
@@ -101,7 +99,7 @@ export function useCombinedScheduleFlow(score: any) {
       }
 
       const { user, company } = data;
-      
+
       if (!user || !company) {
         showToast({
           type: "error",
@@ -143,14 +141,16 @@ export function useCombinedScheduleFlow(score: any) {
         showToast({
           type: "success",
           title: "Success!",
-          message: "Your account has been created and follow-up call has been scheduled. We'll contact you soon!",
+          message:
+            "Your account has been created and follow-up call has been scheduled. We'll contact you soon!",
           duration: 6000,
         });
       } else {
         showToast({
           type: "warning",
           title: "Partial Success",
-          message: "Your account was created successfully, but there was an issue scheduling the call. Please try scheduling again.",
+          message:
+            "Your account was created successfully, but there was an issue scheduling the call. Please try scheduling again.",
           duration: 6000,
         });
       }
@@ -159,11 +159,12 @@ export function useCombinedScheduleFlow(score: any) {
       setShowCombinedOtp(false);
       setCombinedFormData(null);
       setIsAuthInProgress(false);
-      
+
       showToast({
         type: "error",
         title: "Error",
-        message: "There was an issue processing your request. Your account may have been created - please try logging in.",
+        message:
+          "There was an issue processing your request. Your account may have been created - please try logging in.",
         duration: 6000,
       });
     }
@@ -194,6 +195,6 @@ export function useCombinedScheduleFlow(score: any) {
     handleCombinedOtpVerification,
     handleScheduleClick,
     handleCancelCombinedForm,
-    handleCancelCombinedOtp
+    handleCancelCombinedOtp,
   };
 }
