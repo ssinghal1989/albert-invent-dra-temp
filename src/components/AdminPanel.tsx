@@ -973,7 +973,7 @@ export function AdminPanel() {
                 )
               ) : (
                 // Users View - Super Admin Only
-                filteredUsers.length === 0 ? (
+                paginatedUsers.length === 0 ? (
                   <div className="p-6 sm:p-8 text-center">
                     <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">
@@ -987,8 +987,8 @@ export function AdminPanel() {
                     
                     return (
                       <div key={user.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
-                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                          <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
+                          <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
                             <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                               isAlbertInventUser ? 'bg-primary' : 'bg-gray-100'
                             }`}>
