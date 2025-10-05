@@ -18,7 +18,8 @@ import {
   ChevronUp,
   Mail,
   Briefcase,
-  BarChart3
+  BarChart3,
+  Loader2
 } from 'lucide-react';
 import { client } from '../amplifyClient';
 import { useAppContext } from '../context/AppContext';
@@ -75,6 +76,7 @@ export function AdminPanel() {
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingCompany, setUpdatingCompany] = useState<string | null>(null);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [updatingRoles, setUpdatingRoles] = useState<Record<string, boolean>>({});
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(new Set());
   const [tier1Questions, setTier1Questions] = useState<any[]>([]);
@@ -279,9 +281,50 @@ export function AdminPanel() {
     }
   };
 
+  const handleRoleChange = async (userId: string, newRole: 'user' | 'admin' | 'superAdmin') => {
+    try {
+      setUpdatingRoles(prev => ({ ...prev, [userId]: true }));
+      
+      const { data } = await client.models.User.update({
+        id: userId,
+        role: newRole
+      });
+
+      if (data) {
+        // Update local state
+        setUsers(prev => 
+          prev.map(u => 
+            u.id === userId 
+              ? { ...u, role: newRole }
+              : u
+          )
+        );
+
+        showToast({
+          type: 'success',
+          title: 'Role Updated',
+          message: `User role updated to ${newRole}`
+        });
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      showToast({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Failed to update user role'
+      });
+    } finally {
+      setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
+    }
+  };
+
   const openCompanyDomain = (domain: string) => {
     const url = domain.startsWith('http') ? domain : `https://${domain}`;
     window.open(url, '_blank');
+  };
+
+  const getCompanyUrl = (domain: string) => {
+    return domain.startsWith('http') ? domain : `https://${domain}`;
   };
 
   const toggleCompanyExpansion = (companyId: string) => {
@@ -705,40 +748,11 @@ export function AdminPanel() {
                               </LoadingButton>
 
                               <button
-                              {(() => {
-                                const companyName = request.metadata ? JSON.parse(request.metadata as string)?.companyName : 'N/A';
-                                const companyDomain = request.metadata ? JSON.parse(request.metadata as string)?.companyDomain : null;
-                                
-                                if (companyDomain && companyName !== 'N/A') {
-                                  return (
-                                    <a
-                                      href={companyDomain.startsWith('http') ? companyDomain : `https://${companyDomain}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:text-blue-700 hover:underline transition-colors duration-200 truncate"
-                                    >
-                                      {companyName}
-                                    </a>
-                                  );
-                                } else {
-                                  return <span className="truncate">{companyName}</span>;
-                                }
-                              })()}
+                                onClick={() => toggleCompanyExpansion(company.id)}
                                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                               >
                                 {isExpanded ? (
-                              {metadata.companyDomain ? (
-                                <a
-                                  href={getCompanyUrl(metadata.companyDomain)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
-                                >
-                                  {metadata.companyName}
-                                </a>
-                              ) : (
-                                <span className="truncate">{metadata.companyName}</span>
-                              )}
+                                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
                                 ) : (
                                   <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
                                 )}
@@ -837,7 +851,18 @@ export function AdminPanel() {
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Building className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span className="truncate">{metadata.companyName || 'No company'}</span>
+                                    {metadata.companyDomain ? (
+                                      <a
+                                        href={getCompanyUrl(metadata.companyDomain)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
+                                      >
+                                        {metadata.companyName}
+                                      </a>
+                                    ) : (
+                                      <span className="truncate">{metadata.companyName}</span>
+                                    )}
                                   </div>
                                   {metadata.userJobTitle && (
                                     <div className="flex items-center space-x-2">
@@ -1018,14 +1043,14 @@ export function AdminPanel() {
                       <div key={user.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
                         <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0">
                           <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
-                          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
                               isAlbertInventUser ? 'bg-primary' : 'bg-gray-100'
-                            <div className="flex items-start space-x-3 flex-1 min-w-0">
+                            }`}>
                               <Users className={`w-5 h-5 sm:w-6 sm:h-6 ${
                                 isAlbertInventUser ? 'text-white' : 'text-gray-600'
                               }`} />
                             </div>
-                                <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <div className="flex-1 min-w-0">
                               <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                                   {user.name || 'No name'}
@@ -1042,43 +1067,58 @@ export function AdminPanel() {
                                     'bg-gray-100 text-gray-800'
                                   }`}>
                                     {user.role === 'superAdmin' ? 'Super Admin' : 
-                              
-                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 text-xs sm:text-sm text-gray-600">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
-                                  <div className="flex items-center space-x-2">
-                                    <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span className="truncate">{user.email}</span>
-                                  </div>
-                                  {user.jobTitle && (
-                                    <div className="flex items-center space-x-2">
-                                      <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                      <span className="truncate">{user.jobTitle}</span>
-                                    </div>
-                                  )}
+                                     user.role === 'admin' ? 'Admin' : 'User'}
+                                  </span>
                                 </div>
-                                
-                                <div className="mt-3 space-y-2">
-                                  {user.company?.name && (
-                                    <div className="flex items-center space-x-2">
-                                      <Building className="w-4 h-4 flex-shrink-0" />
-                                      {user.company.primaryDomain ? (
-                                        <a
-                                          href={getCompanyUrl(user.company.primaryDomain)}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
-                                        >
-                                          {user.company.name}
-                                        </a>
-                                      ) : (
-                                        <span className="truncate">{user.company.name}</span>
-                                      )}
-                                    </div>
-                                  )}
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-600">
+                                <div className="flex items-center space-x-2">
+                                  <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                  <span className="truncate">{user.email}</span>
+                                </div>
+                                {user.jobTitle && (
                                   <div className="flex items-center space-x-2">
-                                    <Calendar className="w-4 h-4 flex-shrink-0" />
-                                    <span className="text-xs text-gray-500">
-                                      Joined {new Date(user.createdAt || '').toLocaleDateString('en-US', {
+                                    <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="truncate">{user.jobTitle}</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="mt-3 space-y-2">
+                                {user.company?.name && (
+                                  <div className="flex items-center space-x-2">
+                                    <Building className="w-4 h-4 flex-shrink-0" />
+                                    {user.company.primaryDomain ? (
+                                      <a
+                                        href={getCompanyUrl(user.company.primaryDomain)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
+                                      >
+                                        {user.company.name}
+                                      </a>
+                                    ) : (
+                                      <span className="truncate">{user.company.name}</span>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="flex items-center space-x-2">
+                                  <Calendar className="w-4 h-4 flex-shrink-0" />
+                                  <span className="text-xs text-gray-500">
+                                    Joined {new Date(user.createdAt || '').toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Role Management */}
+                          {!isCurrentUser && (
                             <div className="flex flex-col lg:flex-row lg:items-center gap-3">
                               {/* Current Role Badge */}
                               <div className="flex items-center space-x-2">
@@ -1113,7 +1153,7 @@ export function AdminPanel() {
                                 <div className="flex items-center space-x-2 text-primary">
                                   <Loader2 className="w-4 h-4 animate-spin" />
                                   <span className="text-sm">Updating...</span>
-                                </select>
+                                </div>
                               )}
                               
                               {updatingUser === user.id && (
