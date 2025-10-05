@@ -446,7 +446,7 @@ export function AdminPanel() {
 
         {/* Navigation Tabs */}
         <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
-          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+          <div className={`flex space-x-1 bg-gray-100 rounded-lg p-1 ${isSuperAdmin ? 'grid grid-cols-3' : 'grid grid-cols-2'}`}>
             <button
               onClick={() => setCurrentView('companies')}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
@@ -470,6 +470,19 @@ export function AdminPanel() {
               <span className="hidden sm:inline">Call Requests</span>
               <span className="sm:hidden">Requests</span>
             </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setCurrentView('users')}
+                className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
+                  currentView === 'users'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Users className="w-4 h-4 flex-shrink-0" />
+                <span>Users</span>
+              </button>
+            )}
           </div>
         </div>
 
