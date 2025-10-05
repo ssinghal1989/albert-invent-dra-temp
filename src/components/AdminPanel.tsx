@@ -51,7 +51,18 @@ interface CallRequest {
   assessmentInstanceId?: any;
 }
 
-type AdminView = 'companies' | 'callRequests';
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  jobTitle?: string;
+  role: 'user' | 'admin' | 'superAdmin';
+  companyId?: string;
+  company?: any;
+  createdAt: string;
+}
+
+type AdminView = 'companies' | 'callRequests' | 'users';
 
 export function AdminPanel() {
   const { state } = useAppContext();
@@ -59,20 +70,24 @@ export function AdminPanel() {
   const [currentView, setCurrentView] = useState<AdminView>('companies');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [callRequests, setCallRequests] = useState<CallRequest[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [updatingCompany, setUpdatingCompany] = useState<string | null>(null);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
   const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
   const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(new Set());
   const [tier1Questions, setTier1Questions] = useState<any[]>([]);
   const [assessmentInstances, setAssessmentInstances] = useState<Record<string, any>>({});
   const [loadingAssessment, setLoadingAssessment] = useState<string | null>(null);
   const [callRequestFilter, setCallRequestFilter] = useState<'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST'>('ALL');
+  const [userFilter, setUserFilter] = useState<'ALL' | 'ALBERTINVENT'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
   // Check if current user is admin
   const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
+  const isSuperAdmin = state.userData?.role === 'superAdmin';
 
   useEffect(() => {
     if (isAdmin) {
