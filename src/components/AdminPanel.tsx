@@ -93,12 +93,10 @@ export function AdminPanel() {
     if (isAdmin) {
       if (currentView === 'companies') {
         fetchCompanies();
-      } else {
+      } else if (currentView === 'callRequests') {
         fetchCallRequests();
         loadTier1Questions();
-      }
-    } else if (currentView === 'users') {
-      fetchUsers();
+      } else if (currentView === 'users') {
     }
 
   const loadTier1Questions = async () => {
