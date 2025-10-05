@@ -165,7 +165,6 @@ export function CombinedScheduleForm({
 
     await withLoading(async () => {
       await onSubmit(formData);
-      handleClose();
     });
   };
 
