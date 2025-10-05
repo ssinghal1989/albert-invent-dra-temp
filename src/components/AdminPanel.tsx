@@ -97,7 +97,10 @@ export function AdminPanel() {
         fetchCallRequests();
         loadTier1Questions();
       } else if (currentView === 'users') {
+        fetchUsers();
+      }
     }
+  }, [currentView, isAdmin]);
 
   const loadTier1Questions = async () => {
     try {
@@ -170,6 +173,23 @@ export function AdminPanel() {
         type: 'error',
         title: 'Error',
         message: 'Failed to load call requests'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data } = await client.models.User.list();
+      setUsers(data as User[]);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to load users'
       });
     } finally {
       setLoading(false);
