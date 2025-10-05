@@ -32,6 +32,7 @@ import { ToastProvider, useToast } from "./context/ToastContext";
 import { useCallRequest } from "./hooks/useCallRequest";
 import { Tier2AssessmentOld } from "./components/Tier2AssessmentOld";
 import { getDeviceFingerprint } from "./utils/deviceFingerprint";
+import { Tier2Assessment } from "./components/Tier2Assessment";
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -318,10 +319,10 @@ function AppContent() {
         <Route
           path="/tier2"
           element={
-            // <Tier2Assessment
-            //   onNavigateToTier={navigateToTier}
-            // />
-            <Tier2AssessmentOld />
+            <Tier2Assessment
+              onNavigateToTier={navigateToTier}
+            />
+            // <Tier2AssessmentOld />
           }
         />
         <Route
