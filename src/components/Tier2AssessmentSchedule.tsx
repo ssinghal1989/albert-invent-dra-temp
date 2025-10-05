@@ -284,58 +284,58 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
 
   if (currentStep === "confirmation") {
     return (
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100 text-center">
-            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="w-10 h-10 text-white" />
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
             </div>
 
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">
               Request Submitted!
             </h1>
-            <p className="text-gray-600 text-lg mb-8">
+            <p className="text-gray-600 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">
               Thank you for your interest in our Tier 2 Digital Readiness Assessment.
             </p>
 
-            <div className="bg-gray-50 rounded-xl p-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Your Information</h3>
-              <div className="space-y-3 text-left">
+            <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Your Information</h3>
+              <div className="space-y-2 sm:space-y-3 text-left">
                 <div className="flex items-center space-x-3">
-                  <User className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">
+                  <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                  <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
                       ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userName
                       : ""}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">
+                  <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                  <span className="text-gray-700 text-sm sm:text-base break-all">
                     {tier2AssessmentRequest?.metadata
                       ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userEmail
                       : ""}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Building className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">
+                  <Building className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                  <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
                       ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.companyName
                       : ""}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <Briefcase className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">
+                  <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                  <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
                       ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userJobTitle
                       : ""}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
-                  <CalendarIcon className="w-5 h-5 text-primary" />
-                  <span className="text-gray-700">
+                  <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
+                  <span className="text-gray-700 text-sm sm:text-base break-words">
                     {formatSelectedDate(new Date(tier2AssessmentRequest.preferredDate))}{" "}
                     at{" "}
                     {getSelectedTimeLabels(
@@ -346,8 +346,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </div>
             </div>
 
-            <div className="text-sm text-gray-500 mb-6">
-              <p>
+            <div className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
+              <p className="leading-relaxed">
                 Our team will review your request and contact you within 1-2 business days to
                 schedule your in-depth assessment.
               </p>
@@ -366,33 +366,33 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
   }
 
   return (
-    <main className="flex-1 p-8">
+    <main className="flex-1 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+        <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100">
           {/* Header with Back Button */}
-          <div className="flex items-center mb-6">
+          <div className="flex items-center mb-4 sm:mb-6">
             <button
               onClick={onBack}
-              className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200"
+              className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 text-sm sm:text-base"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               <span>Back</span>
             </button>
           </div>
 
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-              <TrendingUp className="w-8 h-8 text-white" />
+          <div className="text-center mb-6 sm:mb-8">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
               Schedule Tier 2 Assessment
             </h1>
-            <p className="text-gray-600 text-lg">
+            <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
               Please provide your information and preferred time for the workshop
             </p>
           </div>
 
-          <form onSubmit={handleFormSubmit} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
             {/* Form fields - same as before */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -400,14 +400,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   id="name"
                   value={formData.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.name
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300 focus:ring-blue-500"
@@ -415,7 +415,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your full name"
                 />
               </div>
-              {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+              {errors.name && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.name}</p>}
             </div>
 
             {/* Email Field */}
@@ -425,7 +425,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="email"
@@ -433,7 +433,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   value={formData.email}
                   disabled={isUserLoggedIn}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.email
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300 focus:ring-blue-500"
@@ -441,7 +441,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your email address"
                 />
               </div>
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email}</p>}
+              {errors.email && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.email}</p>}
             </div>
 
             {/* Company Name Field */}
@@ -451,14 +451,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Building className="h-5 w-5 text-gray-400" />
+                  <Building className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   id="companyName"
                   value={formData.companyName}
                   onChange={(e) => handleInputChange("companyName", e.target.value)}
-                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.companyName
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300 focus:ring-blue-500"
@@ -467,7 +467,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                 />
               </div>
               {errors.companyName && (
-                <p className="mt-1 text-sm text-red-600">{errors.companyName}</p>
+                <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.companyName}</p>
               )}
             </div>
 
@@ -478,14 +478,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Briefcase className="h-5 w-5 text-gray-400" />
+                  <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                 </div>
                 <input
                   type="text"
                   id="jobTitle"
                   value={formData.jobTitle}
                   onChange={(e) => handleInputChange("jobTitle", e.target.value)}
-                  className={`block w-full pl-10 pr-3 py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                  className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.jobTitle
                       ? "border-red-300 focus:ring-red-500"
                       : "border-gray-300 focus:ring-blue-500"
@@ -493,7 +493,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your job title"
                 />
               </div>
-              {errors.jobTitle && <p className="mt-1 text-sm text-red-600">{errors.jobTitle}</p>}
+              {errors.jobTitle && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.jobTitle}</p>}
             </div>
 
             {/* Date Selection */}
@@ -504,14 +504,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               <button
                 type="button"
                 onClick={() => setShowCalendar(!showCalendar)}
-                className={`w-full flex items-center justify-between px-4 py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 ${
+                className={`w-full flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                   errors.selectedDate
                     ? "border-red-300 focus:ring-red-500"
                     : "border-gray-300 focus:ring-blue-500"
                 }`}
               >
                 <div className="flex items-center space-x-3">
-                  <CalendarIcon className="h-5 w-5 text-gray-400" />
+                  <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
                   <span
                     className={
                       formData.selectedDate ? "text-gray-900" : "text-gray-400"
@@ -525,7 +525,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               </button>
 
               {showCalendar && !showTimeSlots && (
-                <div className="mt-4 p-4 border border-gray-200 rounded-xl bg-gray-50">
+                <div className="mt-3 sm:mt-4 p-3 sm:p-4 border border-gray-200 rounded-xl bg-gray-50">
                   <Calendar
                     onChange={handleDateSelect}
                     value={formData.selectedDate}
@@ -541,34 +541,34 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
             {/* Time Selection */}
             {showTimeSlots && formData.selectedDate && (
               <div>
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 mb-2">
                   <label className="block text-sm font-medium text-gray-700">
                     Select Time Slots
                   </label>
                   {formData.selectedTimes.length > 0 && (
-                    <span className="text-xs text-primary font-medium">
+                    <span className="text-xs sm:text-sm text-primary font-medium">
                       {formData.selectedTimes.length} selected
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs sm:text-sm text-gray-500 mb-3">
                   You can select multiple time slots to give us more options
                 </p>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
                   {getAvailableTimeSlots(formData.selectedDate).map((slot) => (
                     <button
                       key={slot.value}
                       type="button"
                       onClick={() => handleTimeSelect(slot.value)}
-                      className={`p-2 text-xs font-medium rounded-lg border transition-all duration-200 ${
+                      className={`p-2 text-xs sm:text-sm font-medium rounded-lg border transition-all duration-200 ${
                         formData.selectedTimes.includes(slot.value)
                           ? "bg-primary text-white border-primary"
                           : "bg-white text-gray-700 border-gray-300 hover:border-primary hover:bg-blue-50"
                       }`}
                     >
-                      <div className="flex items-center justify-center space-x-1">
+                      <div className="flex flex-col items-center justify-center space-y-1 sm:flex-row sm:space-y-0 sm:space-x-1">
                         <Clock className="w-3 h-3 flex-shrink-0" />
-                        <span>{slot.label}</span>
+                        <span className="leading-none">{slot.label}</span>
                       </div>
                     </button>
                   ))}
@@ -578,14 +578,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
 
             {/* Selected Time Summary */}
             {formData.selectedDate && formData.selectedTimes.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4">
                 <div className="flex items-center space-x-3">
-                  <CalendarIcon className="h-5 w-5 text-primary" />
+                  <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-xs sm:text-sm font-medium text-gray-900">
                       Selected Time Slot{formData.selectedTimes.length > 1 ? "s" : ""}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs sm:text-sm text-gray-600 break-words">
                       {formatSelectedDate(formData.selectedDate)} at{" "}
                       {getSelectedTimeLabels(formData.selectedTimes)}
                     </p>
@@ -600,18 +600,18 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               loading={isAuthenticating || isUserFormSubmitting || submitLoading}
               loadingText="Submitting Request..."
               disabled={!isFormValid}
-              className="w-full py-4"
-              size="lg"
+              className="w-full py-3 sm:py-4 text-sm sm:text-base"
+              size="md"
             >
               <span className="flex items-center space-x-2">
                 <span>Schedule Workshop</span>
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
             </LoadingButton>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-xs text-gray-500">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-xs sm:text-sm text-gray-500">
               Our team will contact you to confirm your preferred time or suggest alternatives if needed.
             </p>
           </div>
@@ -626,7 +626,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
           
           .react-calendar-custom .react-calendar__tile {
             border-radius: 8px;
-            margin: 2px;
+            margin: 1px;
           }
           
           .react-calendar-custom .react-calendar__tile--active {
@@ -642,8 +642,18 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
           .react-calendar-custom .react-calendar__tile:enabled:hover {
             background-color: #e6f3ff;
           }
+          
+          @media (max-width: 640px) {
+            .react-calendar-custom .react-calendar__tile {
+              padding: 0.5rem 0.25rem;
+              font-size: 0.75rem;
+              margin: 0.5px;
+            }
+          }
         `}</style>
       </div>
     </main>
   );
 }
+
+export { Tier2AssessmentSchedule }
