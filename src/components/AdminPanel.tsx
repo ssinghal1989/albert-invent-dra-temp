@@ -705,7 +705,25 @@ export function AdminPanel() {
                               </LoadingButton>
 
                               <button
-                                onClick={() => toggleCompanyExpansion(company.id)}
+                              {(() => {
+                                const companyName = request.metadata ? JSON.parse(request.metadata as string)?.companyName : 'N/A';
+                                const companyDomain = request.metadata ? JSON.parse(request.metadata as string)?.companyDomain : null;
+                                
+                                if (companyDomain && companyName !== 'N/A') {
+                                  return (
+                                    <a
+                                      href={companyDomain.startsWith('http') ? companyDomain : `https://${companyDomain}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:text-blue-700 hover:underline transition-colors duration-200 truncate"
+                                    >
+                                      {companyName}
+                                    </a>
+                                  );
+                                } else {
+                                  return <span className="truncate">{companyName}</span>;
+                                }
+                              })()}
                                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                               >
                                 {isExpanded ? (
