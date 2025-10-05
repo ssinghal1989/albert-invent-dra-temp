@@ -499,7 +499,15 @@ export function AdminPanel() {
           ) : (
             <div className="divide-y divide-gray-200">
               {currentView === 'companies' ? (
-                // Companies View
+                // Companies View - Coming Soon
+                <div className="p-6 sm:p-8 text-center">
+                  <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
+                  <p className="text-gray-500 text-sm sm:text-base">Company management features will be available soon.</p>
+                </div>
+                
+                // TODO: Restore this when Companies management is ready
+                /*
                 filteredCompanies.length === 0 ? (
                   <div className="p-6 sm:p-8 text-center">
                     <Building className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
@@ -534,7 +542,6 @@ export function AdminPanel() {
                           </div>
 
                           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-                            {/* Tier 2 Access Status */}
                             <div className="flex items-center justify-between sm:justify-start space-x-2">
                               <span className="text-sm font-medium text-gray-700">Tier 2:</span>
                               <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
@@ -557,7 +564,6 @@ export function AdminPanel() {
                             </div>
 
                             <div className="flex items-center space-x-2 sm:space-x-3">
-                              {/* Toggle Button */}
                               <LoadingButton
                                 onClick={() => updateCompanyTier2Access(company.id, !hasTier2Access)}
                                 loading={updatingCompany === company.id}
@@ -569,7 +575,6 @@ export function AdminPanel() {
                                 {hasTier2Access ? 'Disable' : 'Enable'}
                               </LoadingButton>
 
-                              {/* Expand Button */}
                               <button
                                 onClick={() => toggleCompanyExpansion(company.id)}
                                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
@@ -584,7 +589,6 @@ export function AdminPanel() {
                           </div>
                         </div>
 
-                        {/* Expanded User Details */}
                         {isExpanded && company.users && company.users.length > 0 && (
                           <div className="mt-4 pl-0 sm:pl-16">
                             <h4 className="text-sm font-medium text-gray-700 mb-3">Users:</h4>
@@ -627,6 +631,7 @@ export function AdminPanel() {
                     );
                   })
                 )
+                */
               ) : (
                 // Call Requests View
                 paginatedCallRequests.length === 0 ? (
