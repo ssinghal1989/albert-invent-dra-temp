@@ -667,96 +667,110 @@ export function AdminPanel() {
           {loading ? (
             <div className="p-6 sm:p-8">
               <Loader text={`Loading ${currentView === 'callRequests' ? 'call requests' : currentView}...`} size="lg" />
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {currentView === 'companies' ? (
-                // Companies View - Coming Soon
-                <div className="p-6 sm:p-8 text-center">
-                  <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
-                  <p className="text-gray-500 text-sm sm:text-base">Company management features will be available soon.</p>
-                </div>
-                
-                // TODO: Restore this when Companies management is ready
-                /*
-                filteredCompanies.length === 0 ? (
-                  <div className="p-6 sm:p-8 text-center">
-                    <Building className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No companies found</p>
-                  </div>
-                ) : (
-                  filteredCompanies.map((company) => {
-                    const config = company.config ? JSON.parse(company.config) : {};
-                    const hasTier2Access = config?.tier2AccessEnabled === true;
-                    const isExpanded = expandedCompanies.has(company.id);
-                    
-                    return (
-                      <div key={company.id} className="p-4 sm:p-6">
-                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                          <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Building className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                                {company.name || 'Unnamed Company'}
-                              </h3>
-                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-500">
-                                <span className="truncate">{company.primaryDomain}</span>
-                                <div className="flex items-center space-x-1">
-                                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span>{company.users?.length || 0} users</span>
+                        {/* Grid Layout for Perfect Alignment */}
+                        <div className="grid grid-cols-12 gap-4 items-start">
+                          {/* Left Section - User Info (8 columns) */}
+                          <div className="col-span-12 lg:col-span-8">
+                            <div className="flex items-start space-x-4">
+                              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                <Phone className="w-5 h-5 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                {/* Name and Badges */}
+                                <div className="flex items-center space-x-3 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                    {metadata.userName || 'Unknown User'}
+                                  </h3>
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    request.type === 'TIER1_FOLLOWUP' 
+                                      ? 'bg-blue-100 text-blue-800' 
+                                      : 'bg-purple-100 text-purple-800'
+                                  }`}>
+                                    {request.type === 'TIER1_FOLLOWUP' ? 'Tier 1' : 'Tier 2'}
+                                  </span>
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    request.status === 'PENDING' 
+                                      ? 'bg-yellow-100 text-yellow-800' 
+                                      : request.status === 'SCHEDULED'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {request.status}
+                                  </span>
                                 </div>
-                                <span className="hidden sm:inline">Created {formatDate(company.createdAt)}</span>
+                                
+                                {/* User Details Grid */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate">{metadata.userEmail}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate">{metadata.userJobTitle || 'No job title'}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Building className={`w-4 h-4 flex-shrink-0 ${isAlbertInvent ? 'text-primary' : 'text-gray-400'}`} />
+                                    {metadata.companyName ? (
+                                      <button
+                                        onClick={() => window.open(getCompanyUrl(metadata.companyDomain), '_blank', 'noopener,noreferrer')}
+                                        className="text-primary hover:text-blue-700 hover:underline transition-colors duration-200 truncate text-left"
+                                      >
+                                        {metadata.companyName}
+                                      </button>
+                                    ) : (
+                                      <span className="truncate">No company</span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate">
+                                      Requested: {new Date(request.createdAt).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </div>
-
-                          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
-                            <div className="flex items-center justify-between sm:justify-start space-x-2">
-                              <span className="text-sm font-medium text-gray-700">Tier 2:</span>
-                              <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
-                                hasTier2Access 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {hasTier2Access ? (
-                                  <>
-                                    <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                                    <span>Enabled</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <X className="w-3 h-3 flex-shrink-0" />
-                                    <span>Disabled</span>
-                                  </>
-                                )}
+                          
+                          {/* Right Section - Schedule & Actions (4 columns) */}
+                          <div className="col-span-12 lg:col-span-4">
+                            <div className="flex flex-col space-y-3">
+                              {/* Schedule Info */}
+                              <div className="text-right lg:text-left">
+                                <div className="flex items-center space-x-2 text-sm text-gray-600 mb-1 justify-end lg:justify-start">
+                                  <Calendar className="w-4 h-4" />
+                                  <span>Preferred: {new Date(request.preferredDate).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center space-x-2 text-sm text-gray-600 justify-end lg:justify-start">
+                                  <Clock className="w-4 h-4" />
+                                  <span>{(request.preferredTimes as string[])?.join(', ')}</span>
+                                </div>
                               </div>
-                            </div>
-
-                            <div className="flex items-center space-x-2 sm:space-x-3">
-                              <LoadingButton
-                                onClick={() => updateCompanyTier2Access(company.id, !hasTier2Access)}
-                                loading={updatingCompany === company.id}
-                                loadingText="..."
-                                variant={hasTier2Access ? 'outline' : 'primary'}
-                                size="sm"
-                                className="text-xs sm:text-sm px-3 sm:px-4"
-                              >
-                                {hasTier2Access ? 'Disable' : 'Enable'}
-                              </LoadingButton>
-
-                              <button
-                                onClick={() => toggleCompanyExpansion(company.id)}
-                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                              >
-                                {isExpanded ? (
-                                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
-                                ) : (
-                                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                                )}
-                              </button>
+                              
+                              {/* Assessment Score */}
+                              {request.type === 'TIER1_FOLLOWUP' && metadata.assessmentScore && (
+                                <div className="text-right lg:text-left">
+                                  <span className="text-sm text-gray-500">Assessment Score: </span>
+                                  <span className="font-semibold text-primary">{metadata.assessmentScore}</span>
+                                </div>
+                              )}
+                              
+                              {/* View Assessment Dropdown */}
+                              {userTier1Assessments.length > 0 && (
+                                <div className="flex justify-end lg:justify-start">
+                                  <div className="relative">
+                                    <select
+                                      className="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                      defaultValue=""
+                                    >
+                                      <option value="" disabled>View Assessment</option>
+                                      <option value="view">View Results</option>
+                                    </select>
+                                    <BarChart3 className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
