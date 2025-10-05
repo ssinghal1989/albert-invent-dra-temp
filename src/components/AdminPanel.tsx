@@ -97,8 +97,9 @@ export function AdminPanel() {
         fetchCallRequests();
         loadTier1Questions();
       }
+    } else if (currentView === 'users') {
+      fetchUsers();
     }
-  }, [isAdmin, currentView]);
 
   const loadTier1Questions = async () => {
     try {
