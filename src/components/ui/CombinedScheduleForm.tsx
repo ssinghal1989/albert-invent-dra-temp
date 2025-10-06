@@ -88,8 +88,7 @@ export function CombinedScheduleForm({
   // Get available time slots for selected date
   const getAvailableTimeSlots = (date: Date | null) => {
     if (!date) return [];
-    const unavailableSlots = ['10:00', '14:30', '15:30'];
-    return timeSlots.filter((slot) => !unavailableSlots.includes(slot.value));
+    return timeSlots;
   };
 
   const handleInputChange = (field: keyof CombinedScheduleData, value: string) => {
@@ -351,7 +350,10 @@ export function CombinedScheduleForm({
                 </label>
                 <button
                   type="button"
-                  onClick={() => setShowCalendar(!showCalendar)}
+                  onClick={() => {
+                    setShowCalendar(!showCalendar);
+                    setShowTimeSlots(false);
+                  }}
                   className={`w-full flex items-center justify-between px-4 py-3 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 ${
                     errors.selectedDate
                       ? 'border-red-300 focus:ring-red-500'
@@ -380,7 +382,7 @@ export function CombinedScheduleForm({
                     <Calendar
                       onChange={handleDateSelect}
                       value={formData.selectedDate}
-                      minDate={new Date()}
+                      minDate={new Date(Date.now() + 60 * 24 * 60 * 7 * 1000)}
                       maxDate={
                         new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
                       }
@@ -496,11 +498,6 @@ export function CombinedScheduleForm({
           width: 100%;
           border: none;
           font-family: inherit;
-        }
-        
-        .react-calendar-custom .react-calendar__tile {
-          border-radius: 8px;
-          margin: 2px;
         }
         
         .react-calendar-custom .react-calendar__tile--active {
