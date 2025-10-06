@@ -132,10 +132,25 @@ export function Tier2AssessmentSchedule({
   const timeSlots = generateTimeSlots();
 
   const isDateAvailable = (date: Date) => {
+    // Calculate 5 business days from today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
+    const minDate = new Date(today);
+    let businessDaysAdded = 0;
+    
+    while (businessDaysAdded < 5) {
+      minDate.setDate(minDate.getDate() + 1);
+      const dayOfWeek = minDate.getDay();
+      // If it's not a weekend (Saturday = 6, Sunday = 0), count it as a business day
+      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+        businessDaysAdded++;
+      }
+    }
+    
     const dayOfWeek = date.getDay();
-    return date >= today && dayOfWeek !== 0 && dayOfWeek !== 6;
+    // Only disable weekends, allow all dates >= 5 business days from today
+    return date >= minDate && dayOfWeek !== 0 && dayOfWeek !== 6;
   };
 
   const getAvailableTimeSlots = (date: Date | null) => {
