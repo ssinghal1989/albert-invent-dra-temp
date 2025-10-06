@@ -734,15 +734,13 @@ export function AdminPanel() {
                                 )}
                               </div>
                             </div>
-                      <div key={request.id} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                        {/* Header Row */}
+
                             <div className="flex items-center space-x-2 sm:space-x-3">
-                          <div className="flex items-center space-x-4">
+                              <LoadingButton
                                 onClick={() => updateCompanyTier2Access(company.id, !hasTier2Access)}
                                 loading={updatingCompany === company.id}
                                 loadingText="..."
                                 variant={hasTier2Access ? 'outline' : 'primary'}
-                              <h3 className="font-semibold text-gray-900 text-lg">{metadata.userName || 'Unknown User'}</h3>
                                 className="text-xs sm:text-sm px-3 sm:px-4"
                               >
                                 {hasTier2Access ? 'Disable' : 'Enable'}
@@ -759,14 +757,6 @@ export function AdminPanel() {
                                 )}
                               </button>
                             </div>
-                          </div>
-                          
-                          {/* Action Button */}
-                          <div className="flex items-center space-x-2">
-                            <button className="flex items-center space-x-2 px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200">
-                              <BarChart3 className="w-4 h-4" />
-                              <span className="text-sm font-medium">View Assessment</span>
-                            </button>
                           </div>
                         </div>
 
@@ -1050,106 +1040,9 @@ export function AdminPanel() {
                         const isCurrentUser = user.id === state.userData?.id;
                         const isAlbertInventUser = user.email?.includes('@albertinvent.com');
                         
-                        {/* Content Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                          {/* Left Column - Contact Info */}
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wide">Contact Information</h4>
-                            <div className="space-y-3">
-                              <div className="flex items-center space-x-3">
-                                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-gray-700 text-sm">{metadata.userEmail}</span>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Building className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-gray-700 text-sm">{metadata.companyName}</span>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Briefcase className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <span className="text-gray-700 text-sm">{metadata.userJobTitle}</span>
-                              </div>
-                              {metadata.assessmentScore && (
-                                <div className="flex items-center space-x-3">
-                                  <BarChart3 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                  <span className="text-gray-700 text-sm">
-                                    Assessment Score: <span className="font-semibold">{metadata.assessmentScore}</span>
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Right Column - Schedule Info */}
-                          <div className="space-y-3">
-                            <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wide">Schedule Details</h4>
-                            <div className="space-y-3">
-                              <div className="flex items-center space-x-3">
-                                <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <div>
-                                  <span className="text-gray-500 text-xs">Preferred:</span>
-                                  <span className="text-gray-700 text-sm ml-2">
-                                    {new Date(request.preferredDate).toLocaleDateString('en-US', {
-                                      weekday: 'short',
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Clock className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <div>
-                                  <span className="text-gray-500 text-xs">Times:</span>
-                                  <span className="text-gray-700 text-sm ml-2">
-                                    {(request.preferredTimes || []).map((time: string) => {
-                                      const [hours, minutes] = time.split(':');
-                                      const hour = parseInt(hours);
-                                      const ampm = hour >= 12 ? 'PM' : 'AM';
-                                      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                                      return `${displayHour}:${minutes} ${ampm}`;
-                                    }).join(', ')}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-3">
-                                <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                <div>
-                                  <span className="text-gray-500 text-xs">Requested:</span>
-                                  <span className="text-gray-700 text-sm ml-2">
-                                    {new Date(request.createdAt).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Remarks Section */}
-                        {request.remarks && (
-                          <div className="mt-4 pt-4 border-t border-gray-100">
-                            <h4 className="font-medium text-gray-900 text-sm uppercase tracking-wide mb-2">Remarks</h4>
-                            <p className="text-gray-700 text-sm bg-gray-50 rounded-lg p-3">
-                              {request.remarks}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </main>
-  );
-}
+                        return (
+                          <div key={user.id} className="bg-gray-50 rounded-xl p-4 sm:p-6 border border-gray-200 hover:border-gray-300 transition-colors duration-200">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
                               {/* User Info Section - Takes up 8 columns on large screens */}
                               <div className="lg:col-span-8 flex items-start space-x-4 min-w-0">
                                 <div className="flex-shrink-0">
