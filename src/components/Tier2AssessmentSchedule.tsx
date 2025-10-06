@@ -131,6 +131,27 @@ export function Tier2AssessmentSchedule({
 
   const timeSlots = generateTimeSlots();
 
+  // Helper function to calculate minimum date (5 business days from today)
+  const getMinimumDate = () => {
+    const today = new Date();
+    let businessDaysCount = 0;
+    let currentDate = new Date(today);
+    
+    while (businessDaysCount < 5) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      const dayOfWeek = currentDate.getDay();
+      
+      // If it's a weekday (Monday = 1, Friday = 5), count it
+      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+        businessDaysCount++;
+      }
+    }
+    
+    // Set to start of day for proper comparison
+    currentDate.setHours(0, 0, 0, 0);
+    return currentDate;
+  };
+
   const isDateAvailable = (date: Date) => {
     // Get minimum date (5 business days from today)
     const minDate = getMinimumDate();
