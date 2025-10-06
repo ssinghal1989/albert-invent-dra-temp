@@ -132,24 +132,12 @@ export function Tier2AssessmentSchedule({
   const timeSlots = generateTimeSlots();
 
   const isDateAvailable = (date: Date) => {
-    // Calculate 5 business days from today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const minDate = new Date(today);
-    let businessDaysAdded = 0;
-    
-    while (businessDaysAdded < 5) {
-      minDate.setDate(minDate.getDate() + 1);
-      const dayOfWeek = minDate.getDay();
-      // If it's not a weekend (Saturday = 6, Sunday = 0), count it as a business day
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        businessDaysAdded++;
-      }
-    }
-    
+    // Get minimum date (5 business days from today)
+    const minDate = getMinimumDate();
     const dayOfWeek = date.getDay();
-    // Only disable weekends, allow all dates >= 5 business days from today
+    
+    // Only disable weekends (Saturday = 6, Sunday = 0)
+    // Allow all dates >= minimum date that are not weekends
     return date >= minDate && dayOfWeek !== 0 && dayOfWeek !== 6;
   };
 
@@ -592,23 +580,7 @@ export function Tier2AssessmentSchedule({
                   <Calendar
                     onChange={handleDateSelect}
                     value={formData.selectedDate}
-                    minDate={(() => {
-                      const today = new Date();
-                      today.setHours(0, 0, 0, 0);
-                      
-                      const minDate = new Date(today);
-                      let businessDaysAdded = 0;
-                      
-                      while (businessDaysAdded < 5) {
-                        minDate.setDate(minDate.getDate() + 1);
-                        const dayOfWeek = minDate.getDay();
-                        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-                          businessDaysAdded++;
-                        }
-                      }
-                      
-                      return minDate;
-                    })()}
+                    minDate={getMinimumDate()}
                     maxDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)}
                     tileDisabled={({ date }) => !isDateAvailable(date)}
                     className="react-calendar-custom"
