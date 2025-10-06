@@ -131,41 +131,16 @@ export function Tier2AssessmentSchedule({
 
   const timeSlots = generateTimeSlots();
 
-  // Helper function to calculate minimum date (5 business days from today)
-  const getMinimumDate = () => {
-    const today = new Date();
-    let businessDaysCount = 0;
-    let currentDate = new Date(today);
-    
-    while (businessDaysCount < 5) {
-      currentDate.setDate(currentDate.getDate() + 1);
-      const dayOfWeek = currentDate.getDay();
-      
-      // If it's a weekday (Monday = 1, Friday = 5), count it
-      if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-        businessDaysCount++;
-      }
-    }
-    
-    // Set to start of day for proper comparison
-    currentDate.setHours(0, 0, 0, 0);
-    return currentDate;
-  };
-
   const isDateAvailable = (date: Date) => {
-    // Get minimum date (5 business days from today)
-    const minDate = getMinimumDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const dayOfWeek = date.getDay();
-    
-    // Only disable weekends (Saturday = 6, Sunday = 0)
-    // Allow all dates >= minimum date that are not weekends
-    return date >= minDate && dayOfWeek !== 0 && dayOfWeek !== 6;
+    return date >= today && dayOfWeek !== 0 && dayOfWeek !== 6;
   };
 
   const getAvailableTimeSlots = (date: Date | null) => {
     if (!date) return [];
-    const unavailableSlots = ["10:00", "14:30", "15:30"];
-    return timeSlots.filter((slot) => !unavailableSlots.includes(slot.value));
+    return timeSlots;
   };
 
   const handleInputChange = (field: keyof Tier2FormData, value: string) => {
@@ -575,7 +550,10 @@ export function Tier2AssessmentSchedule({
               </label>
               <button
                 type="button"
-                onClick={() => setShowCalendar(!showCalendar)}
+                onClick={() => {
+                  setShowCalendar(!showCalendar);
+                  setShowTimeSlots(false);
+                }}
                 className={`w-full flex items-center justify-between px-3 sm:px-4 py-3 sm:py-4 border rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                   errors.selectedDate
                     ? "border-red-300 focus:ring-red-500"
@@ -601,15 +579,9 @@ export function Tier2AssessmentSchedule({
                   <Calendar
                     onChange={handleDateSelect}
                     value={formData.selectedDate}
-                    minDate={getMinimumDate()}
-                    maxDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)}
+                    minDate={new Date(Date.now() + 60 * 24 * 7 * 60 * 1000)}
+                    maxDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)}
                     tileDisabled={({ date }) => !isDateAvailable(date)}
-                    calendarType="gregory"
-                    locale="en-US"
-                    showWeekNumbers={false}
-                    showNavigation={true}
-                    prev2Label={null}
-                    next2Label={null}
                     className="react-calendar-custom"
                   />
                 </div>
@@ -704,11 +676,6 @@ export function Tier2AssessmentSchedule({
             width: 100%;
             border: none;
             font-family: inherit;
-          }
-          
-          .react-calendar-custom .react-calendar__tile {
-            border-radius: 8px;
-            margin: 1px;
           }
           
           .react-calendar-custom .react-calendar__tile--active {
