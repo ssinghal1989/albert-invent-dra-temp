@@ -336,7 +336,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                   return (
                     <div className="space-y-3">
                       {/* Priority Recommendation */}
-                      {recommendations.length > 0 && (
+                      {recommendations.length > 0 && recommendations[0].isPriority && (
                         <div
                           className="bg-gradient-to-r  rounded-lg p-4 border-l-4"
                           style={{ borderColor: "#05f" }}
@@ -367,14 +367,20 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                       )}
 
                       {/* Additional Recommendations */}
-                      {recommendations.length > 1 && (
+                      {(() => {
+                        // Filter out priority recommendations to get only the numbered ones
+                        const numberedRecommendations = recommendations.filter(rec => !rec.isPriority);
+                        
+                        if (numberedRecommendations.length === 0) return null;
+                        
+                        return (
                         <div>
                           <h5 className="text-sm sm:text-base font-medium text-gray-900 mb-3">
-                            Additional Focus Areas:
+                            {recommendations.some(rec => rec.isPriority) ? 'Additional Focus Areas:' : 'Focus Areas:'}
                           </h5>
                           <div className="grid gap-2 sm:gap-3">
-                            {recommendations
-                              .splice(1, 10)
+                            {numberedRecommendations
+                              .slice(0, 10)
                               .sort((a, b) => {
                                 const aIndex = a.maturityLevel
                                   ? maturityOrder.indexOf(a.maturityLevel)
@@ -417,7 +423,8 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                               ))}
                           </div>
                         </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })()}
