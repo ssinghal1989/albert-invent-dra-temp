@@ -782,10 +782,10 @@ export function AdminPanel() {
                                       {user.role && (
                                         <>
                                           <span className="text-gray-300 hidden sm:inline">•</span>
-                       {/* Main content with consistent structure */}
-                       <div className="space-y-4">
-                         {/* Contact Information Row */}
-                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                            user.role === 'superAdmin' 
+                                              ? 'bg-red-100 text-red-800'
+                                              : user.role === 'admin'
                                               ? 'bg-purple-100 text-purple-800'
                                               : 'bg-gray-100 text-gray-800'
                                           }`}>
@@ -969,6 +969,7 @@ export function AdminPanel() {
                             </div>
                           )}
                         </div>
+                        </div>
 
                         {/* Expanded Assessment View */}
                         {isExpanded && hasAssessmentData && assessmentInstance && (
@@ -1032,7 +1033,26 @@ export function AdminPanel() {
                                                 >
                                                   <div
                                                     className={`p-1 sm:p-2 rounded-lg text-xs leading-tight ${
-                       </div>
+                                                      isSelected
+                                                        ? 'bg-primary text-white font-medium'
+                                                        : 'bg-white text-gray-600 border border-gray-200'
+                                                    }`}
+                                                  >
+                                                    {option.label}
+                                                  </div>
+                                                </td>
+                                              );
+                                            })}
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })
