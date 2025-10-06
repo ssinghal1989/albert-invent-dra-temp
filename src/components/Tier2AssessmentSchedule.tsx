@@ -11,6 +11,7 @@ import {
   Calendar as CalendarIcon,
   Clock,
   ArrowLeft,
+  X,
 } from "lucide-react";
 import { LoadingButton } from "./ui/LoadingButton";
 import { useLoader } from "../hooks/useLoader";
@@ -32,12 +33,17 @@ interface Tier2AssessmentScheduleProps {
   onBack: () => void;
 }
 
-export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps) {
+export function Tier2AssessmentSchedule({
+  onBack,
+}: Tier2AssessmentScheduleProps) {
   const navigate = useNavigate();
   const { state, dispatch } = useAppContext();
   const { isLoading: submitLoading } = useLoader();
-  const [currentStep, setCurrentStep] = useState<"form" | "confirmation">("form");
-  const { tier2AssessmentRequests, fetchUserCallRequests, scheduleRequest } = useCallRequest();
+  const [currentStep, setCurrentStep] = useState<"form" | "confirmation">(
+    "form"
+  );
+  const { tier2AssessmentRequests, fetchUserCallRequests, scheduleRequest } =
+    useCallRequest();
 
   const [formData, setFormData] = useState<Tier2FormData>({
     name: state.userData?.name || state.userFormData?.name || "",
@@ -73,7 +79,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
   const [errors, setErrors] = useState<Partial<Tier2FormData>>({});
   const [showCalendar, setShowCalendar] = useState(false);
   const [showTimeSlots, setShowTimeSlots] = useState(false);
-  const { loading: isUserFormSubmitting, updateMissingDataForLoggedInUser } = useUserForm();
+  const { loading: isUserFormSubmitting, updateMissingDataForLoggedInUser } =
+    useUserForm();
   const { showToast } = useToast();
 
   const isUserLoggedIn = !!state.loggedInUserDetails?.signInDetails?.loginId;
@@ -90,7 +97,9 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
     navigate("/otp-login");
   };
 
-  const { handleAuth, loading: isAuthenticating } = useAuthFlow(updateStateAndNavigateToOtp);
+  const { handleAuth, loading: isAuthenticating } = useAuthFlow(
+    updateStateAndNavigateToOtp
+  );
 
   // Generate time slots
   const generateTimeSlots = () => {
@@ -194,7 +203,6 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
       if (data) {
         fetchUserCallRequests();
       } else {
-        console.log("Error", errors);
         showToast({
           type: "error",
           title: "Request Failed",
@@ -295,17 +303,21 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               Request Submitted!
             </h1>
             <p className="text-gray-600 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">
-              Thank you for your interest in our Tier 2 Digital Readiness Assessment.
+              Thank you for your interest in our Tier 2 Digital Readiness
+              Assessment.
             </p>
 
             <div className="bg-gray-50 rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">Your Information</h3>
+              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-3 sm:mb-4">
+                Your Information
+              </h3>
               <div className="space-y-2 sm:space-y-3 text-left">
                 <div className="flex items-center space-x-3">
                   <User className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
                   <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
-                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userName
+                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)
+                          ?.userName
                       : ""}
                   </span>
                 </div>
@@ -313,7 +325,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
                   <span className="text-gray-700 text-sm sm:text-base break-all">
                     {tier2AssessmentRequest?.metadata
-                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userEmail
+                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)
+                          ?.userEmail
                       : ""}
                   </span>
                 </div>
@@ -321,7 +334,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   <Building className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
                   <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
-                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.companyName
+                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)
+                          ?.companyName
                       : ""}
                   </span>
                 </div>
@@ -329,14 +343,17 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   <Briefcase className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
                   <span className="text-gray-700 text-sm sm:text-base break-words">
                     {tier2AssessmentRequest?.metadata
-                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)?.userJobTitle
+                      ? JSON.parse(tier2AssessmentRequest?.metadata as string)
+                          ?.userJobTitle
                       : ""}
                   </span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-primary flex-shrink-0" />
                   <span className="text-gray-700 text-sm sm:text-base break-words">
-                    {formatSelectedDate(new Date(tier2AssessmentRequest.preferredDate))}{" "}
+                    {formatSelectedDate(
+                      new Date(tier2AssessmentRequest.preferredDate)
+                    )}{" "}
                     at{" "}
                     {getSelectedTimeLabels(
                       (tier2AssessmentRequest.preferredTimes || []) as string[]
@@ -348,8 +365,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
 
             <div className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6">
               <p className="leading-relaxed">
-                Our team will review your request and contact you within 1-2 business days to
-                schedule your in-depth assessment.
+                Our team will review your request and contact you within 1-2 business days to schedule an orientation to your in-depth assessment.
               </p>
             </div>
 
@@ -370,13 +386,14 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
       <div className="max-w-2xl mx-auto">
         <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-4 sm:p-6 lg:p-8 border border-gray-100">
           {/* Header with Back Button */}
-          <div className="flex items-center mb-4 sm:mb-6">
+
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900"></h2>
             <button
               onClick={onBack}
-              className="flex items-center space-x-1 sm:space-x-2 text-gray-600 hover:text-gray-800 transition-colors duration-200 text-sm sm:text-base"
+              className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all duration-200"
             >
-              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span>Back</span>
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -388,14 +405,18 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
               Schedule Tier 2 Assessment
             </h1>
             <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
-              Please provide your information and preferred time for the workshop
+              Please provide your information and preferred time for the
+              workshop
             </p>
           </div>
 
           <form onSubmit={handleFormSubmit} className="space-y-4 sm:space-y-6">
             {/* Form fields - same as before */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Full Name
               </label>
               <div className="relative">
@@ -415,12 +436,19 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your full name"
                 />
               </div>
-              {errors.name && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.name}</p>}
+              {errors.name && (
+                <p className="mt-1 text-xs sm:text-sm text-red-600">
+                  {errors.name}
+                </p>
+              )}
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email Address
               </label>
               <div className="relative">
@@ -441,12 +469,19 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your email address"
                 />
               </div>
-              {errors.email && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.email}</p>}
+              {errors.email && (
+                <p className="mt-1 text-xs sm:text-sm text-red-600">
+                  {errors.email}
+                </p>
+              )}
             </div>
 
             {/* Company Name Field */}
             <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="companyName"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Company Name
               </label>
               <div className="relative">
@@ -457,7 +492,9 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   type="text"
                   id="companyName"
                   value={formData.companyName}
-                  onChange={(e) => handleInputChange("companyName", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("companyName", e.target.value)
+                  }
                   className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.companyName
                       ? "border-red-300 focus:ring-red-500"
@@ -467,13 +504,18 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                 />
               </div>
               {errors.companyName && (
-                <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.companyName}</p>
+                <p className="mt-1 text-xs sm:text-sm text-red-600">
+                  {errors.companyName}
+                </p>
               )}
             </div>
 
             {/* Job Title Field */}
             <div>
-              <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="jobTitle"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Job Title
               </label>
               <div className="relative">
@@ -484,7 +526,9 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   type="text"
                   id="jobTitle"
                   value={formData.jobTitle}
-                  onChange={(e) => handleInputChange("jobTitle", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("jobTitle", e.target.value)
+                  }
                   className={`block w-full pl-8 sm:pl-10 pr-3 py-3 sm:py-4 border rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200 text-sm sm:text-base ${
                     errors.jobTitle
                       ? "border-red-300 focus:ring-red-500"
@@ -493,7 +537,11 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   placeholder="Enter your job title"
                 />
               </div>
-              {errors.jobTitle && <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.jobTitle}</p>}
+              {errors.jobTitle && (
+                <p className="mt-1 text-xs sm:text-sm text-red-600">
+                  {errors.jobTitle}
+                </p>
+              )}
             </div>
 
             {/* Date Selection */}
@@ -529,7 +577,7 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   <Calendar
                     onChange={handleDateSelect}
                     value={formData.selectedDate}
-                    minDate={new Date()}
+                    minDate={new Date(Date.now() + 60 * 24 * 60 * 7 * 1000)}
                     maxDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)}
                     tileDisabled={({ date }) => !isDateAvailable(date)}
                     className="react-calendar-custom"
@@ -583,7 +631,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
                   <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                   <div>
                     <p className="text-xs sm:text-sm font-medium text-gray-900">
-                      Selected Time Slot{formData.selectedTimes.length > 1 ? "s" : ""}
+                      Selected Time Slot
+                      {formData.selectedTimes.length > 1 ? "s" : ""}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 break-words">
                       {formatSelectedDate(formData.selectedDate)} at{" "}
@@ -597,14 +646,16 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
             {/* Submit Button */}
             <LoadingButton
               type="submit"
-              loading={isAuthenticating || isUserFormSubmitting || submitLoading}
+              loading={
+                isAuthenticating || isUserFormSubmitting || submitLoading
+              }
               loadingText="Submitting Request..."
               disabled={!isFormValid}
               className="w-full py-3 sm:py-4 text-sm sm:text-base"
               size="md"
             >
               <span className="flex items-center space-x-2">
-                <span>Schedule Workshop</span>
+                <span>Schedule orientation call</span>
                 <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </span>
             </LoadingButton>
@@ -612,7 +663,8 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
 
           <div className="mt-4 sm:mt-6 text-center">
             <p className="text-xs sm:text-sm text-gray-500">
-              Our team will contact you to confirm your preferred time or suggest alternatives if needed.
+              Our team will contact you to confirm your preferred time or
+              suggest alternatives if needed.
             </p>
           </div>
         </div>
@@ -655,5 +707,3 @@ export function Tier2AssessmentSchedule({ onBack }: Tier2AssessmentScheduleProps
     </main>
   );
 }
-
-export { Tier2AssessmentSchedule }
