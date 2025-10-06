@@ -592,8 +592,24 @@ export function Tier2AssessmentSchedule({
                   <Calendar
                     onChange={handleDateSelect}
                     value={formData.selectedDate}
-                    minDate={new Date(Date.now() + 60 * 24 * 60 * 7 * 1000)}
-                    maxDate={new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)}
+                    minDate={(() => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      
+                      const minDate = new Date(today);
+                      let businessDaysAdded = 0;
+                      
+                      while (businessDaysAdded < 5) {
+                        minDate.setDate(minDate.getDate() + 1);
+                        const dayOfWeek = minDate.getDay();
+                        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                          businessDaysAdded++;
+                        }
+                      }
+                      
+                      return minDate;
+                    })()}
+                    maxDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)}
                     tileDisabled={({ date }) => !isDateAvailable(date)}
                     className="react-calendar-custom"
                   />
