@@ -49,7 +49,7 @@ const FOCUS_AREA_RECOMMENDATIONS = {
   },
   'Supplier Ecosystem Connectivity': {
     BASIC: "Replace email-based exchanges with shared templates or digital specs.",
-    EMERGING: "Pilot supplier portals for key partners.",
+    EMERGING: "Pilot supplier portals for key suppliers.",
     ESTABLISHED: "Build traceability through real-time digital supplier integrations.",
     WORLD_CLASS: "Create secure, seamless digital ecosystems with full upstream/downstream connectivity."
   },
@@ -62,8 +62,8 @@ const FOCUS_AREA_RECOMMENDATIONS = {
     WORLD_CLASS: "Expand to fully connected smart labs with autonomous workflows and robotic systems."
   },
   'Manufacturing and Scale-up Integration': {
-    BASIC: "Reduce manual tech transfer and document handoffs by digitalizing process data.",
-    EMERGING: "Implement basic digital transfer templates and standardized formats.",
+    BASIC: "Reduce manual tech transfer for scale up and document handoffs by digitalizing process data.",
+    EMERGING: "Implement basic digital transfer templates and standardized formats for scale-up.",
     ESTABLISHED: "Strengthen collaboration through digital twins and shared production views.",
     WORLD_CLASS: "Use live manufacturing feedback to optimize R&D processes in real time."
   },
