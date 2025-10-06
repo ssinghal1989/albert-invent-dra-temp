@@ -604,6 +604,8 @@ export function Tier2AssessmentSchedule({
                     minDate={getMinimumDate()}
                     maxDate={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)}
                     tileDisabled={({ date }) => !isDateAvailable(date)}
+                    calendarType="gregory"
+                    locale="en-US"
                     className="react-calendar-custom"
                   />
                 </div>
@@ -654,23 +656,12 @@ export function Tier2AssessmentSchedule({
                 <div className="flex items-center space-x-3">
                   <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                   <div>
-                   {/* Debug info - remove after testing */}
-                   <div className="mb-2 text-xs text-gray-500">
-                     Today: {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                   </div>
                     <p className="text-xs sm:text-sm font-medium text-gray-900">
                       Selected Time Slot
                       {formData.selectedTimes.length > 1 ? "s" : ""}
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 break-words">
                       {formatSelectedDate(formData.selectedDate)} at{" "}
-                     calendarType="gregory"
-                     locale="en-US"
-                     showWeekNumbers={false}
-                     formatShortWeekday={(locale, date) => {
-                       const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-                       return days[date.getDay()];
-                     }}
                       {getSelectedTimeLabels(formData.selectedTimes)}
                     </p>
                   </div>
