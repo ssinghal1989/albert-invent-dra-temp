@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield } from 'lucide-react';
+import {
   Shield, 
   Building, 
   Users, 
@@ -444,163 +445,25 @@ export function AdminPanel() {
   // Admin Header Component
 
   function AdminHeader() {
-                                          ) : (
     return (
-                                            <span className="truncate">{user.company.name}</span>
       <div className="text-center mb-8">
-                                          )}
         <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                                        </div>
           <Shield className="w-8 h-8 text-white" />
-                                      )}
         </div>
-                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-                                        <Calendar className="w-4 h-4 flex-shrink-0" />
         <p className="text-gray-600 text-lg">Manage assessments and system data</p>
-                                        <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { 
       </div>
-                                          month: 'short', 
     );
-                                          day: 'numeric', 
   }
-                                          year: 'numeric' 
-                                        })}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              
-                              {/* Role Management Section - Takes up 4 columns on large screens */}
-                              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-0 lg:space-y-2">
-                                <div className="flex items-center space-x-2 text-sm">
-                                  <span className="text-gray-600 font-medium">Current Role:</span>
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    user.role === 'superAdmin' 
-                                      ? 'bg-red-100 text-red-800'
-                                      : user.role === 'admin'
-                                      ? 'bg-purple-100 text-purple-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
-                                  </span>
-                                </div>
-                                
-                                {!isCurrentUser && (
-                                  <div className="flex items-center space-x-2">
-                                    <label className="text-sm font-medium text-gray-600">Change to:</label>
-                                    <select
-                                      value={user.role || 'user'}
-                                      onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
-                                      disabled={updatingRoles[user.id]}
-                                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
-                                    >
-                                      <option value="user">User</option>
-                                      <option value="admin">Admin</option>
-                                      <option value="superAdmin">Super Admin</option>
-                                    </select>
-                                    {updatingRoles[user.id] && (
-                                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                    )}
-                                  </div>
-                                )}
-                                
-                                {isCurrentUser && (
-                                  <div className="text-sm text-gray-500 italic">
-                                    Cannot change own role
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          )}
-          
-          {/* Pagination for Call Requests */}
-          {((currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage) ||
-            (currentView === 'users' && filteredUsers.length > itemsPerPage)) && (
-            <div className="p-4 sm:p-6 border-t border-gray-200">
-              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                  {currentView === 'callRequests' ? (
-                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests</>
-                  ) : (
-                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users</>
-                  )}
-                </div>
-                
-                <div className="flex items-center justify-center space-x-2">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                      currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Previous
-                  </button>
-                  
-                  <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, currentView === 'callRequests' ? totalPages : totalUserPages) }, (_, i) => {
-                      let pageNumber;
-                      const pages = currentView === 'callRequests' ? totalPages : totalUserPages;
-                      if (pages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= pages - 2) {
-                        pageNumber = pages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                            currentPage === pageNumber
-                              ? 'bg-primary text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, currentView === 'callRequests' ? totalPages : totalUserPages))}
-                    disabled={currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)}
-                    className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                      currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Next
-                  </button>
+
+  return (
+    <main className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <AdminHeader />
+        
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">
           <UserManagement />
-        </div>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">
-              </div>
-            </div>
-        </div>
-        
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">
           <CompaniesManagement />
-          )}
         </div>
       </div>
     </main>
