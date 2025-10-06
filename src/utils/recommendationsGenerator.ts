@@ -109,14 +109,24 @@ const FOCUS_AREA_RECOMMENDATIONS = {
 export function generateRecommendations(scoreResult: Tier1ScoreResult): RecommendationWithMetadata[] {
   const recommendations: RecommendationWithMetadata[] = [];
 
-  // 1. Add priority sentence based on lowest-scoring pillar
-  const prioritySentence = PRIORITY_SENTENCES[scoreResult.lowestScoringPillar as keyof typeof PRIORITY_SENTENCES];
-  if (prioritySentence) {
-    recommendations.push({
-      text: prioritySentence,
-      pillar: scoreResult.lowestScoringPillar,
-      isPriority: true
-    });
+  // 1. Check if lowest-scoring pillar is above "Emerging" level
+  const lowestScoringPillarData = scoreResult.pillarScores.find(
+    pillar => pillar.pillar === scoreResult.lowestScoringPillar
+  );
+  
+  // Only add priority sentence if the lowest-scoring pillar is at "Emerging" level or below
+  // Emerging = 50, so if average score is > 50, skip priority sentence
+  const shouldShowPrioritySentence = lowestScoringPillarData && lowestScoringPillarData.averageScore <= 50;
+  
+  if (shouldShowPrioritySentence) {
+    const prioritySentence = PRIORITY_SENTENCES[scoreResult.lowestScoringPillar as keyof typeof PRIORITY_SENTENCES];
+    if (prioritySentence) {
+      recommendations.push({
+        text: prioritySentence,
+        pillar: scoreResult.lowestScoringPillar,
+        isPriority: true
+      });
+    }
   }
 
   // 2. Add focus area recommendations based on maturity levels
