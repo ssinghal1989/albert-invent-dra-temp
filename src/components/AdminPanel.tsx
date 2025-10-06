@@ -693,13 +693,13 @@ export function AdminPanel() {
                     
                     return (
                       <div key={company.id} className="p-4 sm:p-6">
-                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                       <div className="flex items-start justify-between mb-6 min-h-[60px]">
                           <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                               <Building className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                             <h3 className="text-lg font-semibold text-gray-900 mb-2">
                                 {company.name || 'Unnamed Company'}
                               </h3>
                               <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-500">
@@ -782,8 +782,10 @@ export function AdminPanel() {
                                       {user.role && (
                                         <>
                                           <span className="text-gray-300 hidden sm:inline">•</span>
-                                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                            user.role === 'admin' || user.role === 'superAdmin'
+                       {/* Main content with consistent structure */}
+                       <div className="space-y-4">
+                         {/* Contact Information Row */}
+                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                               ? 'bg-purple-100 text-purple-800'
                                               : 'bg-gray-100 text-gray-800'
                                           }`}>
@@ -908,6 +910,36 @@ export function AdminPanel() {
                             </div>
                           </div>
 
+                         {/* Additional Details Section - Always present but conditionally filled */}
+                         <div className="border-t pt-4">
+                           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                             {/* Remarks Section */}
+                             <div className="min-h-[40px]">
+                               {request.remarks && (
+                                 <div>
+                                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Remarks</h4>
+                                   <div className="bg-gray-50 rounded-lg p-3">
+                                     <p className="text-sm text-gray-600">{request.remarks}</p>
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                             
+                             {/* Assessment Score Section */}
+                             <div className="min-h-[40px]">
+                               {metadata?.assessmentScore && (
+                                 <div>
+                                   <h4 className="text-sm font-semibold text-gray-700 mb-2">Assessment Details</h4>
+                                   <div className="flex items-center space-x-3">
+                                     <BarChart3 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                     <span className="text-sm font-medium text-gray-900">
+                                       Assessment Score: <span className="text-primary">{metadata.assessmentScore}</span>
+                                     </span>
+                                   </div>
+                                 </div>
+                               )}
+                             </div>
+                           </div>
                           {/* Expand Button for Tier 1 Follow-up requests */}
                           {hasAssessmentData && (
                             <div className="flex justify-center sm:justify-start mt-4 sm:mt-0">
@@ -1000,26 +1032,7 @@ export function AdminPanel() {
                                                 >
                                                   <div
                                                     className={`p-1 sm:p-2 rounded-lg text-xs leading-tight ${
-                                                      isSelected
-                                                        ? "text-white bg-blue-500"
-                                                        : "text-gray-700 bg-white border border-gray-200"
-                                                    }`}
-                                                  >
-                                                    {option.label}
-                                                  </div>
-                                                </td>
-                                              );
-                                            })}
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                       </div>
                       </div>
                     );
                   })
