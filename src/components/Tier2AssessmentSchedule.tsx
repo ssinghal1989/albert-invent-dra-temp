@@ -606,6 +606,10 @@ export function Tier2AssessmentSchedule({
                     tileDisabled={({ date }) => !isDateAvailable(date)}
                     calendarType="gregory"
                     locale="en-US"
+                    showWeekNumbers={false}
+                    showNavigation={true}
+                    prev2Label={null}
+                    next2Label={null}
                     className="react-calendar-custom"
                   />
                 </div>
