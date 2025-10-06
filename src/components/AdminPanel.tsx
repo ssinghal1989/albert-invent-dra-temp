@@ -13,14 +13,15 @@ import {
   Calendar,
   Phone,
   ChevronDown,
-  MessageSquare
+  MessageSquare,
   Eye,
   ChevronDown,
   ChevronUp,
   Mail,
   Briefcase,
   BarChart3,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { client } from '../amplifyClient';
 import { useAppContext } from '../context/AppContext';
@@ -732,7 +733,7 @@ export function AdminPanel() {
                                     <X className="w-3 h-3 flex-shrink-0" />
                                     <span>Disabled</span>
                                   </>
-                    <div className="flex items-start justify-between mb-4">
+                                )}
                               </div>
                             </div>
 
@@ -1108,92 +1109,64 @@ export function AdminPanel() {
                                         Albert Invent
                                       </span>
                                     )}
-                    {/* Main content in a consistent 3-column grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Contact Information - Column 1 */}
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <Mail className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{metadata?.userEmail}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Building className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{metadata?.companyName}</span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Briefcase className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">{metadata?.userJobTitle}</span>
-                        </div>
-                        
-                        {/* Assessment Score - Always in same position */}
-                        {metadata?.assessmentScore && (
-                          <div className="flex items-center space-x-3 pt-2 border-t border-gray-100">
-                            <BarChart3 className="w-4 h-4 text-primary flex-shrink-0" />
-                            <span className="text-sm font-medium text-primary">
-                              Assessment Score: {metadata.assessmentScore}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+                                  </div>
 
-                      {/* Schedule Details - Column 2 */}
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3">
-                          <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">
-                            Preferred: {new Date(request.preferredDate).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Clock className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">
-                            Times: {request.preferredTimes?.map(time => {
-                              const [hours, minutes] = time.split(':');
-                              const hour = parseInt(hours);
-                              const ampm = hour >= 12 ? 'PM' : 'AM';
-                              const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                              return `${displayHour}:${minutes} ${ampm}`;
-                            }).join(', ')}
-                          </span>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Calendar className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                          <span className="text-sm text-gray-700">
-                            Requested: {new Date(request.createdAt).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-                        
-                        {/* Remarks - Always in same position */}
-                        {request.remarks && (
-                          <div className="pt-2 border-t border-gray-100">
-                            <div className="flex items-start space-x-3">
-                              <MessageSquare className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Remarks</span>
-                                <p className="text-sm text-gray-700 mt-1">{request.remarks}</p>
+                                  {/* User Details */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                      <Mail className="w-4 h-4 flex-shrink-0" />
+                                      <span className="truncate">{user.email}</span>
+                                    </div>
+                                    {user.jobTitle && (
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">{user.jobTitle}</span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                                      <span>Joined {formatDate(user.createdAt)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Role Management Section - Takes up 4 columns on large screens */}
+                              <div className="lg:col-span-4 flex flex-col justify-start space-y-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Role
+                                  </label>
+                                  <select
+                                    value={user.role}
+                                    onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
+                                    disabled={updatingRoles[user.id] || isCurrentUser}
+                                    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm ${
+                                      isCurrentUser ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'
+                                    }`}
+                                  >
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="superAdmin">Super Admin</option>
+                                  </select>
+                                  {isCurrentUser && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      You cannot change your own role
+                                    </p>
+                                  )}
+                                </div>
+
+                                {updatingRoles[user.id] && (
+                                  <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    <span>Updating role...</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>
-                        )}
-                      </div>
-
-                      {/* Actions - Column 3 */}
-                      <div className="flex flex-col justify-start">
-                        <button className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-all duration-200 text-sm">
-                          <BarChart3 className="w-4 h-4" />
-                          <span>View Assessment</span>
-                          <ChevronDown className="w-4 h-4" />
-                        </button>
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )
