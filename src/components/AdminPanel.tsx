@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield } from 'lucide-react';
-import {
+import { 
   Shield, 
   Building, 
   Users, 
@@ -26,12 +25,6 @@ import { client } from '../amplifyClient';
 import { useAppContext } from '../context/AppContext';
 import { LoadingButton } from './ui/LoadingButton';
 import { Loader } from './ui/Loader';
-import { UserManagement } from './admin/UserManagement';
-import { CallRequestsManagement } from './admin/CallRequestsManagement';
-import { CompaniesManagement } from './admin/CompaniesManagement';
-import { QuestionManagement } from './admin/QuestionManagement';
-import { AssessmentManagement } from './admin/AssessmentManagement';
-import { SystemInfo } from './admin/SystemInfo';
 import { useToast } from '../context/ToastContext';
 import { questionsService } from '../services/questionsService';
 import { Tier1TemplateId } from '../services/defaultQuestions';
@@ -442,28 +435,816 @@ export function AdminPanel() {
     });
     return sortedOptions;
   };
-  // Admin Header Component
 
-  function AdminHeader() {
+  const getMaturityLabels = () => {
+    const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
+    if (tier1Questions.length > 0 && tier1Questions[0].options) {
+      const maturityLevels = maturityOrder.filter((level) =>
+        tier1Questions[0].options.some((opt: any) => opt.value === level)
+      );
+      return maturityLevels.map((level) =>
+        level
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/\b\w/g, (l) => l.toUpperCase())
+      );
+    }
+    return [];
+  };
+
+  const filteredCompanies = companies.filter(company =>
+    company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    company.primaryDomain.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredCallRequests = callRequests.filter(request => {
+    const metadata = request.metadata ? JSON.parse(request.metadata) : {};
+    const matchesSearch = (
+      metadata.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      metadata.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      metadata.userEmail?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const matchesFilter = callRequestFilter === 'ALL' || request.type === callRequestFilter;
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = (
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    const matchesFilter = userFilter === 'ALL' || 
+      (userFilter === 'ALBERTINVENT' && user.email.includes('@albertinvent.com'));
+    
+    return matchesSearch && matchesFilter;
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredCallRequests.length / itemsPerPage);
+  const totalUserPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCallRequests = filteredCallRequests.slice(startIndex, endIndex);
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [callRequestFilter, searchTerm, userFilter]);
+
+  if (!isAdmin) {
     return (
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-          <Shield className="w-8 h-8 text-white" />
+      <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-xl p-6 sm:p-8 border border-gray-100 text-center">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <AlertCircle className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
+              Access Denied
+            </h1>
+            <p className="text-gray-600 text-base sm:text-lg">
+              You don't have permission to access the admin panel.
+            </p>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
-        <p className="text-gray-600 text-lg">Manage assessments and system data</p>
-      </div>
+      </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <AdminHeader />
-        
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-8">
-          <UserManagement />
-          <CompaniesManagement />
+    <main className="flex-1 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary rounded-full flex items-center justify-center">
+                <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Admin Panel</h1>
+                <p className="text-gray-600 text-sm sm:text-base">Manage companies, users, and call requests</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center space-x-6 sm:space-x-4">
+              <div className="text-center sm:text-right">
+                <p className="text-xs sm:text-sm text-gray-500">Companies</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">{companies.length}</p>
+              </div>
+              <div className="text-center sm:text-right">
+                <p className="text-xs sm:text-sm text-gray-500">Requests</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">{callRequests.length}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div className={`flex space-x-1 bg-gray-100 rounded-lg p-1 ${isSuperAdmin ? 'grid grid-cols-3' : 'grid grid-cols-2'}`}>
+            <button
+              onClick={() => setCurrentView('companies')}
+              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
+                currentView === 'companies'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Building className="w-4 h-4 flex-shrink-0" />
+              <span>Companies</span>
+            </button>
+            <button
+              onClick={() => setCurrentView('callRequests')}
+              className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
+                currentView === 'callRequests'
+                  ? 'bg-white text-primary shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Phone className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Call Requests</span>
+              <span className="sm:hidden">Requests</span>
+            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => setCurrentView('users')}
+                className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
+                  currentView === 'users'
+                    ? 'bg-white text-primary shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Users className="w-4 h-4 flex-shrink-0" />
+                <span>Users</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
+          <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4 lg:items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+              <input
+                type="text"
+                placeholder={
+                  currentView === 'companies' ? "Search companies..." : 
+                  currentView === 'callRequests' ? "Search call requests..." : 
+                  "Search users..."
+                }
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+              />
+            </div>
+            
+            {/* Filter for Call Requests */}
+            {currentView === 'callRequests' && (
+              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</span>
+                <select
+                  value={callRequestFilter}
+                  onChange={(e) => setCallRequestFilter(e.target.value as 'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST')}
+                  className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-sm sm:text-base"
+                >
+                  <option value="ALL">All Requests</option>
+                  <option value="TIER1_FOLLOWUP">Tier 1</option>
+                  <option value="TIER2_REQUEST">Tier 2</option>
+                </select>
+              </div>
+            )}
+            
+            {/* Filter for Users */}
+            {currentView === 'users' && isSuperAdmin && (
+              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</span>
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value as 'ALL' | 'ALBERTINVENT')}
+                  className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-sm sm:text-base"
+                >
+                  <option value="ALL">All Users</option>
+                  <option value="ALBERTINVENT">Albert Invent Only</option>
+                </select>
+              </div>
+            )}
+            
+            <button
+              onClick={
+                currentView === 'companies' ? fetchCompanies : 
+                currentView === 'callRequests' ? fetchCallRequests : 
+                fetchUsers
+              }
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-200 transition-colors duration-200 whitespace-nowrap text-sm sm:text-base"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
+          <div className="p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">
+              {currentView === 'companies' ? 'Companies Management' : 
+               currentView === 'callRequests' ? 'Call Requests' : 
+               'User Management'}
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              {currentView === 'companies' ? 'Manage company settings and view associated users' :
+               currentView === 'callRequests' ? `View and manage call requests (${filteredCallRequests.length} total)` :
+               `Manage user roles and permissions (${filteredUsers.length} total)`
+              }
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="p-6 sm:p-8">
+              <Loader text={`Loading ${currentView === 'callRequests' ? 'call requests' : currentView}...`} size="lg" />
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {currentView === 'companies' ? (
+                // Companies View - Coming Soon
+                <div className="p-6 sm:p-8 text-center">
+                  <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
+                  <p className="text-gray-500 text-sm sm:text-base">Company management features will be available soon.</p>
+                </div>
+                
+                // TODO: Restore this when Companies management is ready
+                /*
+                filteredCompanies.length === 0 ? (
+                  <div className="p-6 sm:p-8 text-center">
+                    <Building className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">No companies found</p>
+                  </div>
+                ) : (
+                  filteredCompanies.map((company) => {
+                    const config = company.config ? JSON.parse(company.config) : {};
+                    const hasTier2Access = config?.tier2AccessEnabled === true;
+                    const isExpanded = expandedCompanies.has(company.id);
+                    
+                    return (
+                      <div key={company.id} className="p-4 sm:p-6">
+                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                          <div className="flex items-start sm:items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Building className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                {company.name || 'Unnamed Company'}
+                              </h3>
+                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-500">
+                                <span className="truncate">{company.primaryDomain}</span>
+                                <div className="flex items-center space-x-1">
+                                  <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span>{company.users?.length || 0} users</span>
+                                </div>
+                                <span className="hidden sm:inline">Created {formatDate(company.createdAt)}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
+                            <div className="flex items-center justify-between sm:justify-start space-x-2">
+                              <span className="text-sm font-medium text-gray-700">Tier 2:</span>
+                              <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
+                                hasTier2Access 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {hasTier2Access ? (
+                                  <>
+                                    <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                                    <span>Enabled</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <X className="w-3 h-3 flex-shrink-0" />
+                                    <span>Disabled</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-2 sm:space-x-3">
+                              <LoadingButton
+                                onClick={() => updateCompanyTier2Access(company.id, !hasTier2Access)}
+                                loading={updatingCompany === company.id}
+                                loadingText="..."
+                                variant={hasTier2Access ? 'outline' : 'primary'}
+                                size="sm"
+                                className="text-xs sm:text-sm px-3 sm:px-4"
+                              >
+                                {hasTier2Access ? 'Disable' : 'Enable'}
+                              </LoadingButton>
+
+                              <button
+                                onClick={() => toggleCompanyExpansion(company.id)}
+                                className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {isExpanded && company.users && company.users.length > 0 && (
+                          <div className="mt-4 pl-0 sm:pl-16">
+                            <h4 className="text-sm font-medium text-gray-700 mb-3">Users:</h4>
+                            <div className="space-y-2">
+                              {company.users.map((user: any) => (
+                                <div key={user.id} className="flex items-start sm:items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
+                                      <span className="font-medium text-gray-900 text-sm sm:text-base">{user.name || 'No name'}</span>
+                                      <span className="text-xs sm:text-sm text-gray-500 break-all">{user.email}</span>
+                                      {user.jobTitle && (
+                                        <>
+                                          <span className="text-gray-300 hidden sm:inline">•</span>
+                                          <span className="text-xs sm:text-sm text-gray-500">{user.jobTitle}</span>
+                                        </>
+                                      )}
+                                      {user.role && (
+                                        <>
+                                          <span className="text-gray-300 hidden sm:inline">•</span>
+                                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                            user.role === 'admin' || user.role === 'superAdmin'
+                                              ? 'bg-purple-100 text-purple-800'
+                                              : 'bg-gray-100 text-gray-800'
+                                          }`}>
+                                            {user.role}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )
+                */
+              ) : currentView === 'callRequests' ? (
+                // Call Requests View
+                paginatedCallRequests.length === 0 ? (
+                  <div className="p-6 sm:p-8 text-center">
+                    <Phone className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      {filteredCallRequests.length === 0 ? 'No call requests found' : 'No requests on this page'}
+                    </p>
+                  </div>
+                ) : (
+                  paginatedCallRequests.map((request) => {
+                    const metadata = request.metadata ? JSON.parse(request.metadata) : {};
+                    const isExpanded = expandedCallRequests.has(request.id);
+                    const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstanceId;
+                    const assessmentInstance = request.assessmentInstanceId ? assessmentInstances[request.assessmentInstanceId] : null;
+                    const isLoadingThisAssessment = loadingAssessment === request.assessmentInstanceId;
+                    
+                    return (
+                      <div key={request.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                        <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 mb-4">
+                          <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Phone className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                  {metadata.userName || 'Unknown User'}
+                                </h3>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(request.type)}`}>
+                                    {request.type === 'TIER1_FOLLOWUP' ? 'Tier 1' : 'Tier 2'}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                                    {request.status}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-2">
+                                    <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="truncate">{metadata.userEmail || 'No email'}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Building className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    {metadata.companyDomain ? (
+                                      <a
+                                        href={getCompanyUrl(metadata.companyDomain)}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
+                                      >
+                                        {metadata.companyName}
+                                      </a>
+                                    ) : (
+                                      <span className="truncate">{metadata.companyName}</span>
+                                    )}
+                                  </div>
+                                  {metadata.userJobTitle && (
+                                    <div className="flex items-center space-x-2">
+                                      <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                      <span className="truncate">{metadata.userJobTitle}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span>Preferred: {formatDate(request.preferredDate)}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span className="text-xs sm:text-sm">{formatTimes(request.preferredTimes)}</span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                                    <span>Requested: {formatDate(request.createdAt)}</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {request.remarks && (
+                                <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+                                  <p className="text-xs sm:text-sm text-gray-700">
+                                    <strong>Remarks:</strong> {request.remarks}
+                                  </p>
+                                </div>
+                              )}
+
+                              {metadata.assessmentScore && (
+                                <div className="mt-3">
+                                  <span className="text-xs sm:text-sm text-gray-600">
+                                    Assessment Score: 
+                                    <span className="ml-1 font-semibold text-primary">
+                                      {metadata.assessmentScore}
+                                    </span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Expand Button for Tier 1 Follow-up requests */}
+                          {hasAssessmentData && (
+                            <div className="flex justify-center sm:justify-start mt-4 sm:mt-0">
+                              <button
+                                onClick={() => handleViewAssessment(request.id, request.assessmentInstanceId!)}
+                                disabled={isLoadingThisAssessment}
+                                className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
+                              >
+                                {isLoadingThisAssessment ? (
+                                  <>
+                                    <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                                    <span>Loading...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <span className="hidden sm:inline">{isExpanded ? 'Hide' : 'View'} Assessment</span>
+                                    <span className="sm:hidden">{isExpanded ? 'Hide' : 'View'}</span>
+                                  </>
+                                )}
+                                {!isLoadingThisAssessment && (isExpanded ? (
+                                  <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                                ) : (
+                                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                                ))}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Expanded Assessment View */}
+                        {isExpanded && hasAssessmentData && assessmentInstance && (
+                          <div className="mt-6 border-t pt-6">
+                            <div className="mb-4">
+                              <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                                Tier 1 Assessment Results
+                              </h4>
+                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-600">
+                                <div className="flex items-center space-x-1">
+                                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  <span>Completed: {formatDate(assessmentInstance.createdAt)}</span>
+                                </div>
+                                {assessmentInstance.score && (
+                                  <div className="flex items-center space-x-1">
+                                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <span>
+                                      Score: {JSON.parse(assessmentInstance.score).overallScore}/100
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Assessment Grid */}
+                            {tier1Questions.length > 0 && assessmentInstance.responses && (
+                              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4">
+                                  <table className="w-full border-collapse">
+                                    <thead>
+                                      <tr>
+                                        <th className="text-left p-2 sm:p-3 font-semibold text-gray-700 border-b bg-white text-xs sm:text-sm min-w-32 sm:min-w-48">
+                                          Focus Areas
+                                        </th>
+                                        {getMaturityLabels().map((level: any) => (
+                                          <th
+                                            key={level}
+                                            className="text-center p-2 sm:p-3 font-semibold text-gray-700 border-b min-w-24 sm:min-w-32 bg-white text-xs sm:text-sm"
+                                          >
+                                            {level}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {tier1Questions.map((question) => {
+                                        const responses = JSON.parse(assessmentInstance.responses);
+                                        const selectedResponse = responses[question.id];
+                                        
+                                        return (
+                                          <tr key={question.id} className="border-b border-gray-200">
+                                            <td className="p-2 sm:p-3 font-medium text-gray-800 bg-white align-top text-xs sm:text-sm">
+                                              {question.prompt}
+                                            </td>
+                                            {getSortedOptions(question).map((option: any) => {
+                                              const isSelected = selectedResponse === option.value;
+                                              return (
+                                                <td
+                                                  key={`${question.id}_${option.label}`}
+                                                  className="p-1 sm:p-2 align-top"
+                                                >
+                                                  <div
+                                                    className={`p-1 sm:p-2 rounded-lg text-xs leading-tight ${
+                                                      isSelected
+                                                        ? "text-white bg-blue-500"
+                                                        : "text-gray-700 bg-white border border-gray-200"
+                                                    }`}
+                                                  >
+                                                    {option.label}
+                                                  </div>
+                                                </td>
+                                              );
+                                            })}
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )
+              ) : (
+                // Users View - Super Admin Only
+                paginatedUsers.length === 0 ? (
+                  <div className="p-6 sm:p-8 text-center">
+                    <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500">
+                      {users.length === 0 ? 'No users found' : 'No users match your search'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 sm:p-6">
+                    <div className="space-y-4">
+                      {paginatedUsers.map((user) => {
+                        const isCurrentUser = user.id === state.userData?.id;
+                        const isAlbertInventUser = user.email?.includes('@albertinvent.com');
+                        
+                        return (
+                          <div key={user.id} className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
+                              {/* User Info Section - Takes up 8 columns on large screens */}
+                              <div className="lg:col-span-8 flex items-start space-x-4 min-w-0">
+                                <div className="flex-shrink-0">
+                                  <Users className={`w-8 h-8 sm:w-10 sm:h-10 ${isAlbertInventUser ? 'text-primary' : 'text-gray-400'}`} />
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                  {/* User Name and Role Badge */}
+                                  <div className="flex items-center space-x-2 mb-3">
+                                    <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                      {user.name || 'No Name'}
+                                    </h3>
+                                    {isCurrentUser && (
+                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                        You
+                                      </span>
+                                    )}
+                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      user.role === 'superAdmin' 
+                                        ? 'bg-red-100 text-red-800'
+                                        : user.role === 'admin'
+                                        ? 'bg-purple-100 text-purple-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
+                                    </span>
+                                    {isAlbertInventUser && (
+                                      <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
+                                        Albert Invent
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  {/* User Details in 2 columns */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                                    {/* Left Column */}
+                                    <div className="space-y-2">
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Mail className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">{user.email}</span>
+                                      </div>
+                                      {user.jobTitle && (
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                          <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                          <span className="truncate">{user.jobTitle}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {/* Right Column */}
+                                    <div className="space-y-2">
+                                      {user.company?.name && (
+                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                          <Building className="w-4 h-4 flex-shrink-0" />
+                                          {user.company.primaryDomain ? (
+                                            <button
+                                              onClick={() => window.open(getCompanyUrl(user.company!.primaryDomain!), '_blank', 'noopener,noreferrer')}
+                                              className="text-primary hover:text-blue-700 hover:underline truncate text-left"
+                                            >
+                                              {user.company.name}
+                                            </button>
+                                          ) : (
+                                            <span className="truncate">{user.company.name}</span>
+                                          )}
+                                        </div>
+                                      )}
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Calendar className="w-4 h-4 flex-shrink-0" />
+                                        <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { 
+                                          month: 'short', 
+                                          day: 'numeric', 
+                                          year: 'numeric' 
+                                        })}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Role Management Section - Takes up 4 columns on large screens */}
+                              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-0 lg:space-y-2">
+                                <div className="flex items-center space-x-2 text-sm">
+                                  <span className="text-gray-600 font-medium">Current Role:</span>
+                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    user.role === 'superAdmin' 
+                                      ? 'bg-red-100 text-red-800'
+                                      : user.role === 'admin'
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
+                                  </span>
+                                </div>
+                                
+                                {!isCurrentUser && (
+                                  <div className="flex items-center space-x-2">
+                                    <label className="text-sm font-medium text-gray-600">Change to:</label>
+                                    <select
+                                      value={user.role || 'user'}
+                                      onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
+                                      disabled={updatingRoles[user.id]}
+                                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                                    >
+                                      <option value="user">User</option>
+                                      <option value="admin">Admin</option>
+                                      <option value="superAdmin">Super Admin</option>
+                                    </select>
+                                    {updatingRoles[user.id] && (
+                                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                    )}
+                                  </div>
+                                )}
+                                
+                                {isCurrentUser && (
+                                  <div className="text-sm text-gray-500 italic">
+                                    Cannot change own role
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          )}
+          
+          {/* Pagination for Call Requests */}
+          {((currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage) ||
+            (currentView === 'users' && filteredUsers.length > itemsPerPage)) && (
+            <div className="p-4 sm:p-6 border-t border-gray-200">
+              <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+                <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
+                  {currentView === 'callRequests' ? (
+                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests</>
+                  ) : (
+                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users</>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-center space-x-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, currentView === 'callRequests' ? totalPages : totalUserPages) }, (_, i) => {
+                      let pageNumber;
+                      const pages = currentView === 'callRequests' ? totalPages : totalUserPages;
+                      if (pages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= pages - 2) {
+                        pageNumber = pages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
+                            currentPage === pageNumber
+                              ? 'bg-primary text-white'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, currentView === 'callRequests' ? totalPages : totalUserPages))}
+                    disabled={currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)}
+                    className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
+                      currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </main>

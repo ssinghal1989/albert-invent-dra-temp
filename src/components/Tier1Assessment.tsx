@@ -336,7 +336,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                   return (
                     <div className="space-y-3">
                       {/* Priority Recommendation */}
-                      {recommendations.length > 0 && recommendations[0].isPriority && (
+                      {recommendations.length > 0 && recommendations.some(item => item.isPriority) && (
                         <div
                           className="bg-gradient-to-r  rounded-lg p-4 border-l-4"
                           style={{ borderColor: "#05f" }}
@@ -367,20 +367,14 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                       )}
 
                       {/* Additional Recommendations */}
-                      {(() => {
-                        // Filter out priority recommendations to get only the numbered ones
-                        const numberedRecommendations = recommendations.filter(rec => !rec.isPriority);
-                        
-                        if (numberedRecommendations.length === 0) return null;
-                        
-                        return (
+                      {recommendations.length > 1 && (
                         <div>
                           <h5 className="text-sm sm:text-base font-medium text-gray-900 mb-3">
-                            {recommendations.some(rec => rec.isPriority) ? 'Additional Focus Areas:' : 'Focus Areas:'}
+                            Additional Focus Areas:
                           </h5>
                           <div className="grid gap-2 sm:gap-3">
-                            {numberedRecommendations
-                              .slice(0, 10)
+                            {recommendations
+                              .filter(item => !item.isPriority)
                               .sort((a, b) => {
                                 const aIndex = a.maturityLevel
                                   ? maturityOrder.indexOf(a.maturityLevel)
@@ -423,8 +417,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                               ))}
                           </div>
                         </div>
-                        );
-                      })()}
+                      )}
                     </div>
                   );
                 })()}
@@ -521,16 +514,16 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
               Please answer all questions to complete your assessment.
             </p>
 
-            <div className="hidden lg:flex lg:justify-between lg:items-center lg:space-x-4 mb-6">
+            <div className="hidden lg:flex lg:justify-end lg:items-center lg:space-x-4 mb-6">
               {/* Request In-Depth Assessment Button - only show if user has completed assessment */}
-              <LoadingButton
+              {/* <LoadingButton
                 onClick={handleRequestTier2}
                 loading={false}
                 loadingText="Submitting..."
                 className="text-base px-4 py-3"
               >
                 Request In-Depth Assessment
-              </LoadingButton>
+              </LoadingButton> */}
 
               <LoadingButton
                 onClick={handleSubmit}
@@ -620,7 +613,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
 
             {/* Submit Buttons - After all questions on mobile */}
             <div className="mt-6 space-y-3">
-              <LoadingButton
+              {/* <LoadingButton
                 onClick={handleRequestTier2}
                 loading={false}
                 loadingText="Submitting..."
@@ -628,7 +621,7 @@ export function Tier1Assessment({ onComplete }: Tier1AssessmentProps) {
                 className="w-full text-sm py-3"
               >
                 Request In-Depth Assessment
-              </LoadingButton>
+              </LoadingButton> */}
               <LoadingButton
                 onClick={handleSubmit}
                 loading={submittingAssesment}

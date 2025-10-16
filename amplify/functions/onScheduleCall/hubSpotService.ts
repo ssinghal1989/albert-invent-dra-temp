@@ -308,7 +308,7 @@ class HubSpotService {
 
       if (existingDeal) {
         // Update existing deal
-        console.log(`Updating existing deal: ${existingDeal.id}`);
+        
         const response = await this.makeRequest(
           `/crm/v3/objects/deals/${existingDeal.id}`,
           'PATCH',
@@ -318,7 +318,7 @@ class HubSpotService {
       }
 
       // Create new deal
-      console.log('Creating new deal');
+      
       const dealPayload: any = { properties };
 
       // Associate with contact and company if provided

@@ -84,7 +84,7 @@ export function UserManagement() {
         });
         
         const sortedUsers = (usersResult.data || []).sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b?.createdAt!).getTime() - new Date(a?.createdAt!).getTime()
         );
         
         setUsers(sortedUsers as User[]);

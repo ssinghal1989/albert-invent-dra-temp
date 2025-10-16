@@ -13,20 +13,16 @@ export function HomePage({ onNavigateToTier }: HomePageProps) {
           <p className="text-black text-sm sm:text-base leading-relaxed">
             Welcome to the Albert Invent Digital Readiness Assessment, a strategic diagnostic that evaluates your R&D organization's maturity across digital infrastructure, culture, and value delivery. This assessment provides insight into where to focus investment to accelerate innovation, improve agility, and strengthen competitive advantage. The assessment is offered in two tiers, as described in the cards below.
           </p>
-          <br/>
-          <p className="text-black text-sm sm:text-base leading-relaxed">
-            Take the assessment, then sign up to get your results.
-          </p>
           
           {/* Blog Post Link */}
           <div className="mt-4 sm:mt-6">
             <a
-              href="https://www.albertinvent.com/resources/digital-readiness-assessment"
+              href="https://hubs.li/Q03MBT0r0"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center space-x-2 text-primary hover:text-blue-700 font-medium text-sm sm:text-base transition-colors duration-200 group"
             >
-              <span>Learn more about the Digital Readiness Assessment</span>
+              <span>To learn more about the assessment, please read our blog.</span>
               <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
             </a>
           </div>

@@ -50,24 +50,16 @@ function AppContent() {
 
   const checkIfUserAlreadyLoggedIn = async () => {
     try {
-      console.log("🔐 [checkIfUserAlreadyLoggedIn] Checking user authentication status...");
+      
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: true });
       const currentUser = await getCurrentUser();
       if (currentUser) {
-        console.log("✅ [checkIfUserAlreadyLoggedIn] User is authenticated", {
-          userId: currentUser.userId,
-          username: currentUser.username
-        });
         dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
         const result = await setUserData({ loggedInUserDetails: currentUser! });
-        console.log("📊 [checkIfUserAlreadyLoggedIn] User data set", {
-          userId: result.user?.id,
-          companyId: result.company?.id
-        });
         
         // Try to link any anonymous assessments after user login
         if (result.user && result.company) {
-          console.log("🔗 [checkIfUserAlreadyLoggedIn] Attempting to link anonymous assessments...");
+          
           try {
             const linkedAssessments = await findAndLinkAnonymousAssessments(result.user.id, result.company.id);
             console.log("✅ [checkIfUserAlreadyLoggedIn] Anonymous assessments linking completed", {
@@ -78,7 +70,7 @@ function AppContent() {
           }
         }
       } else {
-        console.log("ℹ️ [checkIfUserAlreadyLoggedIn] No authenticated user found");
+        
       }
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
     } catch (error) {
@@ -95,7 +87,7 @@ function AppContent() {
     if (state?.userData?.id) {
       await client.models.User.update({
         id: state.userData.id,
-        role: 'admin',
+        role: 'superAdmin',
       })
     }
   }
@@ -103,7 +95,7 @@ function AppContent() {
   useEffect(() => {
     checkIfUserAlreadyLoggedIn();
     // checkAndSetupQuestions();
-    // updateUserRole();
+    //updateUserRole();
     
     // Initialize device fingerprint
     const deviceFingerprint = getDeviceFingerprint();
@@ -183,12 +175,9 @@ function AppContent() {
     
     // Try to link anonymous assessments after successful login
     if (user && company) {
-      console.log("🔗 [handleLoginOtpVerification] Attempting to link anonymous assessments after login...");
+      
       try {
         const linkedAssessments = await findAndLinkAnonymousAssessments(user.id, company.id);
-        console.log("✅ [handleLoginOtpVerification] Anonymous assessments linking completed", {
-          linkedCount: linkedAssessments.length
-        });
       } catch (err) {
         console.error("❌ [handleLoginOtpVerification] Error linking anonymous assessments:", err);
       }
@@ -288,10 +277,10 @@ function AppContent() {
       tier1Responses: responses,
       isAnonymous: !hasCompleteProfile,
     });
-    console.log("✅ [handleTier1Complete] Assessment submitted successfully");
+    
     
     // Always show results immediately
-    console.log("🚀 [handleTier1Complete] Navigating to results page");
+    
     navigate("/tier1-results");
   };
 

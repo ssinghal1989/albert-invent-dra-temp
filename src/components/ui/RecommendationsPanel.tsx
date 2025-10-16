@@ -71,7 +71,7 @@ export function RecommendationsPanel({
 
           <div className="space-y-3">
             {/* Priority Recommendation */}
-            {recommendations.length > 0 && recommendations[0].isPriority && (
+            {recommendations.length > 0 && recommendations.some(item => item.isPriority) && (
               <div
                 className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border-l-4"
                 style={{ 
@@ -100,21 +100,16 @@ export function RecommendationsPanel({
             )}
 
             {/* Additional Recommendations */}
-            {(() => {
-              // Filter out priority recommendations to get only the numbered ones
-              const numberedRecommendations = recommendations.filter(rec => !rec.isPriority);
-              
-              if (numberedRecommendations.length === 0) return null;
-              
-              return (
+            {recommendations.length > 1 && (
               <div>
                 <h5 className="font-medium text-gray-900 mb-3">
-                  {recommendations.some(rec => rec.isPriority) ? 'Additional Focus Areas:' : 'Focus Areas:'}
+                  Additional Focus Areas:
                 </h5>
                 <div className="grid gap-3">
                   {(() => {
                     const maturityOrder = ['BASIC', 'EMERGING', 'ESTABLISHED', 'WORLD_CLASS'];
-                    const sortedRecommendations = numberedRecommendations
+                    const sortedRecommendations = recommendations
+                      .filter(item => !item.isPriority)
                       .sort((a, b) => {
                         const aIndex = a.maturityLevel ? maturityOrder.indexOf(a.maturityLevel) : 999;
                         const bIndex = b.maturityLevel ? maturityOrder.indexOf(b.maturityLevel) : 999;
@@ -151,8 +146,7 @@ export function RecommendationsPanel({
                   })()}
                 </div>
               </div>
-              );
-            })()}
+            )}
           </div>
         </div>
       )}

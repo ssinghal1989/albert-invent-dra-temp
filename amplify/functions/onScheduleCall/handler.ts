@@ -2,7 +2,7 @@ import { Logger } from "@aws-lambda-powertools/logger";
 import type { DynamoDBStreamHandler } from "aws-lambda";
 import { DynamoDB, SES } from "aws-sdk";
 import { AddressList } from "aws-sdk/clients/ses";
-import { getHubSpotService } from "../../../src/services/HubspotService";
+import { getHubSpotService } from "./hubSpotService";
 
 const ses = new SES();
 

@@ -117,7 +117,7 @@ export function CompaniesManagement() {
           userCount: userCounts[company.id] || 0,
           assessmentCount: assessmentCounts[company.id] || 0
         })).sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b?.createdAt!).getTime() - new Date(a?.createdAt!).getTime()
         );
         
         setCompanies(companiesWithCounts as Company[]);
