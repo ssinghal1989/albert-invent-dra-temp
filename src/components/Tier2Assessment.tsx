@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { Tier2AssessmentInfo } from "./Tier2AssessmentInfo";
 import { Tier2AssessmentQuestions } from "./Tier2AssessmentQuestions";
+import { Tier2Results } from "./Tier2Results";
 import { useCallRequest } from "../hooks/useCallRequest";
 import { useAssessment } from "../hooks/useAssesment";
 import { Loader } from "./ui/Loader";
@@ -16,11 +17,11 @@ interface Tier2AssessmentProps {
 export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   const { state } = useAppContext();
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<"info" | "questions" | "schedule">("info");
+  const [currentStep, setCurrentStep] = useState<"info" | "questions" | "schedule" | "results">("info");
   const [isLoading, setIsLoading] = useState(true);
   const hasTier2Access = useHasTier2Access();
   const { tier2AssessmentRequests } = useCallRequest();
-  const { submitTier2Assessment } = useAssessment();
+  const { submitTier2Assessment, userTier2Assessments, fetchUserAssessments } = useAssessment();
 
   const handleStartAssessment = () => {
     setCurrentStep("questions");
@@ -30,12 +31,15 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
     setCurrentStep("schedule");
   };
 
+  const handleRetakeAssessment = () => {
+    setCurrentStep("questions");
+  };
+
   const handleCompleteAssessment = async (responses: Record<string, string>) => {
-    // Handle Tier 2 assessment completion
     try {
       await submitTier2Assessment(responses);
-      // TODO: Navigate to Tier 2 results page or show success message
-      console.log('Tier 2 assessment submitted successfully');
+      await fetchUserAssessments();
+      setCurrentStep("results");
     } catch (error) {
       console.error('Error submitting Tier 2 assessment:', error);
     }
@@ -43,17 +47,31 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   const isUserLoggedIn = !!state.loggedInUserDetails?.signInDetails?.loginId;
   const hasRequestedTier2 = tier2AssessmentRequests.length > 0;
+  const hasExistingAssessment = userTier2Assessments && userTier2Assessments.length > 0;
 
   useEffect(() => {
-    if (isUserLoggedIn && state.userData) {
-      const timer = setTimeout(() => {
+    const initializeComponent = async () => {
+      if (isUserLoggedIn && state.userData) {
+        await fetchUserAssessments();
+
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+        return () => clearTimeout(timer);
+      } else {
         setIsLoading(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setIsLoading(false);
+      }
+    };
+
+    initializeComponent();
+  }, [isUserLoggedIn, state.userData]);
+
+  useEffect(() => {
+    // If user has existing assessment and has requested tier 2, show results
+    if (!isLoading && isUserLoggedIn && hasRequestedTier2 && hasTier2Access && hasExistingAssessment) {
+      setCurrentStep("results");
     }
-  }, [isUserLoggedIn, state.userData, tier2AssessmentRequests]);
+  }, [isLoading, isUserLoggedIn, hasRequestedTier2, hasTier2Access, hasExistingAssessment]);
 
   // Show loader while checking user status
   if (isLoading && isUserLoggedIn) {
@@ -107,6 +125,13 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   // User IS logged in AND has requested Tier 2 AND has access - show assessment flow
   switch (currentStep) {
+    case "results":
+      return (
+        <Tier2Results
+          onRetakeAssessment={handleRetakeAssessment}
+          onNavigateBack={() => onNavigateToTier("tier1")}
+        />
+      );
     case "info":
       return (
         <Tier2AssessmentInfo
