@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAppContext, useHasTier2Access } from "../context/AppContext";
 import { Tier2AssessmentSchedule } from "./Tier2AssessmentSchedule";
 import { useNavigate } from "react-router-dom";
@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { Tier2AssessmentInfo } from "./Tier2AssessmentInfo";
 import { Tier2AssessmentQuestions } from "./Tier2AssessmentQuestions";
 import { useCallRequest } from "../hooks/useCallRequest";
+import { Loader } from "./ui/Loader";
 
 interface Tier2AssessmentProps {
   onNavigateToTier: (tier: "tier1" | "tier2") => void;
@@ -15,6 +16,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   const { state } = useAppContext();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<"info" | "questions" | "schedule">("info");
+  const [isLoading, setIsLoading] = useState(true);
   const hasTier2Access = useHasTier2Access();
   const { tier2AssessmentRequests } = useCallRequest();
 
@@ -33,6 +35,30 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   const isUserLoggedIn = !!state.loggedInUserDetails?.signInDetails?.loginId;
   const hasRequestedTier2 = tier2AssessmentRequests.length > 0;
+
+  useEffect(() => {
+    if (isUserLoggedIn && state.userData) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else {
+      setIsLoading(false);
+    }
+  }, [isUserLoggedIn, state.userData, tier2AssessmentRequests]);
+
+  // Show loader while checking user status
+  if (isLoading && isUserLoggedIn) {
+    return (
+      <main className="flex-1 p-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <Loader text="Loading assessment..." size="lg" />
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // User is NOT logged in - show schedule page
   if (!isUserLoggedIn) {
