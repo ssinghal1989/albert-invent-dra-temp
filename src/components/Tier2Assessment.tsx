@@ -6,6 +6,7 @@ import { AlertCircle } from "lucide-react";
 import { Tier2AssessmentInfo } from "./Tier2AssessmentInfo";
 import { Tier2AssessmentQuestions } from "./Tier2AssessmentQuestions";
 import { useCallRequest } from "../hooks/useCallRequest";
+import { useAssessment } from "../hooks/useAssesment";
 import { Loader } from "./ui/Loader";
 
 interface Tier2AssessmentProps {
@@ -19,6 +20,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   const [isLoading, setIsLoading] = useState(true);
   const hasTier2Access = useHasTier2Access();
   const { tier2AssessmentRequests } = useCallRequest();
+  const { submitTier2Assessment } = useAssessment();
 
   const handleStartAssessment = () => {
     setCurrentStep("questions");
@@ -28,9 +30,15 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
     setCurrentStep("schedule");
   };
 
-  const handleCompleteAssessment = (responses: Record<string, string>) => {
+  const handleCompleteAssessment = async (responses: Record<string, string>) => {
     // Handle Tier 2 assessment completion
-
+    try {
+      await submitTier2Assessment(responses);
+      // TODO: Navigate to Tier 2 results page or show success message
+      console.log('Tier 2 assessment submitted successfully');
+    } catch (error) {
+      console.error('Error submitting Tier 2 assessment:', error);
+    }
   };
 
   const isUserLoggedIn = !!state.loggedInUserDetails?.signInDetails?.loginId;

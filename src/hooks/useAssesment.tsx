@@ -327,24 +327,39 @@ export function useAssessment() {
         setSubmittingAssesment(false);
         return;
       }
-      
-      // Create a new assessment instance for user
+
+      // Get questions to calculate score
+      const { questionsService } = await import('../services/questionsService');
+      const questionsResult = await questionsService.getQuestionsByTemplate(Tier2TemplateId);
+
+      if (!questionsResult.success || !questionsResult.data) {
+        throw new Error("Failed to load questions for score calculation");
+      }
+
+      // Calculate Tier 2 score
+      const { calculateTier2Score } = await import('../utils/tier2ScoreCalculator');
+      const tier2Score = calculateTier2Score(responses, questionsResult.data);
+
+      // Create a new assessment instance for user with calculated score
       const assessmentData = {
         templateId: Tier2TemplateId,
         companyId: state.userData?.companyId,
         initiatorUserId: state?.userData?.id,
         assessmentType: "TIER2" as "TIER2",
         responses: JSON.stringify(responses),
+        score: JSON.stringify(tier2Score),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
-      
-      await client.models.AssessmentInstance.create(assessmentData, {authMode: 'apiKey'});
+
+      const { data } = await client.models.AssessmentInstance.create(assessmentData, {authMode: 'apiKey'});
       await fetchUserAssessments();
       setSubmittingAssesment(false);
+      return data;
     } catch (err) {
       setSubmittingAssesment(false);
       console.error("Error in submitting Tier 2 assessment:", err);
+      throw err;
     }
   };
   const updateTier1AssessmentResponse = useCallback(
