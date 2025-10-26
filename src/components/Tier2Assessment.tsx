@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { Tier2AssessmentInfo } from "./Tier2AssessmentInfo";
 import { Tier2AssessmentQuestions } from "./Tier2AssessmentQuestions";
+import { useCallRequest } from "../hooks/useCallRequest";
 
 interface Tier2AssessmentProps {
   onNavigateToTier: (tier: "tier1" | "tier2") => void;
@@ -15,10 +16,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<"info" | "questions" | "schedule">("info");
   const hasTier2Access = useHasTier2Access();
-
-  // const handleBackToInfo = () => {
-  //   navigate(-1)
-  // };
+  const { tier2AssessmentRequests } = useCallRequest();
 
   const handleStartAssessment = () => {
     setCurrentStep("questions");
@@ -30,13 +28,24 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   const handleCompleteAssessment = (responses: Record<string, string>) => {
     // Handle Tier 2 assessment completion
-    
+
   };
 
   const isUserLoggedIn = !!state.loggedInUserDetails?.signInDetails?.loginId;
+  const hasRequestedTier2 = tier2AssessmentRequests.length > 0;
 
-  
-  if (isUserLoggedIn && !hasTier2Access) {
+  // User is NOT logged in - show schedule page
+  if (!isUserLoggedIn) {
+    return <Tier2AssessmentSchedule onBack={() => setCurrentStep("info")} />;
+  }
+
+  // User IS logged in but has NOT requested Tier 2 - show schedule page
+  if (isUserLoggedIn && !hasRequestedTier2) {
+    return <Tier2AssessmentSchedule onBack={() => setCurrentStep("info")} />;
+  }
+
+  // User IS logged in AND has requested Tier 2 but NO access - show access required
+  if (isUserLoggedIn && hasRequestedTier2 && !hasTier2Access) {
     return (
       <main className="flex-1 p-8">
         <div className="max-w-4xl mx-auto">
@@ -62,6 +71,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
     );
   }
 
+  // User IS logged in AND has requested Tier 2 AND has access - show assessment flow
   switch (currentStep) {
     case "info":
       return (
