@@ -37,8 +37,11 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   const handleCompleteAssessment = async (responses: Record<string, string>) => {
     try {
+      console.log('Submitting Tier 2 assessment...');
       await submitTier2Assessment(responses);
+      console.log('Assessment submitted, fetching updated assessments...');
       await fetchUserAssessments();
+      console.log('Assessments fetched, navigating to results. Count:', userTier2Assessments?.length);
       setCurrentStep("results");
     } catch (error) {
       console.error('Error submitting Tier 2 assessment:', error);
@@ -68,10 +71,11 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   useEffect(() => {
     // If user has existing assessment and has requested tier 2, show results
-    if (!isLoading && isUserLoggedIn && hasRequestedTier2 && hasTier2Access && hasExistingAssessment) {
+    // But only after loading is complete
+    if (!isLoading && isUserLoggedIn && hasRequestedTier2 && hasTier2Access && hasExistingAssessment && currentStep === "info") {
       setCurrentStep("results");
     }
-  }, [isLoading, isUserLoggedIn, hasRequestedTier2, hasTier2Access, hasExistingAssessment]);
+  }, [isLoading, isUserLoggedIn, hasRequestedTier2, hasTier2Access, hasExistingAssessment, currentStep]);
 
   // Show loader while checking user status
   if (isLoading && isUserLoggedIn) {
@@ -130,6 +134,7 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
         <Tier2Results
           onRetakeAssessment={handleRetakeAssessment}
           onNavigateBack={() => onNavigateToTier("tier1")}
+          assessments={userTier2Assessments}
         />
       );
     case "info":
