@@ -4,6 +4,7 @@ import { useAppContext } from "../context/AppContext"; // adjust path
 import { Tier1TemplateId, Tier2TemplateId } from "../services/defaultQuestions";
 import { Tier1ScoreResult } from "../utils/scoreCalculator";
 import { getDeviceFingerprint } from "../utils/deviceFingerprint";
+import {Question} from "../utils/tier2ScoreCalculator";
 
 type Tier1AssessmentRequest = {
   user?: LocalSchema["User"]["type"];
@@ -338,7 +339,7 @@ export function useAssessment() {
 
       // Calculate Tier 2 score
       const { calculateTier2Score } = await import('../utils/tier2ScoreCalculator');
-      const tier2Score = calculateTier2Score(responses, questionsResult.data);
+      const tier2Score = calculateTier2Score(responses, questionsResult.data as Question[]);
 
       // Create a new assessment instance for user with calculated score
       const assessmentData = {
