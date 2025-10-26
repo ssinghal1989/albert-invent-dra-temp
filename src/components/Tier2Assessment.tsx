@@ -62,12 +62,12 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   // User is NOT logged in - show schedule page
   if (!isUserLoggedIn) {
-    return <Tier2AssessmentSchedule onBack={() => setCurrentStep("info")} />;
+    return <Tier2AssessmentSchedule onBack={() => onNavigateToTier("tier1")} />;
   }
 
   // User IS logged in but has NOT requested Tier 2 - show schedule page
   if (isUserLoggedIn && !hasRequestedTier2) {
-    return <Tier2AssessmentSchedule onBack={() => setCurrentStep("info")} />;
+    return <Tier2AssessmentSchedule onBack={() => onNavigateToTier("tier1")} />;
   }
 
   // User IS logged in AND has requested Tier 2 but NO access - show access required
