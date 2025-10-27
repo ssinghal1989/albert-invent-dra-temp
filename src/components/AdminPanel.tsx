@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  Building, 
-  Users, 
-  Search, 
-  Check, 
-  X, 
+import React, { useState, useEffect } from "react";
+import {
+  Shield,
+  Building,
+  Users,
+  Search,
+  Check,
+  X,
   Settings,
   ChevronRight,
   AlertCircle,
@@ -19,15 +19,15 @@ import {
   Mail,
   Briefcase,
   BarChart3,
-  Loader2
-} from 'lucide-react';
-import { client } from '../amplifyClient';
-import { useAppContext } from '../context/AppContext';
-import { LoadingButton } from './ui/LoadingButton';
-import { Loader } from './ui/Loader';
-import { useToast } from '../context/ToastContext';
-import { questionsService } from '../services/questionsService';
-import { Tier1TemplateId } from '../services/defaultQuestions';
+  Loader2,
+} from "lucide-react";
+import { client } from "../amplifyClient";
+import { useAppContext } from "../context/AppContext";
+import { LoadingButton } from "./ui/LoadingButton";
+import { Loader } from "./ui/Loader";
+import { useToast } from "../context/ToastContext";
+import { questionsService } from "../services/questionsService";
+import { Tier1TemplateId } from "../services/defaultQuestions";
 
 interface Company {
   id: string;
@@ -40,8 +40,8 @@ interface Company {
 
 interface CallRequest {
   id: string;
-  type: 'TIER1_FOLLOWUP' | 'TIER2_REQUEST';
-  status: 'PENDING' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+  type: "TIER1_FOLLOWUP" | "TIER2_REQUEST";
+  status: "PENDING" | "SCHEDULED" | "COMPLETED" | "CANCELLED";
   preferredDate: string;
   preferredTimes: string[];
   remarks?: string;
@@ -57,48 +57,61 @@ interface User {
   email: string;
   name?: string;
   jobTitle?: string;
-  role: 'user' | 'admin' | 'superAdmin';
+  role: "user" | "admin" | "superAdmin";
   companyId?: string;
   company?: any;
   createdAt: string;
 }
 
-type AdminView = 'companies' | 'callRequests' | 'users';
+type AdminView = "companies" | "callRequests" | "users";
 
 export function AdminPanel() {
   const { state } = useAppContext();
   const { showToast } = useToast();
-  const [currentView, setCurrentView] = useState<AdminView>('companies');
+  const [currentView, setCurrentView] = useState<AdminView>("companies");
   const [companies, setCompanies] = useState<Company[]>([]);
   const [callRequests, setCallRequests] = useState<CallRequest[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [updatingCompany, setUpdatingCompany] = useState<string | null>(null);
   const [updatingUser, setUpdatingUser] = useState<string | null>(null);
-  const [updatingRoles, setUpdatingRoles] = useState<Record<string, boolean>>({});
-  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set());
-  const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(new Set());
+  const [updatingRoles, setUpdatingRoles] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(
+    new Set()
+  );
+  const [expandedCallRequests, setExpandedCallRequests] = useState<Set<string>>(
+    new Set()
+  );
   const [tier1Questions, setTier1Questions] = useState<any[]>([]);
-  const [assessmentInstances, setAssessmentInstances] = useState<Record<string, any>>({});
-  const [loadingAssessment, setLoadingAssessment] = useState<string | null>(null);
-  const [callRequestFilter, setCallRequestFilter] = useState<'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST'>('ALL');
-  const [userFilter, setUserFilter] = useState<'ALL' | 'ALBERTINVENT'>('ALL');
+  const [assessmentInstances, setAssessmentInstances] = useState<
+    Record<string, any>
+  >({});
+  const [loadingAssessment, setLoadingAssessment] = useState<string | null>(
+    null
+  );
+  const [callRequestFilter, setCallRequestFilter] = useState<
+    "ALL" | "TIER1_FOLLOWUP" | "TIER2_REQUEST"
+  >("ALL");
+  const [userFilter, setUserFilter] = useState<"ALL" | "ALBERTINVENT">("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
   // Check if current user is admin
-  const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
-  const isSuperAdmin = state.userData?.role === 'superAdmin';
+  const isAdmin =
+    state.userData?.role === "admin" || state.userData?.role === "superAdmin";
+  const isSuperAdmin = state.userData?.role === "superAdmin";
 
   useEffect(() => {
     if (isAdmin) {
-      if (currentView === 'companies') {
+      if (currentView === "companies") {
         fetchCompanies();
-      } else if (currentView === 'callRequests') {
+      } else if (currentView === "callRequests") {
         fetchCallRequests();
         loadTier1Questions();
-      } else if (currentView === 'users') {
+      } else if (currentView === "users") {
         fetchUsers();
       }
     }
@@ -106,13 +119,15 @@ export function AdminPanel() {
 
   const loadTier1Questions = async () => {
     try {
-      const result = await questionsService.getQuestionsByTemplate(Tier1TemplateId);
+      const result = await questionsService.getQuestionsByTemplate(
+        Tier1TemplateId
+      );
       if (result.success && result.data) {
         const sortedQuestions = result.data.sort((a, b) => a.order - b.order);
         setTier1Questions(sortedQuestions);
       }
     } catch (error) {
-      console.error('Error loading Tier 1 questions:', error);
+      console.error("Error loading Tier 1 questions:", error);
     }
   };
 
@@ -120,25 +135,25 @@ export function AdminPanel() {
     try {
       setLoading(true);
       const { data } = await client.models.Company.list();
-      
+
       // Fetch users for each company
       const companiesWithUsers = await Promise.all(
         (data || []).map(async (company) => {
           const users = await company.users();
           return {
             ...company,
-            users: users.data || []
+            users: users.data || [],
           };
         })
       );
-      
+
       setCompanies(companiesWithUsers as Company[]);
     } catch (error) {
-      console.error('Error fetching companies:', error);
+      console.error("Error fetching companies:", error);
       showToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load companies'
+        type: "error",
+        title: "Error",
+        message: "Failed to load companies",
       });
     } finally {
       setLoading(false);
@@ -149,7 +164,7 @@ export function AdminPanel() {
     try {
       setLoading(true);
       const { data } = await client.models.ScheduleRequest.list();
-      
+
       // Fetch related data for each request
       const requestsWithDetails = await Promise.all(
         (data || []).map(async (request) => {
@@ -158,23 +173,24 @@ export function AdminPanel() {
           return {
             ...request,
             initiator: initiator.data,
-            company: company.data
+            company: company.data,
           };
         })
       );
-      
+
       // Sort by creation date (newest first)
-      const sortedRequests = requestsWithDetails.sort((a, b) => 
-        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+      const sortedRequests = requestsWithDetails.sort(
+        (a, b) =>
+          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
       );
-      
+
       setCallRequests(sortedRequests as CallRequest[]);
     } catch (error) {
-      console.error('Error fetching call requests:', error);
+      console.error("Error fetching call requests:", error);
       showToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load call requests'
+        type: "error",
+        title: "Error",
+        message: "Failed to load call requests",
       });
     } finally {
       setLoading(false);
@@ -187,148 +203,151 @@ export function AdminPanel() {
       const { data } = await client.models.User.list();
       setUsers(data as User[]);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      console.error("Error fetching users:", error);
       showToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load users'
+        type: "error",
+        title: "Error",
+        message: "Failed to load users",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const updateCompanyTier2Access = async (companyId: string, enabled: boolean) => {
+  const updateCompanyTier2Access = async (
+    companyId: string,
+    enabled: boolean
+  ) => {
     try {
       setUpdatingCompany(companyId);
-      
-      const company = companies.find(c => c.id === companyId);
+
+      const company = companies.find((c) => c.id === companyId);
       if (!company) return;
 
       const currentConfig = company.config ? JSON.parse(company.config) : {};
       const updatedConfig = {
         ...currentConfig,
-        tier2AccessEnabled: enabled
+        tier2AccessEnabled: enabled,
       };
 
       const { data } = await client.models.Company.update({
         id: companyId,
-        config: JSON.stringify(updatedConfig)
+        config: JSON.stringify(updatedConfig),
       });
 
       if (data) {
         // Update local state
-        setCompanies(prev => 
-          prev.map(c => 
-            c.id === companyId 
+        setCompanies((prev) =>
+          prev.map((c) =>
+            c.id === companyId
               ? { ...c, config: JSON.stringify(updatedConfig) }
               : c
           )
         );
 
         showToast({
-          type: 'success',
-          title: 'Access Updated',
-          message: `Tier 2 access ${enabled ? 'enabled' : 'disabled'} for ${company.name}`
+          type: "success",
+          title: "Access Updated",
+          message: `Tier 2 access ${enabled ? "enabled" : "disabled"} for ${
+            company.name
+          }`,
         });
       }
     } catch (error) {
-      console.error('Error updating company access:', error);
+      console.error("Error updating company access:", error);
       showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update company access'
+        type: "error",
+        title: "Update Failed",
+        message: "Failed to update company access",
       });
     } finally {
       setUpdatingCompany(null);
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: 'user' | 'admin' | 'superAdmin') => {
+  const updateUserRole = async (
+    userId: string,
+    newRole: "user" | "admin" | "superAdmin"
+  ) => {
     try {
       setUpdatingUser(userId);
-      
+
       const { data } = await client.models.User.update({
         id: userId,
-        role: newRole
+        role: newRole,
       });
 
       if (data) {
         // Update local state
-        setUsers(prev => 
-          prev.map(u => 
-            u.id === userId 
-              ? { ...u, role: newRole }
-              : u
-          )
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
         );
 
         showToast({
-          type: 'success',
-          title: 'Role Updated',
-          message: `User role updated to ${newRole}`
+          type: "success",
+          title: "Role Updated",
+          message: `User role updated to ${newRole}`,
         });
       }
     } catch (error) {
-      console.error('Error updating user role:', error);
+      console.error("Error updating user role:", error);
       showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update user role'
+        type: "error",
+        title: "Update Failed",
+        message: "Failed to update user role",
       });
     } finally {
       setUpdatingUser(null);
     }
   };
 
-  const handleRoleChange = async (userId: string, newRole: 'user' | 'admin' | 'superAdmin') => {
+  const handleRoleChange = async (
+    userId: string,
+    newRole: "user" | "admin" | "superAdmin"
+  ) => {
     try {
-      setUpdatingRoles(prev => ({ ...prev, [userId]: true }));
-      
+      setUpdatingRoles((prev) => ({ ...prev, [userId]: true }));
+
       const { data } = await client.models.User.update({
         id: userId,
-        role: newRole
+        role: newRole,
       });
 
       if (data) {
         // Update local state
-        setUsers(prev => 
-          prev.map(u => 
-            u.id === userId 
-              ? { ...u, role: newRole }
-              : u
-          )
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
         );
 
         showToast({
-          type: 'success',
-          title: 'Role Updated',
-          message: `User role updated to ${newRole}`
+          type: "success",
+          title: "Role Updated",
+          message: `User role updated to ${newRole}`,
         });
       }
     } catch (error) {
-      console.error('Error updating user role:', error);
+      console.error("Error updating user role:", error);
       showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message: 'Failed to update user role'
+        type: "error",
+        title: "Update Failed",
+        message: "Failed to update user role",
       });
     } finally {
-      setUpdatingRoles(prev => ({ ...prev, [userId]: false }));
+      setUpdatingRoles((prev) => ({ ...prev, [userId]: false }));
     }
   };
 
   const openCompanyDomain = (domain: string) => {
-    const url = domain.startsWith('http') ? domain : `https://${domain}`;
-    window.open(url, '_blank');
+    const url = domain.startsWith("http") ? domain : `https://${domain}`;
+    window.open(url, "_blank");
   };
 
   const getCompanyUrl = (domain: string) => {
-    return domain.startsWith('http') ? domain : `https://${domain}`;
+    return domain.startsWith("http") ? domain : `https://${domain}`;
   };
 
   const toggleCompanyExpansion = (companyId: string) => {
-    setExpandedCompanies(prev => {
+    setExpandedCompanies((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(companyId)) {
         newSet.delete(companyId);
@@ -340,7 +359,7 @@ export function AdminPanel() {
   };
 
   const toggleCallRequestExpansion = (requestId: string) => {
-    setExpandedCallRequests(prev => {
+    setExpandedCallRequests((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(requestId)) {
         newSet.delete(requestId);
@@ -355,75 +374,88 @@ export function AdminPanel() {
     try {
       setLoadingAssessment(assessmentInstanceId);
       const { data } = await client.models.AssessmentInstance.get({
-        id: assessmentInstanceId
+        id: assessmentInstanceId,
       });
-      
+
       if (data) {
-        setAssessmentInstances(prev => ({
+        setAssessmentInstances((prev) => ({
           ...prev,
-          [assessmentInstanceId]: data
+          [assessmentInstanceId]: data,
         }));
       }
     } catch (error) {
-      console.error('Error fetching assessment instance:', error);
+      console.error("Error fetching assessment instance:", error);
       showToast({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load assessment data'
+        type: "error",
+        title: "Error",
+        message: "Failed to load assessment data",
       });
     } finally {
       setLoadingAssessment(null);
     }
   };
 
-  const handleViewAssessment = async (requestId: string, assessmentInstanceId: string) => {
+  const handleViewAssessment = async (
+    requestId: string,
+    assessmentInstanceId: string
+  ) => {
     const isExpanded = expandedCallRequests.has(requestId);
-    
+
     if (!isExpanded) {
       // Expanding - fetch assessment data if not already loaded
       if (!assessmentInstances[assessmentInstanceId]) {
         await fetchAssessmentInstance(assessmentInstanceId);
       }
     }
-    
+
     // Toggle expansion
     toggleCallRequestExpansion(requestId);
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'SCHEDULED': return 'bg-blue-100 text-blue-800';
-      case 'COMPLETED': return 'bg-green-100 text-green-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "PENDING":
+        return "bg-yellow-100 text-yellow-800";
+      case "SCHEDULED":
+        return "bg-blue-100 text-blue-800";
+      case "COMPLETED":
+        return "bg-green-100 text-green-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'TIER1_FOLLOWUP': return 'bg-purple-100 text-purple-800';
-      case 'TIER2_REQUEST': return 'bg-indigo-100 text-indigo-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "TIER1_FOLLOWUP":
+        return "bg-purple-100 text-purple-800";
+      case "TIER2_REQUEST":
+        return "bg-indigo-100 text-indigo-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
   const formatTimes = (times: string[]) => {
-    return times.map(time => {
-      const [hours, minutes] = time.split(':');
-      const hour = parseInt(hours);
-      const ampm = hour >= 12 ? 'PM' : 'AM';
-      const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-      return `${displayHour}:${minutes} ${ampm}`;
-    }).join(', ');
+    return times
+      .map((time) => {
+        const [hours, minutes] = time.split(":");
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+        return `${displayHour}:${minutes} ${ampm}`;
+      })
+      .join(", ");
   };
 
   const getSortedOptions = (question: any) => {
@@ -452,34 +484,36 @@ export function AdminPanel() {
     return [];
   };
 
-  const filteredCompanies = companies.filter(company =>
-    company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.primaryDomain.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCompanies = companies.filter(
+    (company) =>
+      company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.primaryDomain.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredCallRequests = callRequests.filter(request => {
+  const filteredCallRequests = callRequests.filter((request) => {
     const metadata = request.metadata ? JSON.parse(request.metadata) : {};
-    const matchesSearch = (
+    const matchesSearch =
       metadata.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       metadata.companyName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      metadata.userEmail?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    const matchesFilter = callRequestFilter === 'ALL' || request.type === callRequestFilter;
-    
+      metadata.userEmail?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      callRequestFilter === "ALL" || request.type === callRequestFilter;
+
     return matchesSearch && matchesFilter;
   });
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = (
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    
-    const matchesFilter = userFilter === 'ALL' || 
-      (userFilter === 'ALBERTINVENT' && user.email.includes('@albertinvent.com'));
-    
+      user.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesFilter =
+      userFilter === "ALL" ||
+      (userFilter === "ALBERTINVENT" &&
+        user.email.includes("@albertinvent.com"));
+
     return matchesSearch && matchesFilter;
   });
 
@@ -488,7 +522,10 @@ export function AdminPanel() {
   const totalUserPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedCallRequests = filteredCallRequests.slice(startIndex, endIndex);
+  const paginatedCallRequests = filteredCallRequests.slice(
+    startIndex,
+    endIndex
+  );
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
 
   // Reset to first page when filter changes
@@ -527,18 +564,26 @@ export function AdminPanel() {
                 <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">Admin Panel</h1>
-                <p className="text-gray-600 text-sm sm:text-base">Manage companies, users, and call requests</p>
+                <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+                  Admin Panel
+                </h1>
+                <p className="text-gray-600 text-sm sm:text-base">
+                  Manage companies, users, and call requests
+                </p>
               </div>
             </div>
             <div className="flex items-center justify-center space-x-6 sm:space-x-4">
               <div className="text-center sm:text-right">
                 <p className="text-xs sm:text-sm text-gray-500">Companies</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">{companies.length}</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
+                  {companies.length}
+                </p>
               </div>
               <div className="text-center sm:text-right">
                 <p className="text-xs sm:text-sm text-gray-500">Requests</p>
-                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">{callRequests.length}</p>
+                <p className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
+                  {callRequests.length}
+                </p>
               </div>
             </div>
           </div>
@@ -546,24 +591,28 @@ export function AdminPanel() {
 
         {/* Navigation Tabs */}
         <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
-          <div className={`flex space-x-1 bg-gray-100 rounded-lg p-1 ${isSuperAdmin ? 'grid grid-cols-3' : 'grid grid-cols-2'}`}>
+          <div
+            className={`flex space-x-1 bg-gray-100 rounded-lg p-1 ${
+              isSuperAdmin ? "grid grid-cols-3" : "grid grid-cols-2"
+            }`}
+          >
             <button
-              onClick={() => setCurrentView('companies')}
+              onClick={() => setCurrentView("companies")}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
-                currentView === 'companies'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                currentView === "companies"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
               }`}
             >
               <Building className="w-4 h-4 flex-shrink-0" />
               <span>Companies</span>
             </button>
             <button
-              onClick={() => setCurrentView('callRequests')}
+              onClick={() => setCurrentView("callRequests")}
               className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
-                currentView === 'callRequests'
-                  ? 'bg-white text-primary shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
+                currentView === "callRequests"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
               }`}
             >
               <Phone className="w-4 h-4 flex-shrink-0" />
@@ -572,11 +621,11 @@ export function AdminPanel() {
             </button>
             {isSuperAdmin && (
               <button
-                onClick={() => setCurrentView('users')}
+                onClick={() => setCurrentView("users")}
                 className={`flex-1 flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
-                  currentView === 'users'
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
+                  currentView === "users"
+                    ? "bg-white text-primary shadow-sm"
+                    : "text-gray-600 hover:text-gray-800"
                 }`}
               >
                 <Users className="w-4 h-4 flex-shrink-0" />
@@ -594,23 +643,34 @@ export function AdminPanel() {
               <input
                 type="text"
                 placeholder={
-                  currentView === 'companies' ? "Search companies..." : 
-                  currentView === 'callRequests' ? "Search call requests..." : 
-                  "Search users..."
+                  currentView === "companies"
+                    ? "Search companies..."
+                    : currentView === "callRequests"
+                    ? "Search call requests..."
+                    : "Search users..."
                 }
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-9 sm:pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
               />
             </div>
-            
+
             {/* Filter for Call Requests */}
-            {currentView === 'callRequests' && (
+            {currentView === "callRequests" && (
               <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
-                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</span>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Filter:
+                </span>
                 <select
                   value={callRequestFilter}
-                  onChange={(e) => setCallRequestFilter(e.target.value as 'ALL' | 'TIER1_FOLLOWUP' | 'TIER2_REQUEST')}
+                  onChange={(e) =>
+                    setCallRequestFilter(
+                      e.target.value as
+                        | "ALL"
+                        | "TIER1_FOLLOWUP"
+                        | "TIER2_REQUEST"
+                    )
+                  }
                   className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-sm sm:text-base"
                 >
                   <option value="ALL">All Requests</option>
@@ -619,14 +679,18 @@ export function AdminPanel() {
                 </select>
               </div>
             )}
-            
+
             {/* Filter for Users */}
-            {currentView === 'users' && isSuperAdmin && (
+            {currentView === "users" && isSuperAdmin && (
               <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-2">
-                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Filter:</span>
+                <span className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  Filter:
+                </span>
                 <select
                   value={userFilter}
-                  onChange={(e) => setUserFilter(e.target.value as 'ALL' | 'ALBERTINVENT')}
+                  onChange={(e) =>
+                    setUserFilter(e.target.value as "ALL" | "ALBERTINVENT")
+                  }
                   className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-white text-sm sm:text-base"
                 >
                   <option value="ALL">All Users</option>
@@ -634,12 +698,14 @@ export function AdminPanel() {
                 </select>
               </div>
             )}
-            
+
             <button
               onClick={
-                currentView === 'companies' ? fetchCompanies : 
-                currentView === 'callRequests' ? fetchCallRequests : 
-                fetchUsers
+                currentView === "companies"
+                  ? fetchCompanies
+                  : currentView === "callRequests"
+                  ? fetchCallRequests
+                  : fetchUsers
               }
               className="px-4 sm:px-6 py-2 sm:py-3 bg-gray-100 text-gray-700 rounded-lg sm:rounded-xl hover:bg-gray-200 transition-colors duration-200 whitespace-nowrap text-sm sm:text-base"
             >
@@ -652,34 +718,42 @@ export function AdminPanel() {
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-              {currentView === 'companies' ? 'Companies Management' : 
-               currentView === 'callRequests' ? 'Call Requests' : 
-               'User Management'}
+              {currentView === "companies"
+                ? "Companies Management"
+                : currentView === "callRequests"
+                ? "Call Requests"
+                : "User Management"}
             </h2>
             <p className="text-gray-600 text-sm sm:text-base">
-              {currentView === 'companies' ? 'Manage company settings and view associated users' :
-               currentView === 'callRequests' ? `View and manage call requests (${filteredCallRequests.length} total)` :
-               `Manage user roles and permissions (${filteredUsers.length} total)`
-              }
+              {currentView === "companies"
+                ? "Manage company settings and view associated users"
+                : currentView === "callRequests"
+                ? `View and manage call requests (${filteredCallRequests.length} total)`
+                : `Manage user roles and permissions (${filteredUsers.length} total)`}
             </p>
           </div>
 
           {loading ? (
             <div className="p-6 sm:p-8">
-              <Loader text={`Loading ${currentView === 'callRequests' ? 'call requests' : currentView}...`} size="lg" />
+              <Loader
+                text={`Loading ${
+                  currentView === "callRequests" ? "call requests" : currentView
+                }...`}
+                size="lg"
+              />
             </div>
           ) : (
             <div className="divide-y divide-gray-200">
-              {currentView === 'companies' ? (
+              {currentView === "companies" ? (
                 // Companies View - Coming Soon
-                <div className="p-6 sm:p-8 text-center">
-                  <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
-                  <p className="text-gray-500 text-sm sm:text-base">Company management features will be available soon.</p>
-                </div>
-                
+                // <div className="p-6 sm:p-8 text-center">
+                //   <Building className="w-12 h-12 sm:w-16 sm:h-16 text-gray-400 mx-auto mb-4" />
+                //   <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">Coming Soon</h3>
+                //   <p className="text-gray-500 text-sm sm:text-base">Company management features will be available soon.</p>
+                // </div>
+
                 // TODO: Restore this when Companies management is ready
-                /*
+
                 filteredCompanies.length === 0 ? (
                   <div className="p-6 sm:p-8 text-center">
                     <Building className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
@@ -687,10 +761,12 @@ export function AdminPanel() {
                   </div>
                 ) : (
                   filteredCompanies.map((company) => {
-                    const config = company.config ? JSON.parse(company.config) : {};
+                    const config = company.config
+                      ? JSON.parse(company.config)
+                      : {};
                     const hasTier2Access = config?.tier2AccessEnabled === true;
                     const isExpanded = expandedCompanies.has(company.id);
-                    
+
                     return (
                       <div key={company.id} className="p-4 sm:p-6">
                         <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
@@ -700,27 +776,37 @@ export function AdminPanel() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                                {company.name || 'Unnamed Company'}
+                                {company.name || "Unnamed Company"}
                               </h3>
                               <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-500">
-                                <span className="truncate">{company.primaryDomain}</span>
+                                <span className="truncate">
+                                  {company.primaryDomain}
+                                </span>
                                 <div className="flex items-center space-x-1">
                                   <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span>{company.users?.length || 0} users</span>
+                                  <span>
+                                    {company.users?.length || 0} users
+                                  </span>
                                 </div>
-                                <span className="hidden sm:inline">Created {formatDate(company.createdAt)}</span>
+                                <span className="hidden sm:inline">
+                                  Created {formatDate(company.createdAt)}
+                                </span>
                               </div>
                             </div>
                           </div>
 
                           <div className="flex flex-col space-y-3 sm:flex-row sm:items-center sm:space-y-0 sm:space-x-4">
                             <div className="flex items-center justify-between sm:justify-start space-x-2">
-                              <span className="text-sm font-medium text-gray-700">Tier 2:</span>
-                              <div className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
-                                hasTier2Access 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
+                              <span className="text-sm font-medium text-gray-700">
+                                Tier 2:
+                              </span>
+                              <div
+                                className={`flex items-center space-x-1 px-3 py-1 rounded-full text-xs font-medium ${
+                                  hasTier2Access
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
                                 {hasTier2Access ? (
                                   <>
                                     <CheckCircle className="w-3 h-3 flex-shrink-0" />
@@ -737,18 +823,25 @@ export function AdminPanel() {
 
                             <div className="flex items-center space-x-2 sm:space-x-3">
                               <LoadingButton
-                                onClick={() => updateCompanyTier2Access(company.id, !hasTier2Access)}
+                                onClick={() =>
+                                  updateCompanyTier2Access(
+                                    company.id,
+                                    !hasTier2Access
+                                  )
+                                }
                                 loading={updatingCompany === company.id}
                                 loadingText="..."
-                                variant={hasTier2Access ? 'outline' : 'primary'}
+                                variant={hasTier2Access ? "outline" : "primary"}
                                 size="sm"
                                 className="text-xs sm:text-sm px-3 sm:px-4"
                               >
-                                {hasTier2Access ? 'Disable' : 'Enable'}
+                                {hasTier2Access ? "Disable" : "Enable"}
                               </LoadingButton>
 
                               <button
-                                onClick={() => toggleCompanyExpansion(company.id)}
+                                onClick={() =>
+                                  toggleCompanyExpansion(company.id)
+                                }
                                 className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                               >
                                 {isExpanded ? (
@@ -761,68 +854,99 @@ export function AdminPanel() {
                           </div>
                         </div>
 
-                        {isExpanded && company.users && company.users.length > 0 && (
-                          <div className="mt-4 pl-0 sm:pl-16">
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">Users:</h4>
-                            <div className="space-y-2">
-                              {company.users.map((user: any) => (
-                                <div key={user.id} className="flex items-start sm:items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                                    <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
-                                      <span className="font-medium text-gray-900 text-sm sm:text-base">{user.name || 'No name'}</span>
-                                      <span className="text-xs sm:text-sm text-gray-500 break-all">{user.email}</span>
-                                      {user.jobTitle && (
-                                        <>
-                                          <span className="text-gray-300 hidden sm:inline">•</span>
-                                          <span className="text-xs sm:text-sm text-gray-500">{user.jobTitle}</span>
-                                        </>
-                                      )}
-                                      {user.role && (
-                                        <>
-                                          <span className="text-gray-300 hidden sm:inline">•</span>
-                                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                            user.role === 'admin' || user.role === 'superAdmin'
-                                              ? 'bg-purple-100 text-purple-800'
-                                              : 'bg-gray-100 text-gray-800'
-                                          }`}>
-                                            {user.role}
-                                          </span>
-                                        </>
-                                      )}
+                        {isExpanded &&
+                          company.users &&
+                          company.users.length > 0 && (
+                            <div className="mt-4 pl-0 sm:pl-16">
+                              <h4 className="text-sm font-medium text-gray-700 mb-3">
+                                Users:
+                              </h4>
+                              <div className="space-y-2">
+                                {company.users.map((user: any) => (
+                                  <div
+                                    key={user.id}
+                                    className="flex items-start sm:items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+                                  >
+                                    <div className="w-6 h-6 sm:w-8 sm:h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                      <Users className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0">
+                                        <span className="font-medium text-gray-900 text-sm sm:text-base">
+                                          {user.name || "No name"}
+                                        </span>
+                                        <span className="text-xs sm:text-sm text-gray-500 break-all">
+                                          {user.email}
+                                        </span>
+                                        {user.jobTitle && (
+                                          <>
+                                            <span className="text-gray-300 hidden sm:inline">
+                                              •
+                                            </span>
+                                            <span className="text-xs sm:text-sm text-gray-500">
+                                              {user.jobTitle}
+                                            </span>
+                                          </>
+                                        )}
+                                        {user.role && (
+                                          <>
+                                            <span className="text-gray-300 hidden sm:inline">
+                                              •
+                                            </span>
+                                            <span
+                                              className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                                user.role === "admin" ||
+                                                user.role === "superAdmin"
+                                                  ? "bg-purple-100 text-purple-800"
+                                                  : "bg-gray-100 text-gray-800"
+                                              }`}
+                                            >
+                                              {user.role}
+                                            </span>
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
                       </div>
                     );
                   })
                 )
-                */
-              ) : currentView === 'callRequests' ? (
+              ) : currentView === "callRequests" ? (
                 // Call Requests View
                 paginatedCallRequests.length === 0 ? (
                   <div className="p-6 sm:p-8 text-center">
                     <Phone className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-500">
-                      {filteredCallRequests.length === 0 ? 'No call requests found' : 'No requests on this page'}
+                      {filteredCallRequests.length === 0
+                        ? "No call requests found"
+                        : "No requests on this page"}
                     </p>
                   </div>
                 ) : (
                   paginatedCallRequests.map((request) => {
-                    const metadata = request.metadata ? JSON.parse(request.metadata) : {};
+                    const metadata = request.metadata
+                      ? JSON.parse(request.metadata)
+                      : {};
                     const isExpanded = expandedCallRequests.has(request.id);
-                    const hasAssessmentData = request.type === 'TIER1_FOLLOWUP' && request.assessmentInstanceId;
-                    const assessmentInstance = request.assessmentInstanceId ? assessmentInstances[request.assessmentInstanceId] : null;
-                    const isLoadingThisAssessment = loadingAssessment === request.assessmentInstanceId;
-                    
+                    const hasAssessmentData =
+                      request.type === "TIER1_FOLLOWUP" &&
+                      request.assessmentInstanceId;
+                    const assessmentInstance = request.assessmentInstanceId
+                      ? assessmentInstances[request.assessmentInstanceId]
+                      : null;
+                    const isLoadingThisAssessment =
+                      loadingAssessment === request.assessmentInstanceId;
+
                     return (
-                      <div key={request.id} className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200">
+                      <div
+                        key={request.id}
+                        className="p-4 sm:p-6 hover:bg-gray-50 transition-colors duration-200"
+                      >
                         <div className="flex flex-col space-y-4 sm:flex-row sm:items-start sm:justify-between sm:space-y-0 mb-4">
                           <div className="flex items-start space-x-3 sm:space-x-4 flex-1 min-w-0">
                             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -831,29 +955,43 @@ export function AdminPanel() {
                             <div className="flex-1 min-w-0">
                               <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:space-x-3 sm:space-y-0 mb-2">
                                 <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-                                  {metadata.userName || 'Unknown User'}
+                                  {metadata.userName || "Unknown User"}
                                 </h3>
                                 <div className="flex items-center space-x-2">
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(request.type)}`}>
-                                    {request.type === 'TIER1_FOLLOWUP' ? 'Tier 1' : 'Tier 2'}
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(
+                                      request.type
+                                    )}`}
+                                  >
+                                    {request.type === "TIER1_FOLLOWUP"
+                                      ? "Tier 1"
+                                      : "Tier 2"}
                                   </span>
-                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
+                                  <span
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                      request.status
+                                    )}`}
+                                  >
                                     {request.status}
                                   </span>
                                 </div>
                               </div>
-                              
+
                               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 text-xs sm:text-sm text-gray-600">
                                 <div className="space-y-1">
                                   <div className="flex items-center space-x-2">
                                     <Mail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span className="truncate">{metadata.userEmail || 'No email'}</span>
+                                    <span className="truncate">
+                                      {metadata.userEmail || "No email"}
+                                    </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Building className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                                     {metadata.companyDomain ? (
                                       <a
-                                        href={getCompanyUrl(metadata.companyDomain)}
+                                        href={getCompanyUrl(
+                                          metadata.companyDomain
+                                        )}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-primary hover:text-blue-700 hover:underline truncate transition-colors duration-200"
@@ -861,29 +999,40 @@ export function AdminPanel() {
                                         {metadata.companyName}
                                       </a>
                                     ) : (
-                                      <span className="truncate">{metadata.companyName}</span>
+                                      <span className="truncate">
+                                        {metadata.companyName}
+                                      </span>
                                     )}
                                   </div>
                                   {metadata.userJobTitle && (
                                     <div className="flex items-center space-x-2">
                                       <Briefcase className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                      <span className="truncate">{metadata.userJobTitle}</span>
+                                      <span className="truncate">
+                                        {metadata.userJobTitle}
+                                      </span>
                                     </div>
                                   )}
                                 </div>
-                                
+
                                 <div className="space-y-1">
                                   <div className="flex items-center space-x-2">
                                     <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span>Preferred: {formatDate(request.preferredDate)}</span>
+                                    <span>
+                                      Preferred:{" "}
+                                      {formatDate(request.preferredDate)}
+                                    </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Clock className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span className="text-xs sm:text-sm">{formatTimes(request.preferredTimes)}</span>
+                                    <span className="text-xs sm:text-sm">
+                                      {formatTimes(request.preferredTimes)}
+                                    </span>
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     <Calendar className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
-                                    <span>Requested: {formatDate(request.createdAt)}</span>
+                                    <span>
+                                      Requested: {formatDate(request.createdAt)}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -899,7 +1048,7 @@ export function AdminPanel() {
                               {metadata.assessmentScore && (
                                 <div className="mt-3">
                                   <span className="text-xs sm:text-sm text-gray-600">
-                                    Assessment Score: 
+                                    Assessment Score:
                                     <span className="ml-1 font-semibold text-primary">
                                       {metadata.assessmentScore}
                                     </span>
@@ -913,7 +1062,12 @@ export function AdminPanel() {
                           {hasAssessmentData && (
                             <div className="flex justify-center sm:justify-start mt-4 sm:mt-0">
                               <button
-                                onClick={() => handleViewAssessment(request.id, request.assessmentInstanceId!)}
+                                onClick={() =>
+                                  handleViewAssessment(
+                                    request.id,
+                                    request.assessmentInstanceId!
+                                  )
+                                }
                                 disabled={isLoadingThisAssessment}
                                 className="flex items-center space-x-2 px-3 py-2 text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
                               >
@@ -925,318 +1079,443 @@ export function AdminPanel() {
                                 ) : (
                                   <>
                                     <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
-                                    <span className="hidden sm:inline">{isExpanded ? 'Hide' : 'View'} Assessment</span>
-                                    <span className="sm:hidden">{isExpanded ? 'Hide' : 'View'}</span>
+                                    <span className="hidden sm:inline">
+                                      {isExpanded ? "Hide" : "View"} Assessment
+                                    </span>
+                                    <span className="sm:hidden">
+                                      {isExpanded ? "Hide" : "View"}
+                                    </span>
                                   </>
                                 )}
-                                {!isLoadingThisAssessment && (isExpanded ? (
-                                  <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                                ) : (
-                                  <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
-                                ))}
+                                {!isLoadingThisAssessment &&
+                                  (isExpanded ? (
+                                    <ChevronUp className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  ) : (
+                                    <ChevronDown className="w-3 h-3 sm:w-4 sm:h-4" />
+                                  ))}
                               </button>
                             </div>
                           )}
                         </div>
 
                         {/* Expanded Assessment View */}
-                        {isExpanded && hasAssessmentData && assessmentInstance && (
-                          <div className="mt-6 border-t pt-6">
-                            <div className="mb-4">
-                              <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
-                                Tier 1 Assessment Results
-                              </h4>
-                              <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-600">
-                                <div className="flex items-center space-x-1">
-                                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                                  <span>Completed: {formatDate(assessmentInstance.createdAt)}</span>
-                                </div>
-                                {assessmentInstance.score && (
+                        {isExpanded &&
+                          hasAssessmentData &&
+                          assessmentInstance && (
+                            <div className="mt-6 border-t pt-6">
+                              <div className="mb-4">
+                                <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
+                                  Tier 1 Assessment Results
+                                </h4>
+                                <div className="flex flex-col space-y-1 sm:flex-row sm:items-center sm:space-x-4 sm:space-y-0 text-xs sm:text-sm text-gray-600">
                                   <div className="flex items-center space-x-1">
-                                    <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
                                     <span>
-                                      Score: {JSON.parse(assessmentInstance.score).overallScore}/100
+                                      Completed:{" "}
+                                      {formatDate(assessmentInstance.createdAt)}
                                     </span>
                                   </div>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Assessment Grid */}
-                            {tier1Questions.length > 0 && assessmentInstance.responses && (
-                              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
-                                <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4">
-                                  <table className="w-full border-collapse">
-                                    <thead>
-                                      <tr>
-                                        <th className="text-left p-2 sm:p-3 font-semibold text-gray-700 border-b bg-white text-xs sm:text-sm min-w-32 sm:min-w-48">
-                                          Focus Areas
-                                        </th>
-                                        {getMaturityLabels().map((level: any) => (
-                                          <th
-                                            key={level}
-                                            className="text-center p-2 sm:p-3 font-semibold text-gray-700 border-b min-w-24 sm:min-w-32 bg-white text-xs sm:text-sm"
-                                          >
-                                            {level}
-                                          </th>
-                                        ))}
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {tier1Questions.map((question) => {
-                                        const responses = JSON.parse(assessmentInstance.responses);
-                                        const selectedResponse = responses[question.id];
-                                        
-                                        return (
-                                          <tr key={question.id} className="border-b border-gray-200">
-                                            <td className="p-2 sm:p-3 font-medium text-gray-800 bg-white align-top text-xs sm:text-sm">
-                                              {question.prompt}
-                                            </td>
-                                            {getSortedOptions(question).map((option: any) => {
-                                              const isSelected = selectedResponse === option.value;
-                                              return (
-                                                <td
-                                                  key={`${question.id}_${option.label}`}
-                                                  className="p-1 sm:p-2 align-top"
-                                                >
-                                                  <div
-                                                    className={`p-1 sm:p-2 rounded-lg text-xs leading-tight ${
-                                                      isSelected
-                                                        ? "text-white bg-blue-500"
-                                                        : "text-gray-700 bg-white border border-gray-200"
-                                                    }`}
-                                                  >
-                                                    {option.label}
-                                                  </div>
-                                                </td>
-                                              );
-                                            })}
-                                          </tr>
-                                        );
-                                      })}
-                                    </tbody>
-                                  </table>
+                                  {assessmentInstance.score && (
+                                    <div className="flex items-center space-x-1">
+                                      <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      <span>
+                                        Score:{" "}
+                                        {
+                                          JSON.parse(assessmentInstance.score)
+                                            .overallScore
+                                        }
+                                        /100
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            )}
-                          </div>
-                        )}
+
+                              {/* Assessment Grid */}
+                              {tier1Questions.length > 0 &&
+                                assessmentInstance.responses && (
+                                  <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                                    <div className="overflow-x-auto -mx-3 sm:-mx-4 px-3 sm:px-4">
+                                      <table className="w-full border-collapse">
+                                        <thead>
+                                          <tr>
+                                            <th className="text-left p-2 sm:p-3 font-semibold text-gray-700 border-b bg-white text-xs sm:text-sm min-w-32 sm:min-w-48">
+                                              Focus Areas
+                                            </th>
+                                            {getMaturityLabels().map(
+                                              (level: any) => (
+                                                <th
+                                                  key={level}
+                                                  className="text-center p-2 sm:p-3 font-semibold text-gray-700 border-b min-w-24 sm:min-w-32 bg-white text-xs sm:text-sm"
+                                                >
+                                                  {level}
+                                                </th>
+                                              )
+                                            )}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {tier1Questions.map((question) => {
+                                            const responses = JSON.parse(
+                                              assessmentInstance.responses
+                                            );
+                                            const selectedResponse =
+                                              responses[question.id];
+
+                                            return (
+                                              <tr
+                                                key={question.id}
+                                                className="border-b border-gray-200"
+                                              >
+                                                <td className="p-2 sm:p-3 font-medium text-gray-800 bg-white align-top text-xs sm:text-sm">
+                                                  {question.prompt}
+                                                </td>
+                                                {getSortedOptions(question).map(
+                                                  (option: any) => {
+                                                    const isSelected =
+                                                      selectedResponse ===
+                                                      option.value;
+                                                    return (
+                                                      <td
+                                                        key={`${question.id}_${option.label}`}
+                                                        className="p-1 sm:p-2 align-top"
+                                                      >
+                                                        <div
+                                                          className={`p-1 sm:p-2 rounded-lg text-xs leading-tight ${
+                                                            isSelected
+                                                              ? "text-white bg-blue-500"
+                                                              : "text-gray-700 bg-white border border-gray-200"
+                                                          }`}
+                                                        >
+                                                          {option.label}
+                                                        </div>
+                                                      </td>
+                                                    );
+                                                  }
+                                                )}
+                                              </tr>
+                                            );
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          )}
                       </div>
                     );
                   })
                 )
+              ) : // Users View - Super Admin Only
+              paginatedUsers.length === 0 ? (
+                <div className="p-6 sm:p-8 text-center">
+                  <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">
+                    {users.length === 0
+                      ? "No users found"
+                      : "No users match your search"}
+                  </p>
+                </div>
               ) : (
-                // Users View - Super Admin Only
-                paginatedUsers.length === 0 ? (
-                  <div className="p-6 sm:p-8 text-center">
-                    <Users className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">
-                      {users.length === 0 ? 'No users found' : 'No users match your search'}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="p-4 sm:p-6">
-                    <div className="space-y-4">
-                      {paginatedUsers.map((user) => {
-                        const isCurrentUser = user.id === state.userData?.id;
-                        const isAlbertInventUser = user.email?.includes('@albertinvent.com');
-                        
-                        return (
-                          <div key={user.id} className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm">
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
-                              {/* User Info Section - Takes up 8 columns on large screens */}
-                              <div className="lg:col-span-8 flex items-start space-x-4 min-w-0">
-                                <div className="flex-shrink-0">
-                                  <Users className={`w-8 h-8 sm:w-10 sm:h-10 ${isAlbertInventUser ? 'text-primary' : 'text-gray-400'}`} />
-                                </div>
-                                
-                                <div className="flex-1 min-w-0">
-                                  {/* User Name and Role Badge */}
-                                  <div className="flex items-center space-x-2 mb-3">
-                                    <h3 className="text-lg font-semibold text-gray-900 truncate">
-                                      {user.name || 'No Name'}
-                                    </h3>
-                                    {isCurrentUser && (
-                                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                                        You
-                                      </span>
-                                    )}
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                      user.role === 'superAdmin' 
-                                        ? 'bg-red-100 text-red-800'
-                                        : user.role === 'admin'
-                                        ? 'bg-purple-100 text-purple-800'
-                                        : 'bg-gray-100 text-gray-800'
-                                    }`}>
-                                      {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
-                                    </span>
-                                    {isAlbertInventUser && (
-                                      <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
-                                        Albert Invent
-                                      </span>
-                                    )}
-                                  </div>
-                                  
-                                  {/* User Details in 2 columns */}
-                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
-                                    {/* Left Column */}
-                                    <div className="space-y-2">
-                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                        <Mail className="w-4 h-4 flex-shrink-0" />
-                                        <span className="truncate">{user.email}</span>
-                                      </div>
-                                      {user.jobTitle && (
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                          <Briefcase className="w-4 h-4 flex-shrink-0" />
-                                          <span className="truncate">{user.jobTitle}</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                    
-                                    {/* Right Column */}
-                                    <div className="space-y-2">
-                                      {user.company?.name && (
-                                        <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                          <Building className="w-4 h-4 flex-shrink-0" />
-                                          {user.company.primaryDomain ? (
-                                            <button
-                                              onClick={() => window.open(getCompanyUrl(user.company!.primaryDomain!), '_blank', 'noopener,noreferrer')}
-                                              className="text-primary hover:text-blue-700 hover:underline truncate text-left"
-                                            >
-                                              {user.company.name}
-                                            </button>
-                                          ) : (
-                                            <span className="truncate">{user.company.name}</span>
-                                          )}
-                                        </div>
-                                      )}
-                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
-                                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                                        <span>Joined {new Date(user.createdAt).toLocaleDateString('en-US', { 
-                                          month: 'short', 
-                                          day: 'numeric', 
-                                          year: 'numeric' 
-                                        })}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
+                <div className="p-4 sm:p-6">
+                  <div className="space-y-4">
+                    {paginatedUsers.map((user) => {
+                      const isCurrentUser = user.id === state.userData?.id;
+                      const isAlbertInventUser =
+                        user.email?.includes("@albertinvent.com");
+
+                      return (
+                        <div
+                          key={user.id}
+                          className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 shadow-sm"
+                        >
+                          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start">
+                            {/* User Info Section - Takes up 8 columns on large screens */}
+                            <div className="lg:col-span-8 flex items-start space-x-4 min-w-0">
+                              <div className="flex-shrink-0">
+                                <Users
+                                  className={`w-8 h-8 sm:w-10 sm:h-10 ${
+                                    isAlbertInventUser
+                                      ? "text-primary"
+                                      : "text-gray-400"
+                                  }`}
+                                />
                               </div>
-                              
-                              {/* Role Management Section - Takes up 4 columns on large screens */}
-                              <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-0 lg:space-y-2">
-                                <div className="flex items-center space-x-2 text-sm">
-                                  <span className="text-gray-600 font-medium">Current Role:</span>
-                                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    user.role === 'superAdmin' 
-                                      ? 'bg-red-100 text-red-800'
-                                      : user.role === 'admin'
-                                      ? 'bg-purple-100 text-purple-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {user.role === 'superAdmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'User'}
+
+                              <div className="flex-1 min-w-0">
+                                {/* User Name and Role Badge */}
+                                <div className="flex items-center space-x-2 mb-3">
+                                  <h3 className="text-lg font-semibold text-gray-900 truncate">
+                                    {user.name || "No Name"}
+                                  </h3>
+                                  {isCurrentUser && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                                      You
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                      user.role === "superAdmin"
+                                        ? "bg-red-100 text-red-800"
+                                        : user.role === "admin"
+                                        ? "bg-purple-100 text-purple-800"
+                                        : "bg-gray-100 text-gray-800"
+                                    }`}
+                                  >
+                                    {user.role === "superAdmin"
+                                      ? "Super Admin"
+                                      : user.role === "admin"
+                                      ? "Admin"
+                                      : "User"}
                                   </span>
+                                  {isAlbertInventUser && (
+                                    <span className="px-2 py-1 bg-primary text-white text-xs font-medium rounded-full">
+                                      Albert Invent
+                                    </span>
+                                  )}
                                 </div>
-                                
-                                {!isCurrentUser && (
-                                  <div className="flex items-center space-x-2">
-                                    <label className="text-sm font-medium text-gray-600">Change to:</label>
-                                    <select
-                                      value={user.role || 'user'}
-                                      onChange={(e) => handleRoleChange(user.id, e.target.value as 'user' | 'admin' | 'superAdmin')}
-                                      disabled={updatingRoles[user.id]}
-                                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
-                                    >
-                                      <option value="user">User</option>
-                                      <option value="admin">Admin</option>
-                                      <option value="superAdmin">Super Admin</option>
-                                    </select>
-                                    {updatingRoles[user.id] && (
-                                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+
+                                {/* User Details in 2 columns */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
+                                  {/* Left Column */}
+                                  <div className="space-y-2">
+                                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                      <Mail className="w-4 h-4 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {user.email}
+                                      </span>
+                                    </div>
+                                    {user.jobTitle && (
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate">
+                                          {user.jobTitle}
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
-                                )}
-                                
-                                {isCurrentUser && (
-                                  <div className="text-sm text-gray-500 italic">
-                                    Cannot change own role
+
+                                  {/* Right Column */}
+                                  <div className="space-y-2">
+                                    {user.company?.name && (
+                                      <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                        <Building className="w-4 h-4 flex-shrink-0" />
+                                        {user.company.primaryDomain ? (
+                                          <button
+                                            onClick={() =>
+                                              window.open(
+                                                getCompanyUrl(
+                                                  user.company!.primaryDomain!
+                                                ),
+                                                "_blank",
+                                                "noopener,noreferrer"
+                                              )
+                                            }
+                                            className="text-primary hover:text-blue-700 hover:underline truncate text-left"
+                                          >
+                                            {user.company.name}
+                                          </button>
+                                        ) : (
+                                          <span className="truncate">
+                                            {user.company.name}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                                      <Calendar className="w-4 h-4 flex-shrink-0" />
+                                      <span>
+                                        Joined{" "}
+                                        {new Date(
+                                          user.createdAt
+                                        ).toLocaleDateString("en-US", {
+                                          month: "short",
+                                          day: "numeric",
+                                          year: "numeric",
+                                        })}
+                                      </span>
+                                    </div>
                                   </div>
-                                )}
+                                </div>
                               </div>
                             </div>
+
+                            {/* Role Management Section - Takes up 4 columns on large screens */}
+                            <div className="lg:col-span-4 flex flex-col sm:flex-row lg:flex-col items-start sm:items-center lg:items-end space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-0 lg:space-y-2">
+                              <div className="flex items-center space-x-2 text-sm">
+                                <span className="text-gray-600 font-medium">
+                                  Current Role:
+                                </span>
+                                <span
+                                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                                    user.role === "superAdmin"
+                                      ? "bg-red-100 text-red-800"
+                                      : user.role === "admin"
+                                      ? "bg-purple-100 text-purple-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}
+                                >
+                                  {user.role === "superAdmin"
+                                    ? "Super Admin"
+                                    : user.role === "admin"
+                                    ? "Admin"
+                                    : "User"}
+                                </span>
+                              </div>
+
+                              {!isCurrentUser && (
+                                <div className="flex items-center space-x-2">
+                                  <label className="text-sm font-medium text-gray-600">
+                                    Change to:
+                                  </label>
+                                  <select
+                                    value={user.role || "user"}
+                                    onChange={(e) =>
+                                      handleRoleChange(
+                                        user.id,
+                                        e.target.value as
+                                          | "user"
+                                          | "admin"
+                                          | "superAdmin"
+                                      )
+                                    }
+                                    disabled={updatingRoles[user.id]}
+                                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+                                  >
+                                    <option value="user">User</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="superAdmin">
+                                      Super Admin
+                                    </option>
+                                  </select>
+                                  {updatingRoles[user.id] && (
+                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                  )}
+                                </div>
+                              )}
+
+                              {isCurrentUser && (
+                                <div className="text-sm text-gray-500 italic">
+                                  Cannot change own role
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )
+                </div>
               )}
             </div>
           )}
-          
+
           {/* Pagination for Call Requests */}
-          {((currentView === 'callRequests' && filteredCallRequests.length > itemsPerPage) ||
-            (currentView === 'users' && filteredUsers.length > itemsPerPage)) && (
+          {((currentView === "callRequests" &&
+            filteredCallRequests.length > itemsPerPage) ||
+            (currentView === "users" &&
+              filteredUsers.length > itemsPerPage)) && (
             <div className="p-4 sm:p-6 border-t border-gray-200">
               <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                 <div className="text-xs sm:text-sm text-gray-600 text-center sm:text-left">
-                  {currentView === 'callRequests' ? (
-                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredCallRequests.length)} of {filteredCallRequests.length} requests</>
+                  {currentView === "callRequests" ? (
+                    <>
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(endIndex, filteredCallRequests.length)} of{" "}
+                      {filteredCallRequests.length} requests
+                    </>
                   ) : (
-                    <>Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users</>
+                    <>
+                      Showing {startIndex + 1} to{" "}
+                      {Math.min(endIndex, filteredUsers.length)} of{" "}
+                      {filteredUsers.length} users
+                    </>
                   )}
                 </div>
-                
+
                 <div className="flex items-center justify-center space-x-2">
                   <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
                       currentPage === 1
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Previous
                   </button>
-                  
+
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, currentView === 'callRequests' ? totalPages : totalUserPages) }, (_, i) => {
-                      let pageNumber;
-                      const pages = currentView === 'callRequests' ? totalPages : totalUserPages;
-                      if (pages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= pages - 2) {
-                        pageNumber = pages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
+                    {Array.from(
+                      {
+                        length: Math.min(
+                          5,
+                          currentView === "callRequests"
+                            ? totalPages
+                            : totalUserPages
+                        ),
+                      },
+                      (_, i) => {
+                        let pageNumber;
+                        const pages =
+                          currentView === "callRequests"
+                            ? totalPages
+                            : totalUserPages;
+                        if (pages <= 5) {
+                          pageNumber = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNumber = i + 1;
+                        } else if (currentPage >= pages - 2) {
+                          pageNumber = pages - 4 + i;
+                        } else {
+                          pageNumber = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => setCurrentPage(pageNumber)}
+                            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
+                              currentPage === pageNumber
+                                ? "bg-primary text-white"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
                       }
-                      
-                      return (
-                        <button
-                          key={pageNumber}
-                          onClick={() => setCurrentPage(pageNumber)}
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                            currentPage === pageNumber
-                              ? 'bg-primary text-white'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          {pageNumber}
-                        </button>
-                      );
-                    })}
+                    )}
                   </div>
-                  
+
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, currentView === 'callRequests' ? totalPages : totalUserPages))}
-                    disabled={currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)}
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(
+                          prev + 1,
+                          currentView === "callRequests"
+                            ? totalPages
+                            : totalUserPages
+                        )
+                      )
+                    }
+                    disabled={
+                      currentPage ===
+                      (currentView === "callRequests"
+                        ? totalPages
+                        : totalUserPages)
+                    }
                     className={`px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors duration-200 ${
-                      currentPage === (currentView === 'callRequests' ? totalPages : totalUserPages)
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      currentPage ===
+                      (currentView === "callRequests"
+                        ? totalPages
+                        : totalUserPages)
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                     }`}
                   >
                     Next

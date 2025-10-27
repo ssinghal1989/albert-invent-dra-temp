@@ -141,19 +141,10 @@ export function useAssessment() {
           deviceId: deviceFingerprint?.fingerprint,
           timestamp: new Date().toISOString(),
         });
-        console.log("📱 [submitTier1Assessment] Added anonymous metadata", {
-          deviceId: deviceFingerprint?.fingerprint,
-          metadataSize: JSON.stringify(assessmentData.metadata).length
-        });
       }
 
       
       const { data } = await client.models.AssessmentInstance.create(assessmentData, {authMode: 'apiKey'});
-      console.log("✅ [submitTier1Assessment] Assessment instance created", {
-        assessmentId: data?.id,
-        templateId: data?.templateId,
-        assessmentType: data?.assessmentType
-      });
       
       // Create tracking record for anonymous assessments
       if (isAnonymous && data && deviceFingerprint) {
@@ -224,11 +215,6 @@ export function useAssessment() {
       
       try {
         const deviceFingerprint = getDeviceFingerprint();
-        console.log("📱 [findAndLinkAnonymousAssessments] Got device fingerprint", {
-          deviceId: deviceFingerprint.fingerprint,
-          userAgent: deviceFingerprint.userAgent.substring(0, 50) + "...",
-          screenResolution: deviceFingerprint.screenResolution
-        });
         
         // Efficiently search for anonymous assessments by deviceId
         
@@ -249,10 +235,6 @@ export function useAssessment() {
         
         const linkedAssessments = [];
         for (const anonymousAssessment of anonymousAssessments) {
-          console.log("🔄 [findAndLinkAnonymousAssessments] Processing assessment", {
-            trackingId: anonymousAssessment.id,
-            assessmentInstanceId: anonymousAssessment.assessmentInstanceId
-          });
           
           try {
             // Update the actual assessment instance
@@ -267,11 +249,6 @@ export function useAssessment() {
                 originalDeviceId: deviceFingerprint.fingerprint,
               }),
             });
-            console.log("✅ [findAndLinkAnonymousAssessments] Assessment instance updated", {
-              assessmentId: updatedAssessment?.id,
-              newInitiatorUserId: updatedAssessment?.initiatorUserId,
-              newCompanyId: updatedAssessment?.companyId
-            });
             
             // Update the tracking record
             
@@ -283,11 +260,6 @@ export function useAssessment() {
               linkedAt: new Date().toISOString(),
             }, {
               authMode: 'apiKey'
-            });
-            console.log("✅ [findAndLinkAnonymousAssessments] Tracking record updated", {
-              trackingId: anonymousAssessment.id,
-              isLinked: true,
-              linkedUserId: userId
             });
             
             const linked = updatedAssessment;
@@ -305,12 +277,6 @@ export function useAssessment() {
           dispatch({ type: "SET_ANONYMOUS_ASSESSMENT_ID", payload: null });
           
         }
-
-        console.log("🎉 [findAndLinkAnonymousAssessments] Linking process completed", {
-          totalProcessed: anonymousAssessments.length,
-          successfullyLinked: linkedAssessments.length,
-          linkedAssessmentIds: linkedAssessments.map(a => a.id)
-        });
         return linkedAssessments;
       } catch (err) {
         console.error("❌ [findAndLinkAnonymousAssessments] Error finding and linking anonymous assessments:", err);

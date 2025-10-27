@@ -20,6 +20,17 @@ interface Tier2AssessmentQuestionsProps {
   onBack: () => void;
 }
 
+const maturityOrder = ["BASIC", "EMERGING", "ESTABLISHED", "WORLD_CLASS"];
+
+const getSortedOptions = (question: any) => {
+    const sortedOptions = question.options.sort((a: any, b: any) => {
+      const aIndex = maturityOrder.indexOf(a.value);
+      const bIndex = maturityOrder.indexOf(b.value);
+      return aIndex - bIndex;
+    });
+    return sortedOptions;
+  };
+
 export function Tier2AssessmentQuestions({ onComplete, onBack }: Tier2AssessmentQuestionsProps) {
   const [questions, setQuestions] = useState<any[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -225,7 +236,7 @@ export function Tier2AssessmentQuestions({ onComplete, onBack }: Tier2Assessment
 
               {/* Answer Options */}
               <div className="space-y-3 mb-8">
-                {currentQuestion.options?.map((option: any) => {
+                {getSortedOptions(currentQuestion)?.map((option: any) => {
                   const isSelected = responses[currentQuestion.id] === option.value;
                   return (
                     <button

@@ -37,11 +37,8 @@ export function Tier2Assessment({ onNavigateToTier }: Tier2AssessmentProps) {
 
   const handleCompleteAssessment = async (responses: Record<string, string>) => {
     try {
-      console.log('Submitting Tier 2 assessment...');
       await submitTier2Assessment(responses);
-      console.log('Assessment submitted, fetching updated assessments...');
       await fetchUserAssessments();
-      console.log('Assessments fetched, navigating to results. Count:', userTier2Assessments?.length);
       setCurrentStep("results");
     } catch (error) {
       console.error('Error submitting Tier 2 assessment:', error);

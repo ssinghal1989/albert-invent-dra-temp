@@ -1,10 +1,6 @@
-import React, { useState, useEffect } from "react";
+import { AlertCircle, BarChart3, RefreshCw, TrendingUp } from "lucide-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { useAssessment } from "../hooks/useAssesment";
-import { useToast } from "../context/ToastContext";
-import { Loader } from "./ui/Loader";
-import { AlertCircle, BarChart3, TrendingUp, RefreshCw } from "lucide-react";
 import { Tier2ScoreResult } from "../utils/tier2ScoreCalculator";
 
 interface Tier2ResultsProps {
@@ -32,19 +28,11 @@ export function Tier2Results({
     ? JSON.parse(latestAssessment.score as string)
     : null;
 
-  console.log('Tier2Results render:', {
-    isLoggedIn,
-    assessmentCount: userTier2Assessments?.length,
-    hasScore: !!score
-  });
-
   if (!isLoggedIn) {
-    console.log('Tier2Results: User not logged in, redirecting');
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   if (!score) {
-    console.log('Tier2Results: No score found, redirecting. Assessment count:', userTier2Assessments?.length);
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 

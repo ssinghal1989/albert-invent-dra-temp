@@ -155,14 +155,6 @@ export function getDeviceFingerprint(): DeviceFingerprint {
   
   
   const fingerprint = generateDeviceFingerprint();
-  console.log("📱 [getDeviceFingerprint] Generated fingerprint", {
-    deviceId: fingerprint.fingerprint,
-    userAgent: fingerprint.userAgent.substring(0, 50) + "...",
-    screenResolution: fingerprint.screenResolution,
-    timezone: fingerprint.timezone,
-    language: fingerprint.language,
-    platform: fingerprint.platform
-  });
   storeDeviceFingerprint(fingerprint);
   
   return fingerprint;
