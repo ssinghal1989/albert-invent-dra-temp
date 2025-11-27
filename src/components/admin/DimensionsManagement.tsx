@@ -99,6 +99,7 @@ export function DimensionsManagement() {
 
     try {
       setReseeding(true);
+      setLoading(true);
       await clearDimensionsData();
       await seedDimensionsData();
       await loadDimensions();
@@ -118,6 +119,7 @@ export function DimensionsManagement() {
       });
     } finally {
       setReseeding(false);
+      setLoading(false);
     }
   }
 
@@ -139,7 +141,28 @@ export function DimensionsManagement() {
     try {
       setSaving(true);
       await updateSubDimension(subdimensionId, editForm);
-      await loadDimensions();
+
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          return {
+            ...pillar,
+            dimensions: pillar.dimensions.map(dim => {
+              if (dim.name !== selectedDimension) return dim;
+
+              return {
+                ...dim,
+                subdimensions: dim.subdimensions.map(sub => {
+                  if ((sub as any).id !== subdimensionId) return sub;
+                  return { ...sub, ...editForm, id: subdimensionId };
+                })
+              };
+            })
+          };
+        })
+      );
+
       setEditingSubdimension(null);
       setEditForm(null);
       showToast({
@@ -176,10 +199,33 @@ export function DimensionsManagement() {
   async function handleSaveDimensionName() {
     if (!dimensionNameForm.trim() || !selectedDimensionId) return;
 
+    const oldDimensionName = selectedDimension;
+
     try {
       setSaving(true);
       await updateDimension(selectedDimensionId, { name: dimensionNameForm });
-      await loadDimensions();
+
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          return {
+            ...pillar,
+            dimensions: pillar.dimensions.map(dim => {
+              if (dim.name !== oldDimensionName) return dim;
+              return { ...dim, name: dimensionNameForm };
+            })
+          };
+        })
+      );
+
+      setDimensionsWithIds(prevIds =>
+        prevIds.map(dim => {
+          if (dim.id !== selectedDimensionId) return dim;
+          return { ...dim, name: dimensionNameForm };
+        })
+      );
+
       setSelectedDimension(dimensionNameForm);
       setEditingDimensionName(false);
       setDimensionNameForm('');
@@ -208,7 +254,20 @@ export function DimensionsManagement() {
     try {
       setSaving(true);
       await createDimension(selectedPillar, newDimensionName);
-      await loadDimensions();
+
+      await loadDimensionsWithIds();
+
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          return {
+            ...pillar,
+            dimensions: [...pillar.dimensions, { name: newDimensionName, subdimensions: [] }]
+          };
+        })
+      );
+
       setSelectedDimension(newDimensionName);
       setShowAddDimensionModal(false);
       setNewDimensionName('');
@@ -238,14 +297,39 @@ export function DimensionsManagement() {
       return;
     }
 
+    const dimensionToDelete = selectedDimension;
+
     try {
       setSaving(true);
       await deleteDimension(selectedDimensionId);
-      await loadDimensions();
-      const pillar = dimensionsData.find(p => p.name === selectedPillar);
-      if (pillar && pillar.dimensions.length > 0) {
-        setSelectedDimension(pillar.dimensions[0].name);
+
+      let newSelectedDimension = '';
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          const updatedDimensions = pillar.dimensions.filter(dim => dim.name !== dimensionToDelete);
+          if (updatedDimensions.length > 0) {
+            newSelectedDimension = updatedDimensions[0].name;
+          }
+
+          return {
+            ...pillar,
+            dimensions: updatedDimensions
+          };
+        })
+      );
+
+      setDimensionsWithIds(prevIds => prevIds.filter(dim => dim.id !== selectedDimensionId));
+
+      if (newSelectedDimension) {
+        setSelectedDimension(newSelectedDimension);
+        const dimWithId = dimensionsWithIds.find(d => d.name === newSelectedDimension);
+        if (dimWithId) {
+          setSelectedDimensionId(dimWithId.id);
+        }
       }
+
       showToast({
         type: 'success',
         title: 'Success',
@@ -270,8 +354,55 @@ export function DimensionsManagement() {
 
     try {
       setSaving(true);
+
+      const tempId = `temp-${Date.now()}`;
+      const newSubdimension = {
+        ...newSubdimensionForm,
+        id: tempId
+      };
+
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          return {
+            ...pillar,
+            dimensions: pillar.dimensions.map(dim => {
+              if (dim.name !== selectedDimension) return dim;
+
+              return {
+                ...dim,
+                subdimensions: [...dim.subdimensions, newSubdimension as any]
+              };
+            })
+          };
+        })
+      );
+
       await createSubDimension(selectedDimensionId, newSubdimensionForm);
-      await loadDimensions();
+
+      await loadDimensionsWithIds();
+
+      const updatedDimensions = await fetchAllDimensions();
+      const currentPillar = updatedDimensions.find(p => p.name === selectedPillar);
+      const currentDim = currentPillar?.dimensions.find(d => d.name === selectedDimension);
+
+      if (currentDim) {
+        setDimensionsData(prevData =>
+          prevData.map(pillar => {
+            if (pillar.name !== selectedPillar) return pillar;
+
+            return {
+              ...pillar,
+              dimensions: pillar.dimensions.map(dim => {
+                if (dim.name !== selectedDimension) return dim;
+                return currentDim;
+              })
+            };
+          })
+        );
+      }
+
       setShowAddSubdimensionModal(false);
       setNewSubdimensionForm({
         name: '',
@@ -295,6 +426,7 @@ export function DimensionsManagement() {
         message: 'Failed to create subdimension. Please try again.',
         duration: 5000,
       });
+      await loadDimensions();
     } finally {
       setSaving(false);
     }
@@ -307,8 +439,27 @@ export function DimensionsManagement() {
 
     try {
       setSaving(true);
+
+      setDimensionsData(prevData =>
+        prevData.map(pillar => {
+          if (pillar.name !== selectedPillar) return pillar;
+
+          return {
+            ...pillar,
+            dimensions: pillar.dimensions.map(dim => {
+              if (dim.name !== selectedDimension) return dim;
+
+              return {
+                ...dim,
+                subdimensions: dim.subdimensions.filter(sub => (sub as any).id !== subdimensionId)
+              };
+            })
+          };
+        })
+      );
+
       await deleteSubDimension(subdimensionId);
-      await loadDimensions();
+
       showToast({
         type: 'success',
         title: 'Success',
@@ -323,6 +474,7 @@ export function DimensionsManagement() {
         message: 'Failed to delete subdimension. Please try again.',
         duration: 5000,
       });
+      await loadDimensions();
     } finally {
       setSaving(false);
     }
