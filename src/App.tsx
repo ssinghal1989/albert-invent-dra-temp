@@ -33,6 +33,7 @@ import { useCallRequest } from "./hooks/useCallRequest";
 import { Tier2AssessmentOld } from "./components/Tier2AssessmentOld";
 import { getDeviceFingerprint } from "./utils/deviceFingerprint";
 import { Tier2Assessment } from "./components/Tier2Assessment";
+import { ExploreDimensions } from "./components/ExploreDimensions";
 
 function AppContent() {
   const { state, dispatch } = useAppContext();
@@ -50,32 +51,18 @@ function AppContent() {
 
   const checkIfUserAlreadyLoggedIn = async () => {
     try {
-      
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: true });
       const currentUser = await getCurrentUser();
       if (currentUser) {
         dispatch({ type: "SET_LOGGED_IN_USER_DETAILS", payload: currentUser });
-        const result = await setUserData({ loggedInUserDetails: currentUser! });
-        
-        // Try to link any anonymous assessments after user login
-        // if (result.user && result.company) {
-          
-        //   try {
-        //     const linkedAssessments = await findAndLinkAnonymousAssessments(result.user.id, result.company.id);
-        //     console.log("✅ [checkIfUserAlreadyLoggedIn] Anonymous assessments linking completed", {
-        //       linkedCount: linkedAssessments.length
-        //     });
-        //   } catch (err) {
-        //     console.error("❌ [checkIfUserAlreadyLoggedIn] Error linking anonymous assessments:", err);
-        //   }
-        // }
-      } else {
-        
+        await setUserData({ loggedInUserDetails: currentUser });
       }
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
-    } catch (error) {
+    } catch (error: any) {
       dispatch({ type: "SET_IS_LOADING_INITIAL_DATA", payload: false });
-      console.error("❌ [checkIfUserAlreadyLoggedIn] Error checking if user is logged in:", error);
+      if (error.name !== 'UserUnAuthenticatedException') {
+        console.error("❌ [checkIfUserAlreadyLoggedIn] Error checking if user is logged in:", error);
+      }
     }
   };
 
@@ -102,11 +89,12 @@ function AppContent() {
     dispatch({ type: "SET_DEVICE_ID", payload: deviceFingerprint.fingerprint });
   }, []);
 
-  const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" => {
+  const getCurrentView = (): "home" | "tier1" | "tier2" | "admin" | "explore-dimensions" => {
     const path = location.pathname;
     if (path === "/tier1") return "tier1";
     if (path === "/tier2") return "tier2";
     if (path === "/admin") return "admin";
+    if (path === "/explore-dimensions") return "explore-dimensions";
     return "home";
   };
 
@@ -120,6 +108,10 @@ function AppContent() {
 
   const navigateToAdmin = () => {
     navigate("/admin");
+  };
+
+  const navigateToExploreDimensions = () => {
+    navigate("/explore-dimensions");
   };
 
   const toggleSidebar = () => {
@@ -271,6 +263,7 @@ function AppContent() {
       onNavigateHome={navigateHome}
       onNavigateToTier={navigateToTier}
       onNavigateToAdmin={navigateToAdmin}
+      onNavigateToExploreDimensions={navigateToExploreDimensions}
       onLogin={handleHeaderLogin}
       onLogout={handleLogout}
       userName={state.userData?.name || state.userData?.email || ""}
@@ -352,6 +345,10 @@ function AppContent() {
               onCancel={() => navigate("/email-login")}
             />
           }
+        />
+        <Route
+          path="/explore-dimensions"
+          element={<ExploreDimensions />}
         />
       </Routes>
     </Layout>

@@ -1,27 +1,31 @@
-import React from 'react';
-import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home, Shield, X } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, CheckCircle, TrendingUp, Home, Shield, X, Layers, ChevronDown } from 'lucide-react';
+import { useAppContext, useHasTier2Access } from '../context/AppContext';
 
 interface SidebarProps {
-  currentView: 'home' | 'tier1' | 'tier2' | 'admin';
+  currentView: 'home' | 'tier1' | 'tier2' | 'admin' | 'explore-dimensions';
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   onNavigateHome: () => void;
   onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
   onNavigateToAdmin?: () => void;
+  onNavigateToExploreDimensions?: () => void;
 }
 
-export function Sidebar({ 
-  currentView, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  onNavigateHome, 
+export function Sidebar({
+  currentView,
+  sidebarCollapsed,
+  toggleSidebar,
+  onNavigateHome,
   onNavigateToTier,
-  onNavigateToAdmin
+  onNavigateToAdmin,
+  onNavigateToExploreDimensions
 }: SidebarProps) {
   const { state } = useAppContext();
   const redirectPathAfterLogin = state.redirectPathAfterLogin;
   const isAdmin = state.userData?.role === 'admin' || state.userData?.role === 'superAdmin';
+  const hasTier2Access = useHasTier2Access();
+  const [tier2Expanded, setTier2Expanded] = useState(false);
   
   return (
     <>
@@ -76,21 +80,93 @@ export function Sidebar({
               <CheckCircle className="w-5 h-5 flex-shrink-0" />
               {!sidebarCollapsed && <span className="font-medium text-base">Tier 1 Assessment</span>}
             </div>}
-            {!!state.loggedInUserDetails && <div 
-              onClick={() => onNavigateToTier('tier2')}
-              className={`flex items-center ${
-                sidebarCollapsed 
-                  ? 'justify-center w-10 h-10 p-0' 
-                  : 'space-x-3 p-3 w-full'
-              } ${
-                (currentView === 'tier2' || redirectPathAfterLogin?.includes('/tier2')) 
-                  ? 'text-white bg-primary' 
-                  : 'text-secondary hover:bg-light'
-              } rounded-lg cursor-pointer transition-colors duration-200`}
-            >
-              <TrendingUp className="w-5 h-5 flex-shrink-0" />
-              {!sidebarCollapsed && <span className="font-medium text-base">Tier 2 Assessment</span>}
-            </div>}
+            {!!state.loggedInUserDetails && (
+              <div className="relative">
+                {sidebarCollapsed ? (
+                  <>
+                    <div
+                      onClick={() => onNavigateToTier('tier2')}
+                      className={`flex items-center justify-center w-10 h-10 ${
+                        currentView === 'tier2'
+                          ? 'text-white bg-primary'
+                          : 'text-secondary hover:bg-light'
+                      } rounded-lg cursor-pointer transition-colors duration-200`}
+                    >
+                      <TrendingUp className="w-5 h-5 flex-shrink-0" />
+                    </div>
+                    {hasTier2Access && onNavigateToExploreDimensions && (
+                      <div
+                        onClick={onNavigateToExploreDimensions}
+                        className={`flex items-center justify-center w-10 h-10 mt-1 ${
+                          currentView === 'explore-dimensions'
+                            ? 'text-white bg-primary'
+                            : 'text-secondary hover:bg-light'
+                        } rounded-lg cursor-pointer transition-colors duration-200`}
+                      >
+                        <Layers className="w-4 h-4 flex-shrink-0" />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className={`flex items-center justify-between p-3 w-full ${
+                        (currentView === 'tier2' || currentView === 'explore-dimensions' || redirectPathAfterLogin?.includes('/tier2'))
+                          ? 'text-secondary hover:bg-light'
+                          : 'text-secondary hover:bg-light'
+                      } rounded-lg cursor-pointer transition-colors duration-200`}
+                    >
+                      <div
+                        onClick={() => onNavigateToTier('tier2')}
+                        className="flex items-center space-x-3 flex-1"
+                      >
+                        <TrendingUp className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-medium text-base">Tier 2 Assessment</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTier2Expanded(!tier2Expanded);
+                        }}
+                        className="p-1 hover:bg-white/20 rounded transition-colors"
+                      >
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                          tier2Expanded ? 'rotate-180' : ''
+                        }`} />
+                      </button>
+                    </div>
+                    {tier2Expanded && (
+                      <div className="ml-4 mt-1 space-y-1">
+                        <div
+                          onClick={() => onNavigateToTier('tier2')}
+                          className={`flex items-center space-x-3 p-3 w-full ${
+                            currentView === 'tier2'
+                              ? 'text-white bg-primary'
+                              : 'text-secondary hover:bg-light'
+                          } rounded-lg cursor-pointer transition-colors duration-200`}
+                        >
+                          <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                          <span className="font-medium text-sm">Take Assessment</span>
+                        </div>
+                        {hasTier2Access && onNavigateToExploreDimensions && (
+                          <div
+                            onClick={onNavigateToExploreDimensions}
+                            className={`flex items-center space-x-3 p-3 w-full ${
+                              currentView === 'explore-dimensions'
+                                ? 'text-white bg-primary'
+                                : 'text-secondary hover:bg-light'
+                            } rounded-lg cursor-pointer transition-colors duration-200`}
+                          >
+                            <Layers className="w-4 h-4 flex-shrink-0" />
+                            <span className="font-medium text-sm">Explore Dimensions</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             {!!state.loggedInUserDetails && isAdmin && onNavigateToAdmin && <div 
               onClick={onNavigateToAdmin}
               className={`flex items-center ${
@@ -159,20 +235,73 @@ export function Sidebar({
                 <CheckCircle className="w-5 h-5 flex-shrink-0" />
                 <span className="font-medium text-base">Tier 1 Assessment</span>
               </div>}
-              {!!state.loggedInUserDetails && <div 
-                onClick={() => {
-                  onNavigateToTier('tier2');
-                  toggleSidebar();
-                }}
-                className={`flex items-center space-x-3 p-4 w-full ${
-                  (currentView === 'tier2' || redirectPathAfterLogin?.includes('/tier2')) 
-                    ? 'text-white bg-primary' 
-                    : 'text-secondary hover:bg-light'
-                } rounded-lg cursor-pointer transition-colors duration-200`}
-              >
-                <TrendingUp className="w-5 h-5 flex-shrink-0" />
-                <span className="font-medium text-base">Tier 2 Assessment</span>
-              </div>}
+              {!!state.loggedInUserDetails && (
+                <div>
+                  <div
+                    className={`flex items-center justify-between p-4 w-full ${
+                      (currentView === 'tier2' || currentView === 'explore-dimensions' || redirectPathAfterLogin?.includes('/tier2'))
+                        ? 'text-secondary hover:bg-light'
+                        : 'text-secondary hover:bg-light'
+                    } rounded-lg cursor-pointer transition-colors duration-200`}
+                  >
+                    <div
+                      onClick={() => {
+                        onNavigateToTier('tier2');
+                        toggleSidebar();
+                      }}
+                      className="flex items-center space-x-3 flex-1"
+                    >
+                      <TrendingUp className="w-5 h-5 flex-shrink-0" />
+                      <span className="font-medium text-base">Tier 2 Assessment</span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTier2Expanded(!tier2Expanded);
+                      }}
+                      className="p-1 hover:bg-white/20 rounded transition-colors"
+                    >
+                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${
+                        tier2Expanded ? 'rotate-180' : ''
+                      }`} />
+                    </button>
+                  </div>
+                  {tier2Expanded && (
+                    <div className="ml-4 mt-1 space-y-1">
+                      <div
+                        onClick={() => {
+                          onNavigateToTier('tier2');
+                          toggleSidebar();
+                        }}
+                        className={`flex items-center space-x-3 p-4 w-full ${
+                          currentView === 'tier2'
+                            ? 'text-white bg-primary'
+                            : 'text-secondary hover:bg-light'
+                        } rounded-lg cursor-pointer transition-colors duration-200`}
+                      >
+                        <TrendingUp className="w-4 h-4 flex-shrink-0" />
+                        <span className="font-medium text-sm">Take Assessment</span>
+                      </div>
+                      {hasTier2Access && onNavigateToExploreDimensions && (
+                        <div
+                          onClick={() => {
+                            onNavigateToExploreDimensions();
+                            toggleSidebar();
+                          }}
+                          className={`flex items-center space-x-3 p-4 w-full ${
+                            currentView === 'explore-dimensions'
+                              ? 'text-white bg-primary'
+                              : 'text-secondary hover:bg-light'
+                          } rounded-lg cursor-pointer transition-colors duration-200`}
+                        >
+                          <Layers className="w-4 h-4 flex-shrink-0" />
+                          <span className="font-medium text-sm">Explore Dimensions</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               {!!state.loggedInUserDetails && isAdmin && onNavigateToAdmin && <div 
                 onClick={() => {
                   onNavigateToAdmin();

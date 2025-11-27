@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { LoadingButton } from './LoadingButton';
 import { useLoader } from '../../hooks/useLoader';
+import { useToast } from '../../context/ToastContext';
 import 'react-calendar/dist/Calendar.css';
 
 export interface ScheduleCallData {
@@ -22,12 +23,13 @@ interface ScheduleCallModalProps {
   title?: string;
 }
 
-export function ScheduleCallModal({ 
-  isOpen, 
-  onClose, 
+export function ScheduleCallModal({
+  isOpen,
+  onClose,
   onSubmit,
   title = "Schedule a Call"
 }: ScheduleCallModalProps) {
+  const { showToast } = useToast();
   const { isLoading: submitLoading, withLoading } = useLoader();
   const [scheduleData, setScheduleData] = useState<ScheduleCallData>({
     selectedDate: null,
@@ -113,7 +115,12 @@ export function ScheduleCallModal({
 
   const handleSubmitSchedule = async () => {
     if (!scheduleData.selectedDate || scheduleData.selectedTimes.length === 0) {
-      alert('Please select both date and at least one time slot');
+      showToast({
+        type: 'warning',
+        title: 'Missing Information',
+        message: 'Please select both date and at least one time slot',
+        duration: 5000,
+      });
       return;
     }
 

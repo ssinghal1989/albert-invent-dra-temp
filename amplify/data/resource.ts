@@ -146,7 +146,62 @@ export const schema = a.schema({
     .secondaryIndexes((index) => [
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
-    .authorization((allow) => [allow.authenticated(), allow.owner()])
+    .authorization((allow) => [allow.authenticated(), allow.owner()]),
+  Pillar: a
+    .model({
+      id: a.id().required(),
+      name: a.string().required(),
+      displayName: a.string().required(),
+      color: a.string(),
+      order: a.integer().required(),
+      dimensions: a.hasMany("Dimension", "pillarId"),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
+    })
+    .authorization((allow) => [
+      allow.authenticated(),
+      allow.publicApiKey().to(["read"]),
+    ]),
+  Dimension: a
+    .model({
+      id: a.id().required(),
+      pillarId: a.id().required(),
+      name: a.string().required(),
+      order: a.integer().required(),
+      pillar: a.belongsTo("Pillar", "pillarId"),
+      subdimensions: a.hasMany("SubDimension", "dimensionId"),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
+    })
+    .secondaryIndexes((index) => [
+      index("pillarId").sortKeys(["order"]),
+    ])
+    .authorization((allow) => [
+      allow.authenticated(),
+      allow.publicApiKey().to(["read"]),
+    ]),
+  SubDimension: a
+    .model({
+      id: a.id().required(),
+      dimensionId: a.id().required(),
+      name: a.string().required(),
+      whyItMatters: a.string().required(),
+      basic: a.string().required(),
+      emerging: a.string().required(),
+      established: a.string().required(),
+      worldClass: a.string().required(),
+      order: a.integer().required(),
+      dimension: a.belongsTo("Dimension", "dimensionId"),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
+    })
+    .secondaryIndexes((index) => [
+      index("dimensionId").sortKeys(["order"]),
+    ])
+    .authorization((allow) => [
+      allow.authenticated(),
+      allow.publicApiKey().to(["read"]),
+    ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;

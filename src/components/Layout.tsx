@@ -4,25 +4,27 @@ import { Sidebar } from './Sidebar';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentView: 'home' | 'tier1' | 'tier2' | 'admin';
+  currentView: 'home' | 'tier1' | 'tier2' | 'admin' | 'explore-dimensions';
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
   onNavigateHome: () => void;
   onNavigateToTier: (tier: 'tier1' | 'tier2') => void;
   onNavigateToAdmin?: () => void;
+  onNavigateToExploreDimensions?: () => void;
   onLogin?: () => void;
   onLogout?: () => void;
   userName?: string;
 }
 
-export function Layout({ 
-  children, 
-  currentView, 
-  sidebarCollapsed, 
-  toggleSidebar, 
-  onNavigateHome, 
+export function Layout({
+  children,
+  currentView,
+  sidebarCollapsed,
+  toggleSidebar,
+  onNavigateHome,
   onNavigateToTier,
   onNavigateToAdmin,
+  onNavigateToExploreDimensions,
   onLogin,
   onLogout,
   userName
@@ -44,6 +46,7 @@ export function Layout({
           onNavigateHome={onNavigateHome}
           onNavigateToTier={onNavigateToTier}
           onNavigateToAdmin={onNavigateToAdmin}
+          onNavigateToExploreDimensions={onNavigateToExploreDimensions}
         />
         <div className="flex-1 min-w-0 overflow-auto">
           {children}
