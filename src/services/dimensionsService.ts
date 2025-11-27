@@ -6,71 +6,83 @@ const client = generateClient<Schema>();
 
 export async function fetchAllDimensions(): Promise<Pillar[]> {
   try {
-    const pillarsResult = await client.models.Pillar.list({
-      selectionSet: ['id', 'name', 'displayName', 'color', 'order'],
-    });
+    const [pillarsResult, allDimensionsResult, allSubdimensionsResult] = await Promise.all([
+      client.models.Pillar.list({
+        selectionSet: ['id', 'name', 'displayName', 'color', 'order'],
+      }),
+      client.models.Dimension.list({
+        selectionSet: ['id', 'name', 'order', 'pillarId'],
+      }),
+      client.models.SubDimension.list({
+        selectionSet: [
+          'id',
+          'name',
+          'whyItMatters',
+          'basic',
+          'emerging',
+          'established',
+          'worldClass',
+          'order',
+          'dimensionId',
+        ],
+      }),
+    ]);
 
     if (!pillarsResult.data || pillarsResult.data.length === 0) {
       return [];
     }
 
-    const pillars: Pillar[] = [];
-
-    for (const pillarData of pillarsResult.data) {
-      const dimensionsResult = await client.models.Dimension.list({
-        filter: { pillarId: { eq: pillarData.id } },
-        selectionSet: ['id', 'name', 'order', 'pillarId'],
-      });
-
-      const dimensions: Dimension[] = [];
-
-      for (const dimensionData of dimensionsResult.data) {
-        const subdimensionsResult = await client.models.SubDimension.list({
-          filter: { dimensionId: { eq: dimensionData.id } },
-          selectionSet: [
-            'id',
-            'name',
-            'whyItMatters',
-            'basic',
-            'emerging',
-            'established',
-            'worldClass',
-            'order',
-            'dimensionId',
-          ],
-        });
-
-        const subdimensions: (SubDimension & { id: string })[] = subdimensionsResult.data
-          .sort((a, b) => (a.order || 0) - (b.order || 0))
-          .map((sub) => ({
-            id: sub.id,
-            name: sub.name || '',
-            whyItMatters: sub.whyItMatters || '',
-            basic: sub.basic || '',
-            emerging: sub.emerging || '',
-            established: sub.established || '',
-            worldClass: sub.worldClass || '',
-          }));
-
-        dimensions.push({
-          name: dimensionData.name || '',
-          subdimensions,
-        });
+    const subdimensionsByDimensionId = new Map<string, (SubDimension & { id: string })[]>();
+    allSubdimensionsResult.data.forEach((sub) => {
+      if (!sub.dimensionId) return;
+      if (!subdimensionsByDimensionId.has(sub.dimensionId)) {
+        subdimensionsByDimensionId.set(sub.dimensionId, []);
       }
+      subdimensionsByDimensionId.get(sub.dimensionId)!.push({
+        id: sub.id,
+        name: sub.name || '',
+        whyItMatters: sub.whyItMatters || '',
+        basic: sub.basic || '',
+        emerging: sub.emerging || '',
+        established: sub.established || '',
+        worldClass: sub.worldClass || '',
+      });
+    });
 
-      dimensions.sort((a, b) => {
-        const aData = dimensionsResult.data.find((d) => d.name === a.name);
-        const bData = dimensionsResult.data.find((d) => d.name === b.name);
+    subdimensionsByDimensionId.forEach((subs) => {
+      subs.sort((a, b) => {
+        const aData = allSubdimensionsResult.data.find(s => s.id === a.id);
+        const bData = allSubdimensionsResult.data.find(s => s.id === b.id);
         return (aData?.order || 0) - (bData?.order || 0);
       });
+    });
 
-      pillars.push({
-        name: pillarData.name || '',
-        displayName: pillarData.displayName || '',
-        color: pillarData.color || '',
-        dimensions,
+    const dimensionsByPillarId = new Map<string, Dimension[]>();
+    allDimensionsResult.data.forEach((dim) => {
+      if (!dim.pillarId) return;
+      if (!dimensionsByPillarId.has(dim.pillarId)) {
+        dimensionsByPillarId.set(dim.pillarId, []);
+      }
+      dimensionsByPillarId.get(dim.pillarId)!.push({
+        name: dim.name || '',
+        subdimensions: subdimensionsByDimensionId.get(dim.id) || [],
       });
-    }
+    });
+
+    dimensionsByPillarId.forEach((dims, pillarId) => {
+      dims.sort((a, b) => {
+        const aData = allDimensionsResult.data.find(d => d.name === a.name && d.pillarId === pillarId);
+        const bData = allDimensionsResult.data.find(d => d.name === b.name && d.pillarId === pillarId);
+        return (aData?.order || 0) - (bData?.order || 0);
+      });
+    });
+
+    const pillars: Pillar[] = pillarsResult.data.map((pillarData) => ({
+      name: pillarData.name || '',
+      displayName: pillarData.displayName || '',
+      color: pillarData.color || '',
+      dimensions: dimensionsByPillarId.get(pillarData.id) || [],
+    }));
 
     pillars.sort((a, b) => {
       const aData = pillarsResult.data.find((p) => p.name === a.name);

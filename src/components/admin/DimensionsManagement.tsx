@@ -768,7 +768,7 @@ export function DimensionsManagement() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Subdimension Name
+                  Subdimension Name <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -776,11 +776,12 @@ export function DimensionsManagement() {
                   onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Enter subdimension name"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Why It Matters
+                  Why It Matters <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   value={newSubdimensionForm.whyItMatters}
@@ -788,11 +789,12 @@ export function DimensionsManagement() {
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Explain why this subdimension matters"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Basic
+                  Basic <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   value={newSubdimensionForm.basic}
@@ -800,11 +802,12 @@ export function DimensionsManagement() {
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Describe the basic level"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Emerging
+                  Emerging <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   value={newSubdimensionForm.emerging}
@@ -812,11 +815,12 @@ export function DimensionsManagement() {
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Describe the emerging level"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Established
+                  Established <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   value={newSubdimensionForm.established}
@@ -824,11 +828,12 @@ export function DimensionsManagement() {
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Describe the established level"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  World Class
+                  World Class <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   value={newSubdimensionForm.worldClass}
@@ -836,6 +841,7 @@ export function DimensionsManagement() {
                   rows={3}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="Describe the world class level"
+                  required
                 />
               </div>
               <div className="flex gap-3 justify-end pt-4">
@@ -858,7 +864,15 @@ export function DimensionsManagement() {
                 </button>
                 <button
                   onClick={handleAddSubdimension}
-                  disabled={saving || !newSubdimensionForm.name.trim()}
+                  disabled={
+                    saving ||
+                    !newSubdimensionForm.name.trim() ||
+                    !newSubdimensionForm.whyItMatters.trim() ||
+                    !newSubdimensionForm.basic.trim() ||
+                    !newSubdimensionForm.emerging.trim() ||
+                    !newSubdimensionForm.established.trim() ||
+                    !newSubdimensionForm.worldClass.trim()
+                  }
                   className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
                   {saving ? 'Creating...' : 'Create Subdimension'}
