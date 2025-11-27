@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Save, X, RefreshCw, ChevronDown } from 'lucide-react';
-import { fetchAllDimensions, updateSubDimension, updateDimension, fetchDimensionsByPillarWithIds } from '../../services/dimensionsService';
+import { Edit2, Save, X, RefreshCw, ChevronDown, Plus, Trash2 } from 'lucide-react';
+import {
+  fetchAllDimensions,
+  updateSubDimension,
+  updateDimension,
+  fetchDimensionsByPillarWithIds,
+  createDimension,
+  deleteDimension,
+  createSubDimension,
+  deleteSubDimension
+} from '../../services/dimensionsService';
 import { seedDimensionsData, clearDimensionsData } from '../../services/dimensionsSeedService';
 import { Pillar } from '../../data/dimensionsData';
 import { useToast } from '../../context/ToastContext';
@@ -26,6 +35,17 @@ export function DimensionsManagement() {
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [reseeding, setReseeding] = useState(false);
+  const [showAddDimensionModal, setShowAddDimensionModal] = useState(false);
+  const [showAddSubdimensionModal, setShowAddSubdimensionModal] = useState(false);
+  const [newDimensionName, setNewDimensionName] = useState('');
+  const [newSubdimensionForm, setNewSubdimensionForm] = useState({
+    name: '',
+    whyItMatters: '',
+    basic: '',
+    emerging: '',
+    established: '',
+    worldClass: '',
+  });
 
   useEffect(() => {
     loadDimensions();
@@ -182,6 +202,132 @@ export function DimensionsManagement() {
     }
   }
 
+  async function handleAddDimension() {
+    if (!newDimensionName.trim()) return;
+
+    try {
+      setSaving(true);
+      await createDimension(selectedPillar, newDimensionName);
+      await loadDimensions();
+      setSelectedDimension(newDimensionName);
+      setShowAddDimensionModal(false);
+      setNewDimensionName('');
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Dimension created successfully!',
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error creating dimension:', error);
+      showToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message: 'Failed to create dimension. Please try again.',
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteDimension() {
+    if (!selectedDimensionId) return;
+
+    if (!confirm(`Are you sure you want to delete the dimension "${selectedDimension}"? This will also delete all its subdimensions.`)) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await deleteDimension(selectedDimensionId);
+      await loadDimensions();
+      const pillar = dimensionsData.find(p => p.name === selectedPillar);
+      if (pillar && pillar.dimensions.length > 0) {
+        setSelectedDimension(pillar.dimensions[0].name);
+      }
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Dimension deleted successfully!',
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error deleting dimension:', error);
+      showToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message: 'Failed to delete dimension. Please try again.',
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleAddSubdimension() {
+    if (!selectedDimensionId || !newSubdimensionForm.name.trim()) return;
+
+    try {
+      setSaving(true);
+      await createSubDimension(selectedDimensionId, newSubdimensionForm);
+      await loadDimensions();
+      setShowAddSubdimensionModal(false);
+      setNewSubdimensionForm({
+        name: '',
+        whyItMatters: '',
+        basic: '',
+        emerging: '',
+        established: '',
+        worldClass: '',
+      });
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Subdimension created successfully!',
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error creating subdimension:', error);
+      showToast({
+        type: 'error',
+        title: 'Creation Failed',
+        message: 'Failed to create subdimension. Please try again.',
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeleteSubdimension(subdimensionId: string, subdimensionName: string) {
+    if (!confirm(`Are you sure you want to delete the subdimension "${subdimensionName}"?`)) {
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await deleteSubDimension(subdimensionId);
+      await loadDimensions();
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: 'Subdimension deleted successfully!',
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error deleting subdimension:', error);
+      showToast({
+        type: 'error',
+        title: 'Deletion Failed',
+        message: 'Failed to delete subdimension. Please try again.',
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const currentPillar = dimensionsData.find(p => p.name === selectedPillar);
   const currentDimension = currentPillar?.dimensions.find(d => d.name === selectedDimension);
 
@@ -237,19 +383,36 @@ export function DimensionsManagement() {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Select Dimension</label>
-          <div className="relative">
-            <select
-              value={selectedDimension}
-              onChange={(e) => setSelectedDimension(e.target.value)}
-              className="w-full px-4 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <select
+                value={selectedDimension}
+                onChange={(e) => setSelectedDimension(e.target.value)}
+                className="w-full px-4 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
+              >
+                {currentPillar?.dimensions.map((dimension) => (
+                  <option key={dimension.name} value={dimension.name}>
+                    {dimension.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+            </div>
+            <button
+              onClick={() => setShowAddDimensionModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              title="Add New Dimension"
             >
-              {currentPillar?.dimensions.map((dimension) => (
-                <option key={dimension.name} value={dimension.name}>
-                  {dimension.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              <Plus className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleDeleteDimension}
+              disabled={saving || !currentDimension}
+              className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Delete Dimension"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -297,6 +460,16 @@ export function DimensionsManagement() {
             )}
           </div>
 
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <button
+              onClick={() => setShowAddSubdimensionModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors w-full justify-center"
+            >
+              <Plus className="w-5 h-5" />
+              Add New Subdimension
+            </button>
+          </div>
+
           <div className="divide-y divide-gray-200">
             {currentDimension.subdimensions.map((subdimension: any, index) => {
               const subdimensionId = subdimension.id;
@@ -317,13 +490,23 @@ export function DimensionsManagement() {
                       <h4 className="text-lg font-semibold text-gray-900">{subdimension.name}</h4>
                     )}
                     {!isEditing ? (
-                      <button
-                        onClick={() => handleEdit(subdimensionId, subdimension)}
-                        className="flex items-center gap-2 px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                        Edit
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(subdimensionId, subdimension)}
+                          className="flex items-center gap-2 px-3 py-1 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSubdimension(subdimensionId, subdimension.name)}
+                          disabled={saving}
+                          className="flex items-center gap-2 px-3 py-1 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete
+                        </button>
+                      </div>
                     ) : (
                       <div className="flex gap-2">
                         <button
@@ -420,6 +603,157 @@ export function DimensionsManagement() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Add Dimension Modal */}
+      {showAddDimensionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Dimension</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Dimension Name
+                </label>
+                <input
+                  type="text"
+                  value={newDimensionName}
+                  onChange={(e) => setNewDimensionName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter dimension name"
+                />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowAddDimensionModal(false);
+                    setNewDimensionName('');
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddDimension}
+                  disabled={saving || !newDimensionName.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Creating...' : 'Create Dimension'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Subdimension Modal */}
+      {showAddSubdimensionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 my-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Add New Subdimension</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Subdimension Name
+                </label>
+                <input
+                  type="text"
+                  value={newSubdimensionForm.name}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Enter subdimension name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Why It Matters
+                </label>
+                <textarea
+                  value={newSubdimensionForm.whyItMatters}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, whyItMatters: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Explain why this subdimension matters"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Basic
+                </label>
+                <textarea
+                  value={newSubdimensionForm.basic}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, basic: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the basic level"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Emerging
+                </label>
+                <textarea
+                  value={newSubdimensionForm.emerging}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, emerging: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the emerging level"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Established
+                </label>
+                <textarea
+                  value={newSubdimensionForm.established}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, established: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the established level"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  World Class
+                </label>
+                <textarea
+                  value={newSubdimensionForm.worldClass}
+                  onChange={(e) => setNewSubdimensionForm(prev => ({ ...prev, worldClass: e.target.value }))}
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Describe the world class level"
+                />
+              </div>
+              <div className="flex gap-3 justify-end pt-4">
+                <button
+                  onClick={() => {
+                    setShowAddSubdimensionModal(false);
+                    setNewSubdimensionForm({
+                      name: '',
+                      whyItMatters: '',
+                      basic: '',
+                      emerging: '',
+                      established: '',
+                      worldClass: '',
+                    });
+                  }}
+                  disabled={saving}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddSubdimension}
+                  disabled={saving || !newSubdimensionForm.name.trim()}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {saving ? 'Creating...' : 'Create Subdimension'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

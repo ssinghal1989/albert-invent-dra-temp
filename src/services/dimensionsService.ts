@@ -164,3 +164,91 @@ export async function fetchDimensionsByPillarWithIds(pillarName: string): Promis
     throw error;
   }
 }
+
+export async function createDimension(pillarName: string, dimensionName: string): Promise<void> {
+  try {
+    const pillarsResult = await client.models.Pillar.list({
+      filter: { name: { eq: pillarName } },
+      selectionSet: ['id'],
+    });
+
+    if (!pillarsResult.data || pillarsResult.data.length === 0) {
+      throw new Error('Pillar not found');
+    }
+
+    const pillarId = pillarsResult.data[0].id;
+
+    const existingDimensions = await client.models.Dimension.list({
+      filter: { pillarId: { eq: pillarId } },
+      selectionSet: ['order'],
+    });
+
+    const maxOrder = existingDimensions.data.reduce((max, dim) => Math.max(max, dim.order || 0), 0);
+
+    await client.models.Dimension.create({
+      name: dimensionName,
+      pillarId: pillarId,
+      order: maxOrder + 1,
+    });
+  } catch (error) {
+    console.error('Error creating dimension:', error);
+    throw error;
+  }
+}
+
+export async function deleteDimension(dimensionId: string): Promise<void> {
+  try {
+    const subdimensionsResult = await client.models.SubDimension.list({
+      filter: { dimensionId: { eq: dimensionId } },
+      selectionSet: ['id'],
+    });
+
+    for (const subdimension of subdimensionsResult.data) {
+      await client.models.SubDimension.delete({ id: subdimension.id });
+    }
+
+    await client.models.Dimension.delete({ id: dimensionId });
+  } catch (error) {
+    console.error('Error deleting dimension:', error);
+    throw error;
+  }
+}
+
+export async function createSubDimension(
+  dimensionId: string,
+  subdimensionData: {
+    name: string;
+    whyItMatters: string;
+    basic: string;
+    emerging: string;
+    established: string;
+    worldClass: string;
+  }
+): Promise<void> {
+  try {
+    const existingSubdimensions = await client.models.SubDimension.list({
+      filter: { dimensionId: { eq: dimensionId } },
+      selectionSet: ['order'],
+    });
+
+    const maxOrder = existingSubdimensions.data.reduce((max, sub) => Math.max(max, sub.order || 0), 0);
+
+    await client.models.SubDimension.create({
+      ...subdimensionData,
+      dimensionId: dimensionId,
+      order: maxOrder + 1,
+    });
+  } catch (error) {
+    console.error('Error creating subdimension:', error);
+    throw error;
+  }
+}
+
+export async function deleteSubDimension(subdimensionId: string): Promise<void> {
+  try {
+    await client.models.SubDimension.delete({ id: subdimensionId });
+  } catch (error) {
+    console.error('Error deleting subdimension:', error);
+    throw error;
+  }
+}
