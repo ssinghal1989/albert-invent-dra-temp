@@ -494,7 +494,11 @@ export function DimensionsManagement() {
             <div className="relative flex-1">
               <select
                 value={selectedDimension}
-                onChange={(e) => setSelectedDimension(e.target.value)}
+                onChange={(e) => {
+                  setSelectedDimension(e.target.value);
+                  const dimWithId = dimensionsWithIds.find(d => d.name === e.target.value);
+                  setSelectedDimensionId(dimWithId ? dimWithId.id : '');
+                }}
                 className="w-full px-4 py-2 pr-10 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary appearance-none"
               >
                 {currentPillar?.dimensions.map((dimension) => (
