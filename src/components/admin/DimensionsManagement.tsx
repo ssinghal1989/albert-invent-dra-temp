@@ -255,20 +255,19 @@ export function DimensionsManagement() {
       setSaving(true);
       await createDimension(selectedPillar, newDimensionName);
 
+      const updatedDimensions = await fetchAllDimensions();
+      setDimensionsData(updatedDimensions);
+
       await loadDimensionsWithIds();
 
-      setDimensionsData(prevData =>
-        prevData.map(pillar => {
-          if (pillar.name !== selectedPillar) return pillar;
-
-          return {
-            ...pillar,
-            dimensions: [...pillar.dimensions, { name: newDimensionName, subdimensions: [] }]
-          };
-        })
-      );
-
       setSelectedDimension(newDimensionName);
+
+      const newDimIds = await fetchDimensionsByPillarWithIds(selectedPillar);
+      const newDim = newDimIds.find(d => d.name === newDimensionName);
+      if (newDim) {
+        setSelectedDimensionId(newDim.id);
+      }
+
       setShowAddDimensionModal(false);
       setNewDimensionName('');
       showToast({
@@ -355,53 +354,10 @@ export function DimensionsManagement() {
     try {
       setSaving(true);
 
-      const tempId = `temp-${Date.now()}`;
-      const newSubdimension = {
-        ...newSubdimensionForm,
-        id: tempId
-      };
-
-      setDimensionsData(prevData =>
-        prevData.map(pillar => {
-          if (pillar.name !== selectedPillar) return pillar;
-
-          return {
-            ...pillar,
-            dimensions: pillar.dimensions.map(dim => {
-              if (dim.name !== selectedDimension) return dim;
-
-              return {
-                ...dim,
-                subdimensions: [...dim.subdimensions, newSubdimension as any]
-              };
-            })
-          };
-        })
-      );
-
       await createSubDimension(selectedDimensionId, newSubdimensionForm);
 
-      await loadDimensionsWithIds();
-
       const updatedDimensions = await fetchAllDimensions();
-      const currentPillar = updatedDimensions.find(p => p.name === selectedPillar);
-      const currentDim = currentPillar?.dimensions.find(d => d.name === selectedDimension);
-
-      if (currentDim) {
-        setDimensionsData(prevData =>
-          prevData.map(pillar => {
-            if (pillar.name !== selectedPillar) return pillar;
-
-            return {
-              ...pillar,
-              dimensions: pillar.dimensions.map(dim => {
-                if (dim.name !== selectedDimension) return dim;
-                return currentDim;
-              })
-            };
-          })
-        );
-      }
+      setDimensionsData(updatedDimensions);
 
       setShowAddSubdimensionModal(false);
       setNewSubdimensionForm({
@@ -426,7 +382,6 @@ export function DimensionsManagement() {
         message: 'Failed to create subdimension. Please try again.',
         duration: 5000,
       });
-      await loadDimensions();
     } finally {
       setSaving(false);
     }
