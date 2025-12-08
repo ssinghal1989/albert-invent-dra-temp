@@ -94,34 +94,69 @@ export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
                 />
                 {isHovered && (
                   <>
+                    <defs>
+                      <filter id="tooltip-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                        <feComponentTransfer>
+                          <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                          <feMergeNode/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                      <linearGradient id="tooltip-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 0.95 }} />
+                        <stop offset="100%" style={{ stopColor: '#2563eb', stopOpacity: 0.95 }} />
+                      </linearGradient>
+                    </defs>
                     <rect
-                      x={x - 35}
-                      y={y - 40}
-                      width={70}
-                      height={30}
-                      fill="white"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      rx={6}
-                      className="drop-shadow-lg"
+                      x={x - 50}
+                      y={y - 70}
+                      width={100}
+                      height={60}
+                      fill="url(#tooltip-gradient)"
+                      rx={10}
+                      filter="url(#tooltip-shadow)"
                     />
                     <text
                       x={x}
-                      y={y - 30}
+                      y={y - 45}
                       textAnchor="middle"
-                      className="text-xs font-semibold fill-gray-900"
+                      className="text-xs font-medium fill-white"
+                      style={{ opacity: 0.9 }}
                     >
-                      Score: {assessment.score.toFixed(1)}
+                      Score
                     </text>
+                    <text
+                      x={x}
+                      y={y - 25}
+                      textAnchor="middle"
+                      className="text-2xl font-bold fill-white"
+                    >
+                      {assessment.score.toFixed(1)}
+                    </text>
+                    <line
+                      x1={x - 35}
+                      y1={y - 35}
+                      x2={x + 35}
+                      y2={y - 35}
+                      stroke="white"
+                      strokeWidth={1}
+                      opacity={0.3}
+                    />
                     <text
                       x={x}
                       y={y - 18}
                       textAnchor="middle"
-                      className="text-xs fill-gray-600"
+                      className="text-xs font-medium fill-white"
+                      style={{ opacity: 0.95 }}
                     >
                       {assessment.date.toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
+                        year: 'numeric'
                       })}
                     </text>
                   </>
