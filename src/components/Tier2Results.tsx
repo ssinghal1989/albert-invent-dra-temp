@@ -8,6 +8,8 @@ import { ScoreTimelineChart } from "./charts/ScoreTimelineChart";
 import { DimensionBarChart } from "./charts/DimensionBarChart";
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
+import { questionsService } from "../services/questionsService";
+import { Tier2TemplateId } from "../services/defaultQuestions";
 
 const client = generateClient<Schema>();
 
@@ -59,13 +61,9 @@ export function Tier2Results({
         : undefined;
 
       if (responses) {
-        const { data: questionsData } = await client.models.Question.list({
-          filter: {
-            templateId: { eq: 'tier2-full-readiness-v1' }
-          }
-        });
+        const {data: questionsData} = await questionsService.getQuestionsByTemplate(Tier2TemplateId);
 
-        const questions: Question[] = questionsData.map(q => {
+        const questions: Question[] = questionsData ? questionsData?.map(q => {
           let metadata: { pillar?: string; dimension?: string } | undefined = undefined;
           if (q.metadata) {
             try {
@@ -80,7 +78,7 @@ export function Tier2Results({
             metadata,
             options: []
           };
-        });
+        }) : [];
 
         setProcessedScore(ensureDimensionScores(scoreData, responses, questions));
       } else {
