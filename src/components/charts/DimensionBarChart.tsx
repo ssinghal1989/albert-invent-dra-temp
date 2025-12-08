@@ -17,7 +17,7 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
   const barGroupWidth = 100;
   const width = Math.max(1200, dimensions.length * barGroupWidth + 160);
   const height = 500;
-  const padding = { top: 20, right: 120, bottom: 140, left: 60 };
+  const padding = { top: 70, right: 120, bottom: 100, left: 60 };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -221,7 +221,7 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
                     x={x}
                     y={chartHeight + 10}
                     width={barWidth}
-                    height={100}
+                    height={70}
                   >
                     <div
                       style={{
@@ -255,7 +255,7 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
 
           <text
             x={chartWidth / 2}
-            y={chartHeight + 120}
+            y={chartHeight + 85}
             textAnchor="middle"
             className="text-sm font-semibold fill-gray-700"
           >
