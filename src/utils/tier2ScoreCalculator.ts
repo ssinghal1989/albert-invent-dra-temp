@@ -169,7 +169,7 @@ export function calculateTier2Score(
   };
 
   // Initialize dimension scores
-  const dimensionData: { [dimension: string]: { score: number; pillar: string } } = {};
+  const dimensionData: { [dimension: string]: { score: number; pillar: string; questionCount: number } } = {};
 
   // Calculate raw scores for each pillar and dimension
   Object.entries(responses).forEach(([questionId, maturityLevel]) => {
@@ -189,9 +189,10 @@ export function calculateTier2Score(
     }
 
     if (!dimensionData[dimension]) {
-      dimensionData[dimension] = { score: 0, pillar };
+      dimensionData[dimension] = { score: 0, pillar, questionCount: 0 };
     }
     dimensionData[dimension].score += score;
+    dimensionData[dimension].questionCount += 1;
   });
 
   const digitalizationRawScore = pillarData['DIGITALIZATION'];
@@ -243,8 +244,8 @@ export function calculateTier2Score(
 
   // Prepare dimension scores breakdown
   const dimensionScores: DimensionScore[] = Object.entries(dimensionData).map(([dimension, data]) => {
-    const maxScore = 4;
-    const percentage = (data.score / maxScore) * 100;
+    const maxScore = data.questionCount * 4;
+    const percentage = maxScore > 0 ? (data.score / maxScore) * 100 : 0;
     return {
       dimension,
       dimensionScore: data.score,
@@ -287,7 +288,7 @@ export function ensureDimensionScores(
     return { ...scoreResult, dimensionScores: [] };
   }
 
-  const dimensionData: { [dimension: string]: { score: number; pillar: string } } = {};
+  const dimensionData: { [dimension: string]: { score: number; pillar: string; questionCount: number } } = {};
 
   Object.entries(responses).forEach(([questionId, maturityLevel]) => {
     const question = questions.find(q => q.id === questionId);
@@ -298,14 +299,15 @@ export function ensureDimensionScores(
     const score = SCORING_CONFIG.maturityToScore[maturityLevel as keyof typeof SCORING_CONFIG.maturityToScore] || 0;
 
     if (!dimensionData[dimension]) {
-      dimensionData[dimension] = { score: 0, pillar };
+      dimensionData[dimension] = { score: 0, pillar, questionCount: 0 };
     }
     dimensionData[dimension].score += score;
+    dimensionData[dimension].questionCount += 1;
   });
 
   const dimensionScores: DimensionScore[] = Object.entries(dimensionData).map(([dimension, data]) => {
-    const maxScore = 4;
-    const percentage = (data.score / maxScore) * 100;
+    const maxScore = data.questionCount * 4;
+    const percentage = maxScore > 0 ? (data.score / maxScore) * 100 : 0;
     return {
       dimension,
       dimensionScore: data.score,
