@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface ScoreTimelineChartProps {
   assessments: Array<{
     date: Date;
@@ -6,6 +8,8 @@ interface ScoreTimelineChartProps {
 }
 
 export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<number | null>(null);
+
   if (assessments.length === 0) return null;
 
   const sortedAssessments = [...assessments].sort((a, b) => a.date.getTime() - b.date.getTime());
@@ -74,9 +78,54 @@ export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
           {sortedAssessments.map((assessment, i) => {
             const x = i * xStep;
             const y = getY(assessment.score);
+            const isHovered = hoveredPoint === i;
             return (
               <g key={i}>
-                <circle cx={x} cy={y} r={5} fill="#3b82f6" stroke="white" strokeWidth={2} />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={isHovered ? 8 : 5}
+                  fill="#3b82f6"
+                  stroke="white"
+                  strokeWidth={2}
+                  className="transition-all cursor-pointer"
+                  onMouseEnter={() => setHoveredPoint(i)}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                />
+                {isHovered && (
+                  <>
+                    <rect
+                      x={x - 35}
+                      y={y - 40}
+                      width={70}
+                      height={30}
+                      fill="white"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      rx={6}
+                      className="drop-shadow-lg"
+                    />
+                    <text
+                      x={x}
+                      y={y - 30}
+                      textAnchor="middle"
+                      className="text-xs font-semibold fill-gray-900"
+                    >
+                      Score: {assessment.score.toFixed(1)}
+                    </text>
+                    <text
+                      x={x}
+                      y={y - 18}
+                      textAnchor="middle"
+                      className="text-xs fill-gray-600"
+                    >
+                      {assessment.date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </text>
+                  </>
+                )}
                 <text
                   x={x}
                   y={chartHeight + 30}
@@ -89,9 +138,6 @@ export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
                     day: 'numeric',
                   })}
                 </text>
-                <title>
-                  {assessment.date.toLocaleDateString()}: {assessment.score}
-                </title>
               </g>
             );
           })}
