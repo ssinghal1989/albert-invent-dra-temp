@@ -1,6 +1,6 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
-import { Tier2ScoreResult } from './tier2ScoreCalculator';
+import { Tier2ScoreResult, ensureDimensionScores, Question, Tier2AssessmentResponses } from './tier2ScoreCalculator';
 
 const client = generateClient<Schema>();
 
@@ -42,9 +42,26 @@ export async function fetchTeamAverages(companyId: string): Promise<TeamAverages
       return null;
     }
 
+    const { data: questionsData } = await client.models.Question.list({
+      filter: {
+        templateId: { eq: 'tier2-full-readiness-v1' }
+      }
+    });
+
+    const questions: Question[] = questionsData.map(q => ({
+      id: q.sectionId || '',
+      prompt: q.prompt || '',
+      metadata: q.metadata,
+      options: []
+    }));
+
     const scores: Tier2ScoreResult[] = assessments
       .filter((a) => a.score)
-      .map((a) => JSON.parse(a.score as string));
+      .map((a) => {
+        const score = JSON.parse(a.score as string);
+        const responses = a.responses ? JSON.parse(a.responses as string) : undefined;
+        return ensureDimensionScores(score, responses, questions);
+      });
 
     if (scores.length === 0) {
       return null;
@@ -75,13 +92,15 @@ export async function fetchTeamAverages(companyId: string): Promise<TeamAverages
         pillarAverages[pillar.pillar].percentage += percentage;
       });
 
-      score.dimensionScores.forEach((dimension) => {
-        if (!dimensionAverages[dimension.dimension]) {
-          dimensionAverages[dimension.dimension] = { score: 0, percentage: 0 };
-        }
-        dimensionAverages[dimension.dimension].score += dimension.dimensionScore;
-        dimensionAverages[dimension.dimension].percentage += dimension.percentage;
-      });
+      if (score.dimensionScores && score.dimensionScores.length > 0) {
+        score.dimensionScores.forEach((dimension) => {
+          if (!dimensionAverages[dimension.dimension]) {
+            dimensionAverages[dimension.dimension] = { score: 0, percentage: 0 };
+          }
+          dimensionAverages[dimension.dimension].score += dimension.dimensionScore;
+          dimensionAverages[dimension.dimension].percentage += dimension.percentage;
+        });
+      }
     });
 
     const count = scores.length;

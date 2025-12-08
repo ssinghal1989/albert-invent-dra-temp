@@ -271,6 +271,58 @@ export function calculateTier2Score(
 }
 
 /**
+ * Ensures dimensionScores exists on a Tier2ScoreResult
+ * For backward compatibility with existing assessments that don't have dimensionScores
+ */
+export function ensureDimensionScores(
+  scoreResult: Tier2ScoreResult,
+  responses?: Tier2AssessmentResponses,
+  questions?: Question[]
+): Tier2ScoreResult {
+  if (scoreResult.dimensionScores && scoreResult.dimensionScores.length > 0) {
+    return scoreResult;
+  }
+
+  if (!responses || !questions) {
+    return { ...scoreResult, dimensionScores: [] };
+  }
+
+  const dimensionData: { [dimension: string]: { score: number; pillar: string } } = {};
+
+  Object.entries(responses).forEach(([questionId, maturityLevel]) => {
+    const question = questions.find(q => q.id === questionId);
+    if (!question) return;
+
+    const metadata = typeof question.metadata === 'string'
+      ? JSON.parse(question.metadata)
+      : question.metadata;
+
+    const pillar = metadata?.pillar || 'UNKNOWN';
+    const dimension = metadata?.dimension || 'UNKNOWN';
+    const score = SCORING_CONFIG.maturityToScore[maturityLevel as keyof typeof SCORING_CONFIG.maturityToScore] || 0;
+
+    if (!dimensionData[dimension]) {
+      dimensionData[dimension] = { score: 0, pillar };
+    }
+    dimensionData[dimension].score += score;
+  });
+
+  const dimensionScores: DimensionScore[] = Object.entries(dimensionData).map(([dimension, data]) => {
+    const maxScore = 4;
+    const percentage = (data.score / maxScore) * 100;
+    return {
+      dimension,
+      dimensionScore: data.score,
+      maxScore,
+      percentage,
+      pillar: data.pillar
+    };
+  });
+
+  return { ...scoreResult, dimensionScores };
+}
+
+/**
  * Get recommendations based on pillar scores
  */
 export function getTier2Recommendations(scoreResult: Tier2ScoreResult): string[] {

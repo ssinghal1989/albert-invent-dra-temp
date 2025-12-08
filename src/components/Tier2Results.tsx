@@ -1,11 +1,15 @@
 import { AlertCircle, BarChart3, LineChart, RefreshCw, TrendingUp } from "lucide-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
-import { Tier2ScoreResult } from "../utils/tier2ScoreCalculator";
+import { Tier2ScoreResult, ensureDimensionScores, Question, Tier2AssessmentResponses } from "../utils/tier2ScoreCalculator";
 import { useEffect, useState } from "react";
 import { fetchTeamAverages, TeamAverages } from "../utils/teamAverageCalculator";
 import { ScoreTimelineChart } from "./charts/ScoreTimelineChart";
 import { DimensionBarChart } from "./charts/DimensionBarChart";
+import { generateClient } from 'aws-amplify/data';
+import type { Schema } from '../../amplify/data/resource';
+
+const client = generateClient<Schema>();
 
 interface Tier2ResultsProps {
   onRetakeAssessment: () => void;
@@ -22,6 +26,7 @@ export function Tier2Results({
   const location = useLocation();
   const [teamAverages, setTeamAverages] = useState<TeamAverages | null>(null);
   const [loadingTeamData, setLoadingTeamData] = useState(true);
+  const [processedScore, setProcessedScore] = useState<Tier2ScoreResult | null>(null);
 
   const isLoggedIn = !!state.loggedInUserDetails;
   const companyId = state.loggedInUserDetails?.companyId;
@@ -29,9 +34,48 @@ export function Tier2Results({
   const userTier2Assessments = assessments || [];
 
   const latestAssessment = userTier2Assessments?.[0];
-  const score: Tier2ScoreResult | null = latestAssessment
+  const rawScore: Tier2ScoreResult | null = latestAssessment
     ? JSON.parse(latestAssessment.score as string)
     : null;
+
+  useEffect(() => {
+    async function loadAndProcessScore() {
+      if (!rawScore) {
+        setProcessedScore(null);
+        return;
+      }
+
+      if (rawScore.dimensionScores && rawScore.dimensionScores.length > 0) {
+        setProcessedScore(rawScore);
+        return;
+      }
+
+      const responses = latestAssessment?.responses
+        ? JSON.parse(latestAssessment.responses as string)
+        : undefined;
+
+      if (responses) {
+        const { data: questionsData } = await client.models.Question.list({
+          filter: {
+            templateId: { eq: 'tier2-full-readiness-v1' }
+          }
+        });
+
+        const questions: Question[] = questionsData.map(q => ({
+          id: q.sectionId || '',
+          prompt: q.prompt || '',
+          metadata: q.metadata,
+          options: []
+        }));
+
+        setProcessedScore(ensureDimensionScores(rawScore, responses, questions));
+      } else {
+        setProcessedScore(rawScore);
+      }
+    }
+
+    loadAndProcessScore();
+  }, [latestAssessment, rawScore]);
 
   useEffect(() => {
     async function loadTeamAverages() {
@@ -51,9 +95,11 @@ export function Tier2Results({
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  if (!score) {
+  if (!processedScore) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
+
+  const score = processedScore;
 
   const handleRetake = () => {
     onRetakeAssessment();
@@ -227,19 +273,21 @@ export function Tier2Results({
         </div>
 
         {/* Dimension Bar Chart */}
-        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-blue-600" />
-            Dimension Performance
-          </h2>
-          <DimensionBarChart
-            dimensions={score.dimensionScores.map((dimension) => ({
-              name: dimension.dimension,
-              myScore: dimension.percentage,
-              teamAverage: teamAverages?.dimensionAverages[dimension.dimension]?.percentage || null,
-            }))}
-          />
-        </div>
+        {score.dimensionScores && score.dimensionScores.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-blue-600" />
+              Dimension Performance
+            </h2>
+            <DimensionBarChart
+              dimensions={score.dimensionScores.map((dimension) => ({
+                name: dimension.dimension,
+                myScore: dimension.percentage,
+                teamAverage: teamAverages?.dimensionAverages[dimension.dimension]?.percentage || null,
+              }))}
+            />
+          </div>
+        )}
 
         {/* Score Details */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
