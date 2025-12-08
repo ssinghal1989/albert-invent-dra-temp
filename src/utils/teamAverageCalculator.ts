@@ -1,6 +1,8 @@
 import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { Tier2ScoreResult, ensureDimensionScores, Question, Tier2AssessmentResponses } from './tier2ScoreCalculator';
+import { questionsService } from '../services/questionsService';
+import { Tier2TemplateId } from '../services/defaultQuestions';
 
 const client = generateClient<Schema>();
 
@@ -42,13 +44,8 @@ export async function fetchTeamAverages(companyId: string): Promise<TeamAverages
       return null;
     }
 
-    const { data: questionsData } = await client.models.Question.list({
-      filter: {
-        templateId: { eq: 'tier2-full-readiness-v1' }
-      }
-    });
-
-    const questions: Question[] = questionsData.map(q => {
+    const {data: questionsData} = await questionsService.getQuestionsByTemplate(Tier2TemplateId);
+    const questions: Question[] = questionsData ? questionsData?.map(q => {
       let metadata: { pillar?: string; dimension?: string } | undefined = undefined;
       if (q.metadata) {
         try {
@@ -58,12 +55,12 @@ export async function fetchTeamAverages(companyId: string): Promise<TeamAverages
         }
       }
       return {
-        id: q.sectionId || '',
+        id: q.id || '',
         prompt: q.prompt || '',
         metadata,
         options: []
       };
-    });
+    }) : [];
 
     const scores: Tier2ScoreResult[] = assessments
       .filter((a) => a.score)
