@@ -14,20 +14,25 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
   if (dimensions.length === 0) return null;
 
   const maxScore = 100;
-  const barGroupWidth = 60;
+  const barGroupWidth = 100;
   const width = Math.max(1200, dimensions.length * barGroupWidth + 160);
   const height = 500;
-  const padding = { top: 20, right: 120, bottom: 180, left: 60 };
+  const padding = { top: 20, right: 120, bottom: 140, left: 60 };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
 
   const barWidth = chartWidth / dimensions.length;
-  const barPadding = Math.max(8, barWidth * 0.15);
-  const actualBarWidth = (barWidth - barPadding) / 2;
+  const barPadding = Math.max(20, barWidth * 0.25);
+  const actualBarWidth = (barWidth - barPadding) / 2.5;
 
   const getY = (score: number) => {
     return chartHeight - (score / maxScore) * chartHeight;
+  };
+
+  const formatDimensionName = (name: string, maxLength: number = 20) => {
+    if (name.length <= maxLength) return name;
+    return name.substring(0, maxLength - 3) + '...';
   };
 
   const yTicks = [0, 25, 50, 75, 100];
@@ -211,22 +216,46 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
                   </>
                 )}
 
-                <text
-                  x={x + barWidth / 2}
-                  y={chartHeight + 10}
-                  textAnchor="start"
-                  className="text-[10px] fill-gray-700"
-                  transform={`rotate(-60, ${x + barWidth / 2}, ${chartHeight + 10})`}
-                >
-                  {dimension.name}
-                </text>
+                <g>
+                  <foreignObject
+                    x={x}
+                    y={chartHeight + 10}
+                    width={barWidth}
+                    height={100}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'flex-start',
+                        width: '100%',
+                        height: '100%',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color: '#374151',
+                          textAlign: 'center',
+                          lineHeight: '1.3',
+                          wordBreak: 'break-word',
+                          maxWidth: `${barWidth - 10}px`,
+                        }}
+                        title={dimension.name}
+                      >
+                        {formatDimensionName(dimension.name, 25)}
+                      </div>
+                    </div>
+                  </foreignObject>
+                </g>
               </g>
             );
           })}
 
           <text
             x={chartWidth / 2}
-            y={chartHeight + 165}
+            y={chartHeight + 120}
             textAnchor="middle"
             className="text-sm font-semibold fill-gray-700"
           >
