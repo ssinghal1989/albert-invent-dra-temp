@@ -290,7 +290,9 @@ export function ensureDimensionScores(
 
   const dimensionData: { [dimension: string]: { score: number; pillar: string; questionCount: number } } = {};
 
+  console.log('Calculating missing dimension scores for Tier2ScoreResult', scoreResult, responses, questions);
   Object.entries(responses).forEach(([questionId, maturityLevel]) => {
+    console.log('Processing response for question', questions, questionId, maturityLevel);
     const question = questions.find(q => q.id === questionId);
     if (!question || !question.metadata) return;
 
@@ -304,6 +306,8 @@ export function ensureDimensionScores(
     dimensionData[dimension].score += score;
     dimensionData[dimension].questionCount += 1;
   });
+
+  console.log('Recalculating dimension scores for Tier2ScoreResult', dimensionData);
 
   const dimensionScores: DimensionScore[] = Object.entries(dimensionData).map(([dimension, data]) => {
     const maxScore = data.questionCount * 4;
