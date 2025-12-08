@@ -18,7 +18,7 @@ export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
   const minScore = 0;
   const width = 800;
   const height = 300;
-  const padding = { top: 20, right: 40, bottom: 60, left: 60 };
+  const padding = { top: 80, right: 40, bottom: 60, left: 60 };
 
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
@@ -95,70 +95,82 @@ export function ScoreTimelineChart({ assessments }: ScoreTimelineChartProps) {
                 {isHovered && (
                   <>
                     <defs>
-                      <filter id="tooltip-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                      <filter id={`tooltip-shadow-${i}`} x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+                        <feOffset dx="0" dy="6" result="offsetblur"/>
                         <feComponentTransfer>
-                          <feFuncA type="linear" slope="0.2"/>
+                          <feFuncA type="linear" slope="0.25"/>
                         </feComponentTransfer>
                         <feMerge>
                           <feMergeNode/>
                           <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                       </filter>
-                      <linearGradient id="tooltip-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 0.95 }} />
-                        <stop offset="100%" style={{ stopColor: '#2563eb', stopOpacity: 0.95 }} />
-                      </linearGradient>
                     </defs>
-                    <rect
-                      x={x - 50}
-                      y={y - 70}
-                      width={100}
-                      height={60}
-                      fill="url(#tooltip-gradient)"
-                      rx={10}
-                      filter="url(#tooltip-shadow)"
-                    />
-                    <text
-                      x={x}
-                      y={y - 45}
-                      textAnchor="middle"
-                      className="text-xs font-medium fill-white"
-                      style={{ opacity: 0.9 }}
-                    >
-                      Score
-                    </text>
-                    <text
-                      x={x}
-                      y={y - 25}
-                      textAnchor="middle"
-                      className="text-2xl font-bold fill-white"
-                    >
-                      {assessment.score.toFixed(1)}
-                    </text>
-                    <line
-                      x1={x - 35}
-                      y1={y - 35}
-                      x2={x + 35}
-                      y2={y - 35}
-                      stroke="white"
-                      strokeWidth={1}
-                      opacity={0.3}
-                    />
-                    <text
-                      x={x}
-                      y={y - 18}
-                      textAnchor="middle"
-                      className="text-xs font-medium fill-white"
-                      style={{ opacity: 0.95 }}
-                    >
-                      {assessment.date.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
-                    </text>
+                    <g style={{ animation: 'fadeIn 0.2s ease-in-out' }}>
+                      <rect
+                        x={x - 60}
+                        y={y - 80}
+                        width={120}
+                        height={68}
+                        fill="white"
+                        rx={12}
+                        filter={`url(#tooltip-shadow-${i})`}
+                      />
+                      <rect
+                        x={x - 56}
+                        y={y - 76}
+                        width={112}
+                        height={60}
+                        fill="#f8fafc"
+                        rx={10}
+                      />
+                      <circle
+                        cx={x}
+                        cy={y - 56}
+                        r={20}
+                        fill="#3b82f6"
+                        opacity={0.1}
+                      />
+                      <text
+                        x={x}
+                        y={y - 48}
+                        textAnchor="middle"
+                        className="text-3xl font-bold fill-blue-600"
+                        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        {assessment.score.toFixed(0)}
+                      </text>
+                      <rect
+                        x={x - 40}
+                        y={y - 35}
+                        width={80}
+                        height={1}
+                        fill="#e2e8f0"
+                      />
+                      <text
+                        x={x}
+                        y={y - 22}
+                        textAnchor="middle"
+                        className="text-xs font-semibold fill-gray-700"
+                        style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}
+                      >
+                        {assessment.date.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </text>
+                      <polygon
+                        points={`${x},${y - 12} ${x - 8},${y - 20} ${x + 8},${y - 20}`}
+                        fill="white"
+                        filter={`url(#tooltip-shadow-${i})`}
+                      />
+                      <polygon
+                        points={`${x},${y - 14} ${x - 6},${y - 20} ${x + 6},${y - 20}`}
+                        fill="#f8fafc"
+                      />
+                    </g>
                   </>
                 )}
                 <text

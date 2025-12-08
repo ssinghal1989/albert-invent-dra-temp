@@ -107,49 +107,107 @@ export function DimensionBarChart({ dimensions }: DimensionBarChartProps) {
 
                 {isMyBarHovered && (
                   <>
+                    <defs>
+                      <filter id={`bar-tooltip-shadow-${i}`} x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                        <feComponentTransfer>
+                          <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                          <feMergeNode/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
                     <rect
-                      x={myBarX + actualBarWidth / 2 - 40}
-                      y={getY(dimension.myScore) - 32}
-                      width={80}
-                      height={26}
+                      x={myBarX + actualBarWidth / 2 - 45}
+                      y={getY(dimension.myScore) - 48}
+                      width={90}
+                      height={40}
                       fill="white"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
+                      rx={8}
+                      filter={`url(#bar-tooltip-shadow-${i})`}
+                    />
+                    <rect
+                      x={myBarX + actualBarWidth / 2 - 42}
+                      y={getY(dimension.myScore) - 45}
+                      width={84}
+                      height={34}
+                      fill="#eff6ff"
                       rx={6}
-                      filter="url(#shadow)"
                     />
                     <text
                       x={myBarX + actualBarWidth / 2}
-                      y={getY(dimension.myScore) - 14}
+                      y={getY(dimension.myScore) - 26}
                       textAnchor="middle"
-                      className="text-xs font-bold fill-gray-900"
+                      className="text-xl font-bold"
+                      fill="#3b82f6"
                     >
                       {dimension.myScore.toFixed(1)}%
                     </text>
+                    <polygon
+                      points={`${myBarX + actualBarWidth / 2},${getY(dimension.myScore) - 8} ${myBarX + actualBarWidth / 2 - 6},${getY(dimension.myScore) - 14} ${myBarX + actualBarWidth / 2 + 6},${getY(dimension.myScore) - 14}`}
+                      fill="white"
+                      filter={`url(#bar-tooltip-shadow-${i})`}
+                    />
+                    <polygon
+                      points={`${myBarX + actualBarWidth / 2},${getY(dimension.myScore) - 10} ${myBarX + actualBarWidth / 2 - 4},${getY(dimension.myScore) - 14} ${myBarX + actualBarWidth / 2 + 4},${getY(dimension.myScore) - 14}`}
+                      fill="#eff6ff"
+                    />
                   </>
                 )}
 
                 {isTeamBarHovered && dimension.teamAverage !== null && (
                   <>
+                    <defs>
+                      <filter id={`team-tooltip-shadow-${i}`} x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+                        <feOffset dx="0" dy="4" result="offsetblur"/>
+                        <feComponentTransfer>
+                          <feFuncA type="linear" slope="0.2"/>
+                        </feComponentTransfer>
+                        <feMerge>
+                          <feMergeNode/>
+                          <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                      </filter>
+                    </defs>
                     <rect
-                      x={teamBarX + actualBarWidth / 2 - 40}
-                      y={getY(dimension.teamAverage) - 32}
-                      width={80}
-                      height={26}
+                      x={teamBarX + actualBarWidth / 2 - 45}
+                      y={getY(dimension.teamAverage) - 48}
+                      width={90}
+                      height={40}
                       fill="white"
-                      stroke="#10b981"
-                      strokeWidth={2}
+                      rx={8}
+                      filter={`url(#team-tooltip-shadow-${i})`}
+                    />
+                    <rect
+                      x={teamBarX + actualBarWidth / 2 - 42}
+                      y={getY(dimension.teamAverage) - 45}
+                      width={84}
+                      height={34}
+                      fill="#f0fdf4"
                       rx={6}
-                      filter="url(#shadow)"
                     />
                     <text
                       x={teamBarX + actualBarWidth / 2}
-                      y={getY(dimension.teamAverage) - 14}
+                      y={getY(dimension.teamAverage) - 26}
                       textAnchor="middle"
-                      className="text-xs font-bold fill-gray-900"
+                      className="text-xl font-bold"
+                      fill="#10b981"
                     >
                       {dimension.teamAverage.toFixed(1)}%
                     </text>
+                    <polygon
+                      points={`${teamBarX + actualBarWidth / 2},${getY(dimension.teamAverage) - 8} ${teamBarX + actualBarWidth / 2 - 6},${getY(dimension.teamAverage) - 14} ${teamBarX + actualBarWidth / 2 + 6},${getY(dimension.teamAverage) - 14}`}
+                      fill="white"
+                      filter={`url(#team-tooltip-shadow-${i})`}
+                    />
+                    <polygon
+                      points={`${teamBarX + actualBarWidth / 2},${getY(dimension.teamAverage) - 10} ${teamBarX + actualBarWidth / 2 - 4},${getY(dimension.teamAverage) - 14} ${teamBarX + actualBarWidth / 2 + 4},${getY(dimension.teamAverage) - 14}`}
+                      fill="#f0fdf4"
+                    />
                   </>
                 )}
 
