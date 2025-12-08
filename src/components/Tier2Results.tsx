@@ -27,6 +27,7 @@ export function Tier2Results({
   const [teamAverages, setTeamAverages] = useState<TeamAverages | null>(null);
   const [loadingTeamData, setLoadingTeamData] = useState(true);
   const [processedScore, setProcessedScore] = useState<Tier2ScoreResult | null>(null);
+  const [isProcessingScore, setIsProcessingScore] = useState(true);
 
   const isLoggedIn = !!state.loggedInUserDetails;
   const companyId = state.company?.id;
@@ -34,23 +35,26 @@ export function Tier2Results({
   const userTier2Assessments = assessments || [];
 
   const latestAssessment = userTier2Assessments?.[0];
-  const rawScore: Tier2ScoreResult | null = latestAssessment
-    ? JSON.parse(latestAssessment.score as string)
-    : null;
 
   useEffect(() => {
     async function loadAndProcessScore() {
-      if (!rawScore) {
+      setIsProcessingScore(true);
+
+      if (!latestAssessment || !latestAssessment.score) {
         setProcessedScore(null);
+        setIsProcessingScore(false);
         return;
       }
 
-      if (rawScore.dimensionScores && rawScore.dimensionScores.length > 0) {
-        setProcessedScore(rawScore);
+      const scoreData: Tier2ScoreResult = JSON.parse(latestAssessment.score as string);
+
+      if (scoreData.dimensionScores && scoreData.dimensionScores.length > 0) {
+        setProcessedScore(scoreData);
+        setIsProcessingScore(false);
         return;
       }
 
-      const responses = latestAssessment?.responses
+      const responses = latestAssessment.responses
         ? JSON.parse(latestAssessment.responses as string)
         : undefined;
 
@@ -61,21 +65,33 @@ export function Tier2Results({
           }
         });
 
-        const questions: Question[] = questionsData.map(q => ({
-          id: q.sectionId || '',
-          prompt: q.prompt || '',
-          metadata: q.metadata,
-          options: []
-        }));
+        const questions: Question[] = questionsData.map(q => {
+          let metadata: { pillar?: string; dimension?: string } | undefined = undefined;
+          if (q.metadata) {
+            try {
+              metadata = typeof q.metadata === 'string' ? JSON.parse(q.metadata) : q.metadata as any;
+            } catch (e) {
+              metadata = undefined;
+            }
+          }
+          return {
+            id: q.sectionId || '',
+            prompt: q.prompt || '',
+            metadata,
+            options: []
+          };
+        });
 
-        setProcessedScore(ensureDimensionScores(rawScore, responses, questions));
+        setProcessedScore(ensureDimensionScores(scoreData, responses, questions));
       } else {
-        setProcessedScore(rawScore);
+        setProcessedScore(scoreData);
       }
+
+      setIsProcessingScore(false);
     }
 
     loadAndProcessScore();
-  }, [latestAssessment, rawScore]);
+  }, [latestAssessment]);
 
   useEffect(() => {
     async function loadTeamAverages() {
@@ -93,6 +109,23 @@ export function Tier2Results({
 
   if (!isLoggedIn) {
     return <Navigate to="/" state={{ from: location }} replace />;
+  }
+
+  if (isProcessingScore) {
+    return (
+      <main className="flex-1 p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your assessment results...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!processedScore) {

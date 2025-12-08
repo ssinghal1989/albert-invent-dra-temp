@@ -291,14 +291,10 @@ export function ensureDimensionScores(
 
   Object.entries(responses).forEach(([questionId, maturityLevel]) => {
     const question = questions.find(q => q.id === questionId);
-    if (!question) return;
+    if (!question || !question.metadata) return;
 
-    const metadata = typeof question.metadata === 'string'
-      ? JSON.parse(question.metadata)
-      : question.metadata;
-
-    const pillar = metadata?.pillar || 'UNKNOWN';
-    const dimension = metadata?.dimension || 'UNKNOWN';
+    const pillar = question.metadata.pillar || 'UNKNOWN';
+    const dimension = question.metadata.dimension || 'UNKNOWN';
     const score = SCORING_CONFIG.maturityToScore[maturityLevel as keyof typeof SCORING_CONFIG.maturityToScore] || 0;
 
     if (!dimensionData[dimension]) {

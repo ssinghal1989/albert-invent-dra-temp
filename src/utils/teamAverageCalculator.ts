@@ -48,12 +48,22 @@ export async function fetchTeamAverages(companyId: string): Promise<TeamAverages
       }
     });
 
-    const questions: Question[] = questionsData.map(q => ({
-      id: q.sectionId || '',
-      prompt: q.prompt || '',
-      metadata: q.metadata,
-      options: []
-    }));
+    const questions: Question[] = questionsData.map(q => {
+      let metadata: { pillar?: string; dimension?: string } | undefined = undefined;
+      if (q.metadata) {
+        try {
+          metadata = typeof q.metadata === 'string' ? JSON.parse(q.metadata) : q.metadata as any;
+        } catch (e) {
+          metadata = undefined;
+        }
+      }
+      return {
+        id: q.sectionId || '',
+        prompt: q.prompt || '',
+        metadata,
+        options: []
+      };
+    });
 
     const scores: Tier2ScoreResult[] = assessments
       .filter((a) => a.score)
