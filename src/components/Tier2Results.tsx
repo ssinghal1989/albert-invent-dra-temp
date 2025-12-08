@@ -1,7 +1,11 @@
-import { AlertCircle, BarChart3, RefreshCw, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart3, LineChart, RefreshCw, TrendingUp } from "lucide-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { Tier2ScoreResult } from "../utils/tier2ScoreCalculator";
+import { useEffect, useState } from "react";
+import { fetchTeamAverages, TeamAverages } from "../utils/teamAverageCalculator";
+import { ScoreTimelineChart } from "./charts/ScoreTimelineChart";
+import { DimensionBarChart } from "./charts/DimensionBarChart";
 
 interface Tier2ResultsProps {
   onRetakeAssessment: () => void;
@@ -16,17 +20,32 @@ export function Tier2Results({
 }: Tier2ResultsProps) {
   const { state } = useAppContext();
   const location = useLocation();
+  const [teamAverages, setTeamAverages] = useState<TeamAverages | null>(null);
+  const [loadingTeamData, setLoadingTeamData] = useState(true);
 
   const isLoggedIn = !!state.loggedInUserDetails;
+  const companyId = state.loggedInUserDetails?.companyId;
 
-  // Use passed assessments or empty array
   const userTier2Assessments = assessments || [];
 
-  // Get latest assessment (sorted by createdAt in descending order)
   const latestAssessment = userTier2Assessments?.[0];
   const score: Tier2ScoreResult | null = latestAssessment
     ? JSON.parse(latestAssessment.score as string)
     : null;
+
+  useEffect(() => {
+    async function loadTeamAverages() {
+      if (companyId) {
+        setLoadingTeamData(true);
+        const averages = await fetchTeamAverages(companyId);
+        setTeamAverages(averages);
+        setLoadingTeamData(false);
+      } else {
+        setLoadingTeamData(false);
+      }
+    }
+    loadTeamAverages();
+  }, [companyId]);
 
   if (!isLoggedIn) {
     return <Navigate to="/" state={{ from: location }} replace />;
@@ -111,6 +130,25 @@ export function Tier2Results({
           </div>
         </div>
 
+        {/* Score vs Time Graph */}
+        {userTier2Assessments.length > 1 && (
+          <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <LineChart className="w-6 h-6 text-blue-600" />
+              Score Progress Over Time
+            </h2>
+            <ScoreTimelineChart
+              assessments={userTier2Assessments.map((assessment) => {
+                const assessmentScore: Tier2ScoreResult = JSON.parse(assessment.score as string);
+                return {
+                  date: new Date(assessment.createdAt || ''),
+                  score: assessmentScore.normalizedShiftedScore,
+                };
+              })}
+            />
+          </div>
+        )}
+
         {/* Pillar Breakdown */}
         <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
@@ -121,6 +159,9 @@ export function Tier2Results({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {score.pillarScores.map((pillar) => {
               const percentage = Math.round((pillar.rawScore / pillar.maxRawScore) * 100);
+              const teamAvg = teamAverages?.pillarAverages[pillar.pillar];
+              const teamPercentage = teamAvg ? Math.round(teamAvg.percentage) : null;
+
               return (
                 <div
                   key={pillar.pillar}
@@ -137,20 +178,28 @@ export function Tier2Results({
 
                   <div className="space-y-3">
                     <div className="flex items-baseline justify-between">
-                      <span className="text-sm text-gray-600">Raw Score</span>
+                      <span className="text-sm text-gray-600">My Score</span>
                       <span className="text-lg font-bold text-gray-900">
                         {pillar.rawScore} / {pillar.maxRawScore}
                       </span>
                     </div>
 
-                    {/* Progress Bar */}
+                    {teamPercentage !== null && (
+                      <div className="flex items-baseline justify-between">
+                        <span className="text-sm text-green-600">Team Average</span>
+                        <span className="text-lg font-bold text-green-600">
+                          {teamPercentage}%
+                        </span>
+                      </div>
+                    )}
+
                     <div className="w-full bg-gray-200 rounded-full h-3">
                       <div
                         className={`h-3 rounded-full transition-all ${
                           percentage >= 75
-                            ? 'bg-green-500'
-                            : percentage >= 50
                             ? 'bg-blue-500'
+                            : percentage >= 50
+                            ? 'bg-blue-400'
                             : percentage >= 25
                             ? 'bg-yellow-500'
                             : 'bg-red-500'
@@ -159,16 +208,37 @@ export function Tier2Results({
                       />
                     </div>
 
-                    <div className="text-right">
+                    <div className="flex items-center justify-between">
                       <span className={`text-2xl font-bold ${getScoreColor(percentage)}`}>
                         {percentage}%
                       </span>
+                      {teamPercentage !== null && (
+                        <span className="text-sm text-gray-600">
+                          {percentage > teamPercentage ? '+' : ''}
+                          {(percentage - teamPercentage).toFixed(1)}% vs team
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        </div>
+
+        {/* Dimension Bar Chart */}
+        <div className="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <BarChart3 className="w-6 h-6 text-blue-600" />
+            Dimension Performance
+          </h2>
+          <DimensionBarChart
+            dimensions={score.dimensionScores.map((dimension) => ({
+              name: dimension.dimension,
+              myScore: dimension.percentage,
+              teamAverage: teamAverages?.dimensionAverages[dimension.dimension]?.percentage || null,
+            }))}
+          />
         </div>
 
         {/* Score Details */}
@@ -179,32 +249,74 @@ export function Tier2Results({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-700">Total Raw Score</span>
-                <span className="font-semibold text-gray-900">
-                  {score.totalRawScore} / 80
-                </span>
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700">Total Raw Score</span>
+                  <span className="font-semibold text-gray-900">
+                    {score.totalRawScore} / 80
+                  </span>
+                </div>
+                {teamAverages && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-600">Team Average</span>
+                    <span className="font-semibold text-green-600">
+                      {teamAverages.calculationAverages.totalRawScore.toFixed(1)} / 80
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-700">Weighted Score</span>
-                <span className="font-semibold text-gray-900">
-                  {score.weightedScore.toFixed(3)}
-                </span>
+
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700">Weighted Score</span>
+                  <span className="font-semibold text-gray-900">
+                    {score.weightedScore.toFixed(3)}
+                  </span>
+                </div>
+                {teamAverages && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-600">Team Average</span>
+                    <span className="font-semibold text-green-600">
+                      {teamAverages.calculationAverages.weightedScore.toFixed(3)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                <span className="text-gray-700">Normalized Score</span>
-                <span className="font-semibold text-gray-900">
-                  {score.normalizedScore}
-                </span>
+              <div className="p-4 bg-gray-50 rounded-xl">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-gray-700">Normalized Score</span>
+                  <span className="font-semibold text-gray-900">
+                    {score.normalizedScore}
+                  </span>
+                </div>
+                {teamAverages && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-600">Team Average</span>
+                    <span className="font-semibold text-green-600">
+                      {teamAverages.calculationAverages.normalizedScore.toFixed(0)}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between items-center p-4 bg-blue-50 rounded-xl border border-blue-200">
-                <span className="text-blue-700 font-medium">Final Score</span>
-                <span className="font-bold text-blue-900 text-xl">
-                  {score.normalizedShiftedScore}
-                </span>
+
+              <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-blue-700 font-medium">Final Score</span>
+                  <span className="font-bold text-blue-900 text-xl">
+                    {score.normalizedShiftedScore}
+                  </span>
+                </div>
+                {teamAverages && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-green-600">Team Average</span>
+                    <span className="font-bold text-green-600">
+                      {teamAverages.calculationAverages.normalizedShiftedScore.toFixed(0)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
