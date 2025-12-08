@@ -29,7 +29,7 @@ export function Tier2Results({
   const [processedScore, setProcessedScore] = useState<Tier2ScoreResult | null>(null);
 
   const isLoggedIn = !!state.loggedInUserDetails;
-  const companyId = state.loggedInUserDetails?.companyId;
+  const companyId = state.company?.id;
 
   const userTier2Assessments = assessments || [];
 
