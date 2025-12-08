@@ -25,6 +25,14 @@ export interface PillarRawScore {
   dimensionCount: number;
 }
 
+export interface DimensionScore {
+  dimension: string;
+  dimensionScore: number;
+  maxScore: number;
+  percentage: number;
+  pillar: string;
+}
+
 export interface Tier2ScoreResult {
   // Raw scores per pillar
   digitalizationRawScore: number;
@@ -47,6 +55,9 @@ export interface Tier2ScoreResult {
 
   // Breakdown by pillar
   pillarScores: PillarRawScore[];
+
+  // Breakdown by dimension
+  dimensionScores: DimensionScore[];
 
   // Total questions answered
   totalQuestions: number;
@@ -145,6 +156,7 @@ export function calculateTier2Score(
       maturityLevel: 'Basic',
       scenarioSimulated: 'Completely Basic',
       pillarScores: [],
+      dimensionScores: [],
       totalQuestions: 0
     };
   }
@@ -156,7 +168,10 @@ export function calculateTier2Score(
     'VALUE_SCALING': 0
   };
 
-  // Calculate raw scores for each pillar
+  // Initialize dimension scores
+  const dimensionData: { [dimension: string]: { score: number; pillar: string } } = {};
+
+  // Calculate raw scores for each pillar and dimension
   Object.entries(responses).forEach(([questionId, maturityLevel]) => {
     const question = questions.find(q => q.id === questionId);
     if (!question) return;
@@ -166,11 +181,17 @@ export function calculateTier2Score(
       : question.metadata;
 
     const pillar = metadata?.pillar || 'UNKNOWN';
+    const dimension = metadata?.dimension || 'UNKNOWN';
     const score = SCORING_CONFIG.maturityToScore[maturityLevel as keyof typeof SCORING_CONFIG.maturityToScore] || 0;
 
     if (pillarData[pillar] !== undefined) {
       pillarData[pillar] += score;
     }
+
+    if (!dimensionData[dimension]) {
+      dimensionData[dimension] = { score: 0, pillar };
+    }
+    dimensionData[dimension].score += score;
   });
 
   const digitalizationRawScore = pillarData['DIGITALIZATION'];
@@ -220,6 +241,19 @@ export function calculateTier2Score(
     }
   ];
 
+  // Prepare dimension scores breakdown
+  const dimensionScores: DimensionScore[] = Object.entries(dimensionData).map(([dimension, data]) => {
+    const maxScore = 4;
+    const percentage = (data.score / maxScore) * 100;
+    return {
+      dimension,
+      dimensionScore: data.score,
+      maxScore,
+      percentage,
+      pillar: data.pillar
+    };
+  });
+
   return {
     digitalizationRawScore,
     transformationRawScore,
@@ -231,6 +265,7 @@ export function calculateTier2Score(
     maturityLevel,
     scenarioSimulated,
     pillarScores,
+    dimensionScores,
     totalQuestions
   };
 }
