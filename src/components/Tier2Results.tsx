@@ -1,4 +1,4 @@
-import { AlertCircle, BarChart3, LineChart, RefreshCw, TrendingUp } from "lucide-react";
+import { AlertCircle, BarChart3, LineChart, RefreshCw, TrendingUp, Download, FileCheck } from "lucide-react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAppContext } from "../context/AppContext";
 import { Tier2ScoreResult, ensureDimensionScores, Question, Tier2AssessmentResponses } from "../utils/tier2ScoreCalculator";
@@ -10,6 +10,8 @@ import { generateClient } from 'aws-amplify/data';
 import type { Schema } from '../../amplify/data/resource';
 import { questionsService } from "../services/questionsService";
 import { Tier2TemplateId } from "../services/defaultQuestions";
+import { useAssessmentReport } from "../hooks/useAssessmentReport";
+import { AssessmentReportData } from "../services/assessmentReportService";
 
 const client = generateClient<Schema>();
 
@@ -30,6 +32,9 @@ export function Tier2Results({
   const [loadingTeamData, setLoadingTeamData] = useState(true);
   const [processedScore, setProcessedScore] = useState<Tier2ScoreResult | null>(null);
   const [isProcessingScore, setIsProcessingScore] = useState(true);
+  const [availableReport, setAvailableReport] = useState<AssessmentReportData | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const { getReportByAssessmentId, downloadReport } = useAssessmentReport();
 
   const isLoggedIn = !!state.loggedInUserDetails;
   const companyId = state.company?.id;
@@ -105,6 +110,24 @@ export function Tier2Results({
     loadTeamAverages();
   }, [companyId]);
 
+  useEffect(() => {
+    async function checkForReport() {
+      if (latestAssessment?.id) {
+        setLoadingReport(true);
+        try {
+          const report = await getReportByAssessmentId(latestAssessment.id);
+          setAvailableReport(report);
+        } catch (error) {
+          console.error("Error checking for report:", error);
+          setAvailableReport(null);
+        } finally {
+          setLoadingReport(false);
+        }
+      }
+    }
+    checkForReport();
+  }, [latestAssessment?.id, getReportByAssessmentId]);
+
   if (!isLoggedIn) {
     return <Navigate to="/" state={{ from: location }} replace />;
   }
@@ -134,6 +157,16 @@ export function Tier2Results({
 
   const handleRetake = () => {
     onRetakeAssessment();
+  };
+
+  const handleDownloadReport = async () => {
+    if (availableReport) {
+      try {
+        await downloadReport(availableReport.reportFileKey, availableReport.reportFileName);
+      } catch (error) {
+        console.error("Error downloading report:", error);
+      }
+    }
   };
 
   const getMaturityColor = (level: string) => {
@@ -170,13 +203,24 @@ export function Tier2Results({
                 Detailed Digital Readiness Analysis
               </p>
             </div>
-            <button
-              onClick={handleRetake}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              <RefreshCw className="w-5 h-5" />
-              Retake Assessment
-            </button>
+            <div className="flex gap-3">
+              {availableReport && (
+                <button
+                  onClick={handleDownloadReport}
+                  className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+                >
+                  <Download className="w-5 h-5" />
+                  Download Report
+                </button>
+              )}
+              <button
+                onClick={handleRetake}
+                className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+              >
+                <RefreshCw className="w-5 h-5" />
+                Retake Assessment
+              </button>
+            </div>
           </div>
 
           {/* Overall Score Card */}
@@ -197,11 +241,21 @@ export function Tier2Results({
                   <span className="font-semibold">{score.maturityLevel}</span>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600 mb-2">Scenario</p>
-                <p className="text-lg font-semibold text-gray-800">
-                  {score.scenarioSimulated}
-                </p>
+              <div className="text-right space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Scenario</p>
+                  <p className="text-lg font-semibold text-gray-800">
+                    {score.scenarioSimulated}
+                  </p>
+                </div>
+                {availableReport && (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                    <FileCheck className="w-5 h-5 text-green-600" />
+                    <span className="text-sm font-medium text-green-700">
+                      Report Available
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -95,6 +95,7 @@ export const schema = a.schema({
       responses: a.json(), // Storing responses as JSON for simplicity
       createdAt: a.datetime().default(new Date().toISOString()),
       updatedAt: a.datetime().default(new Date().toISOString()),
+      reports: a.hasMany("AssessmentReport", "assessmentInstanceId"),
       //relations
       //assessor: a.belongsTo('User', 'assessorId'),
       //responses: a.hasMany('Response', 'assessmentInstanceId'),
@@ -107,6 +108,28 @@ export const schema = a.schema({
       index("initiatorUserId").sortKeys(["createdAt"]),
     ])
     .authorization((allow) => [allow.authenticated(), allow.owner(), allow.publicApiKey()]),
+  AssessmentReport: a
+    .model({
+      id: a.id().required(),
+      assessmentInstanceId: a.id().required(),
+      companyId: a.id().required(),
+      reportFileKey: a.string().required(),
+      reportFileName: a.string().required(),
+      uploadedBy: a.id().required(),
+      uploadedAt: a.datetime().default(new Date().toISOString()),
+      status: a.enum(["active", "archived", "deleted"]).default("active"),
+      fileSize: a.integer(),
+      mimeType: a.string().default("application/pdf"),
+      notes: a.string(),
+      assessmentInstance: a.belongsTo("AssessmentInstance", "assessmentInstanceId"),
+      createdAt: a.datetime().default(new Date().toISOString()),
+      updatedAt: a.datetime().default(new Date().toISOString()),
+    })
+    .secondaryIndexes((index) => [
+      index("assessmentInstanceId").sortKeys(["createdAt"]),
+      index("companyId").sortKeys(["uploadedAt"]),
+    ])
+    .authorization((allow) => [allow.authenticated()]),
   AnonymousAssessment: a
     .model({
       id: a.id().required(),

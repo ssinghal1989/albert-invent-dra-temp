@@ -20,6 +20,7 @@ import {
   Briefcase,
   BarChart3,
   Loader2,
+  FileText,
 } from "lucide-react";
 import { client } from "../amplifyClient";
 import { useAppContext } from "../context/AppContext";
@@ -29,6 +30,7 @@ import { useToast } from "../context/ToastContext";
 import { questionsService } from "../services/questionsService";
 import { Tier1TemplateId } from "../services/defaultQuestions";
 import { DimensionsManagement } from "./admin/DimensionsManagement";
+import { Tier2AssessmentsManagement } from "./admin/Tier2AssessmentsManagement";
 
 interface Company {
   id: string;
@@ -64,7 +66,7 @@ interface User {
   createdAt: string;
 }
 
-type AdminView = "companies" | "callRequests" | "users" | "dimensions";
+type AdminView = "companies" | "callRequests" | "users" | "dimensions" | "reports";
 
 export function AdminPanel() {
   const { state } = useAppContext();
@@ -592,7 +594,7 @@ export function AdminPanel() {
 
         {/* Navigation Tabs */}
         <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 bg-gray-100 rounded-lg p-1">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setCurrentView("companies")}
               className={`flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
@@ -628,6 +630,18 @@ export function AdminPanel() {
               <span className="hidden sm:inline">Dimensions</span>
               <span className="sm:hidden">Dims</span>
             </button>
+            <button
+              onClick={() => setCurrentView("reports")}
+              className={`flex items-center justify-center space-x-1 sm:space-x-2 py-2 px-2 sm:px-4 rounded-md font-medium transition-colors duration-200 text-sm sm:text-base ${
+                currentView === "reports"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <FileText className="w-4 h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Reports</span>
+              <span className="sm:hidden">Reports</span>
+            </button>
             {isSuperAdmin && (
               <button
                 onClick={() => setCurrentView("users")}
@@ -645,7 +659,7 @@ export function AdminPanel() {
         </div>
 
         {/* Search and Filters */}
-        {currentView !== "dimensions" && <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
+        {currentView !== "dimensions" && currentView !== "reports" && <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-200 mb-4 sm:mb-6">
           <div className="flex flex-col space-y-4 lg:flex-row lg:space-y-0 lg:space-x-4 lg:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
@@ -724,7 +738,7 @@ export function AdminPanel() {
         </div>}
 
         {/* Content */}
-        {currentView !== "dimensions" && <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
+        {currentView !== "dimensions" && currentView !== "reports" && <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
           <div className="p-4 sm:p-6 border-b border-gray-200">
             <h2 className="text-lg sm:text-xl font-bold text-gray-900">
               {currentView === "companies"
@@ -1539,6 +1553,13 @@ export function AdminPanel() {
         {currentView === "dimensions" && (
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200">
             <DimensionsManagement />
+          </div>
+        )}
+
+        {/* Reports View */}
+        {currentView === "reports" && (
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-200 p-6">
+            <Tier2AssessmentsManagement />
           </div>
         )}
       </div>
