@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Upload, Download, Building, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Upload, Download, Building, Calendar, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import { client } from '../../amplifyClient';
 import { LoadingButton } from '../ui/LoadingButton';
 import { useLoader } from '../../hooks/useLoader';
 import { useAssessmentReport } from '../../hooks/useAssessmentReport';
 import { ReportUploadModal } from './ReportUploadModal';
+
+interface Company {
+  id: string;
+  name?: string;
+  primaryDomain: string;
+}
 
 interface AssessmentStats {
   totalTier2: number;
@@ -31,6 +37,8 @@ interface Tier2Assessment {
 }
 
 export function Tier2AssessmentsManagement() {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [assessmentStats, setAssessmentStats] = useState<AssessmentStats>({
     totalTier2: 0,
     withReports: 0,
@@ -40,20 +48,38 @@ export function Tier2AssessmentsManagement() {
   const [showAssessmentsList, setShowAssessmentsList] = useState(false);
   const [selectedAssessment, setSelectedAssessment] = useState<Tier2Assessment | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const { isLoading: companiesLoading, withLoading: withCompaniesLoading } = useLoader();
   const { isLoading: statsLoading, withLoading: withStatsLoading } = useLoader();
   const { isLoading: assessmentsLoading, withLoading: withAssessmentsLoading } = useLoader();
   const { downloadReport, getAllReports } = useAssessmentReport();
 
   useEffect(() => {
-    loadAssessmentStats();
+    loadCompanies();
   }, []);
 
-  const loadAssessmentStats = async () => {
+  const loadCompanies = async () => {
+    await withCompaniesLoading(async () => {
+      try {
+        const { data } = await client.models.Company.list();
+        const companiesList = (data || []).map(c => ({
+          id: c.id,
+          name: c.name,
+          primaryDomain: c.primaryDomain
+        }));
+        setCompanies(companiesList);
+      } catch (error) {
+        console.error('Error loading companies:', error);
+      }
+    });
+  };
+
+  const loadAssessmentStats = async (companyId: string) => {
     await withStatsLoading(async () => {
       try {
         const tier2Result = await client.models.AssessmentInstance.list({
           filter: {
-            assessmentType: { eq: "TIER2" }
+            assessmentType: { eq: "TIER2" },
+            companyId: { eq: companyId }
           }
         });
 
@@ -78,12 +104,13 @@ export function Tier2AssessmentsManagement() {
     });
   };
 
-  const loadAssessmentsList = async () => {
+  const loadAssessmentsList = async (companyId: string) => {
     await withAssessmentsLoading(async () => {
       try {
         const tier2Result = await client.models.AssessmentInstance.list({
           filter: {
-            assessmentType: { eq: "TIER2" }
+            assessmentType: { eq: "TIER2" },
+            companyId: { eq: companyId }
           },
           selectionSet: [
             'id',
@@ -126,6 +153,12 @@ export function Tier2AssessmentsManagement() {
     });
   };
 
+  const handleCompanySelect = async (company: Company) => {
+    setSelectedCompany(company);
+    setShowAssessmentsList(false);
+    await loadAssessmentStats(company.id);
+  };
+
   const handleUploadClick = (assessment: Tier2Assessment) => {
     setSelectedAssessment(assessment);
     setShowUploadModal(true);
@@ -134,9 +167,17 @@ export function Tier2AssessmentsManagement() {
   const handleUploadSuccess = () => {
     setShowUploadModal(false);
     setSelectedAssessment(null);
-    loadAssessmentStats();
-    if (showAssessmentsList) {
-      loadAssessmentsList();
+    if (selectedCompany) {
+      loadAssessmentStats(selectedCompany.id);
+      if (showAssessmentsList) {
+        loadAssessmentsList(selectedCompany.id);
+      }
+    }
+  };
+
+  const handleViewAllAssessments = () => {
+    if (selectedCompany) {
+      loadAssessmentsList(selectedCompany.id);
     }
   };
 
@@ -156,51 +197,104 @@ export function Tier2AssessmentsManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total Tier 2 Assessments</p>
-              <p className="text-2xl font-bold text-gray-900">{assessmentStats.totalTier2}</p>
-            </div>
-            <FileText className="w-8 h-8 text-blue-500" />
-          </div>
-        </div>
+      <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100">
+        <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <Building className="w-6 h-6 text-blue-600" />
+          Select Company
+        </h2>
+        <p className="text-sm text-gray-600 mb-4">
+          Choose a company to view their Tier 2 assessment reports and upload detailed reports.
+        </p>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">With Reports</p>
-              <p className="text-2xl font-bold text-green-600">{assessmentStats.withReports}</p>
-            </div>
-            <CheckCircle className="w-8 h-8 text-green-500" />
+        {companiesLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Without Reports</p>
-              <p className="text-2xl font-bold text-amber-600">{assessmentStats.withoutReports}</p>
-            </div>
-            <XCircle className="w-8 h-8 text-amber-500" />
+        ) : (
+          <div className="relative">
+            <select
+              value={selectedCompany?.id || ''}
+              onChange={(e) => {
+                const company = companies.find(c => c.id === e.target.value);
+                if (company) handleCompanySelect(company);
+              }}
+              className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 appearance-none cursor-pointer"
+            >
+              <option value="">Select a company...</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name || company.primaryDomain} ({company.primaryDomain})
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
           </div>
-        </div>
+        )}
       </div>
 
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Manage Reports</h3>
-        <LoadingButton
-          onClick={loadAssessmentsList}
-          isLoading={assessmentsLoading}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <FileText className="w-4 h-4" />
-          View All Assessments
-        </LoadingButton>
-      </div>
+      {selectedCompany && (
+        <>
+          <div className="bg-white rounded-2xl p-6 border border-gray-200">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Building className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {selectedCompany.name || selectedCompany.primaryDomain}
+                </h3>
+                <p className="text-sm text-gray-500">{selectedCompany.primaryDomain}</p>
+              </div>
+            </div>
 
-      {showAssessmentsList && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Tier 2 Assessments</p>
+                    <p className="text-3xl font-bold text-blue-600 mt-2">{assessmentStats.totalTier2}</p>
+                  </div>
+                  <FileText className="w-10 h-10 text-blue-500" />
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-6 rounded-lg border border-green-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">With Reports</p>
+                    <p className="text-3xl font-bold text-green-600 mt-2">{assessmentStats.withReports}</p>
+                  </div>
+                  <CheckCircle className="w-10 h-10 text-green-500" />
+                </div>
+              </div>
+
+              <div className="bg-amber-50 p-6 rounded-lg border border-amber-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Without Reports</p>
+                    <p className="text-3xl font-bold text-amber-600 mt-2">{assessmentStats.withoutReports}</p>
+                  </div>
+                  <XCircle className="w-10 h-10 text-amber-500" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-gray-900">Manage Reports</h3>
+            <LoadingButton
+              onClick={handleViewAllAssessments}
+              isLoading={assessmentsLoading}
+              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+            >
+              <FileText className="w-4 h-4" />
+              View All Assessments
+            </LoadingButton>
+          </div>
+        </>
+      )}
+
+      {selectedCompany && showAssessmentsList && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -227,24 +321,35 @@ export function Tier2AssessmentsManagement() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {assessments.map((assessment) => (
-                  <tr key={assessment.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-mono text-gray-900">
-                        {assessment.id.slice(0, 8)}...
-                      </div>
+                {assessments.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-500 font-medium">No assessments found</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        This company has not completed any Tier 2 assessments yet.
+                      </p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4 text-gray-400" />
-                        <div className="text-sm">
-                          <div className="font-medium text-gray-900">
-                            {assessment.company?.name || 'N/A'}
-                          </div>
-                          <div className="text-gray-500">{assessment.company?.primaryDomain}</div>
+                  </tr>
+                ) : (
+                  assessments.map((assessment) => (
+                    <tr key={assessment.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-mono text-gray-900">
+                          {assessment.id.slice(0, 8)}...
                         </div>
-                      </div>
-                    </td>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <div className="text-sm">
+                            <div className="font-medium text-gray-900">
+                              {assessment.company?.name || 'N/A'}
+                            </div>
+                            <div className="text-gray-500">{assessment.company?.primaryDomain}</div>
+                          </div>
+                        </div>
+                      </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm">
                         <div className="font-medium text-gray-900">
@@ -298,9 +403,10 @@ export function Tier2AssessmentsManagement() {
                           </button>
                         )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
