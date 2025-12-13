@@ -34,7 +34,7 @@ export function Tier2Results({
   const [isProcessingScore, setIsProcessingScore] = useState(true);
   const [availableReport, setAvailableReport] = useState<AssessmentReportData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
-  const { getReportByAssessmentId, downloadReport } = useAssessmentReport();
+  const { getReportsByCompanyId, downloadReport } = useAssessmentReport();
 
   const isLoggedIn = !!state.loggedInUserDetails;
   const companyId = state.company?.id;
@@ -112,11 +112,18 @@ export function Tier2Results({
 
   useEffect(() => {
     async function checkForReport() {
-      if (latestAssessment?.id) {
+      if (companyId) {
         setLoadingReport(true);
         try {
-          const report = await getReportByAssessmentId(latestAssessment.id);
-          setAvailableReport(report);
+          const reports = await getReportsByCompanyId(companyId);
+          if (reports && reports.length > 0) {
+            const sortedReports = reports.sort((a, b) =>
+              new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+            );
+            setAvailableReport(sortedReports[0]);
+          } else {
+            setAvailableReport(null);
+          }
         } catch (error) {
           console.error("Error checking for report:", error);
           setAvailableReport(null);
@@ -126,7 +133,7 @@ export function Tier2Results({
       }
     }
     checkForReport();
-  }, [latestAssessment?.id, getReportByAssessmentId]);
+  }, [companyId, getReportsByCompanyId]);
 
   if (!isLoggedIn) {
     return <Navigate to="/" state={{ from: location }} replace />;
@@ -208,9 +215,10 @@ export function Tier2Results({
                 <button
                   onClick={handleDownloadReport}
                   className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors"
+                  disabled={loadingReport}
                 >
                   <Download className="w-5 h-5" />
-                  Download Report
+                  Download Company Report
                 </button>
               )}
               <button
@@ -252,7 +260,7 @@ export function Tier2Results({
                   <div className="flex items-center gap-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
                     <FileCheck className="w-5 h-5 text-green-600" />
                     <span className="text-sm font-medium text-green-700">
-                      Report Available
+                      Company Report Available
                     </span>
                   </div>
                 )}
