@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ChevronDown } from 'lucide-react';
 
 interface CompanyScoreChartProps {
   overallScore: number;
@@ -11,7 +11,7 @@ interface CompanyScoreChartProps {
 }
 
 export function CompanyScoreChart({ overallScore, dimensionScores }: CompanyScoreChartProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-600 bg-green-100 border-green-200';
@@ -61,13 +61,17 @@ export function CompanyScoreChart({ overallScore, dimensionScores }: CompanyScor
           className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
         >
           <span>Dimension Breakdown</span>
-          {isExpanded ? (
-            <ChevronUp className="w-5 h-5" />
-          ) : (
+          <span className="transition-transform duration-300" style={{ transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
             <ChevronDown className="w-5 h-5" />
-          )}
+          </span>
         </button>
-        {isExpanded && (
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            maxHeight: isExpanded ? '2000px' : '0',
+            opacity: isExpanded ? 1 : 0,
+          }}
+        >
           <div className="space-y-4 pt-2">
             {dimensionScores.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-4">No dimension scores available</p>
@@ -93,7 +97,7 @@ export function CompanyScoreChart({ overallScore, dimensionScores }: CompanyScor
               })
             )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
