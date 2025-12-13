@@ -147,59 +147,44 @@ export function Tier2AssessmentsManagement() {
         return;
       }
 
-      const dimensionsResult = await client.models.Dimension.list();
-      const dimensionsMap = new Map(
-        (dimensionsResult.data || []).map(d => [d.id, d.name || 'Unknown'])
-      );
-
-      const dimensionAggregates = new Map<string, { totalScore: number; totalResponses: number; maxPossiblePerAssessment: number }>();
+      const dimensionAggregates = new Map<string, { totalScore: number; totalQuestions: number }>();
 
       for (const assessment of assessmentsResult.data) {
         const responsesResult = await client.models.AssessmentResponse.list({
           filter: {
             assessmentInstanceId: { eq: assessment.id }
-          }
+          },
+          selectionSet: [
+            'id',
+            'questionId',
+            'selectedOptionId',
+            'question.dimensionId',
+            'question.dimension.name',
+            'selectedOption.points'
+          ]
         });
 
         if (responsesResult.data) {
-          const dimensionScoresForAssessment = new Map<string, { score: number; count: number }>();
-
           for (const response of responsesResult.data) {
-            const questionResult = await client.models.Question.get({ id: response.questionId || '' });
-            const optionResult = await client.models.ResponseOption.get({ id: response.selectedOptionId || '' });
+            const dimensionName = response.question?.dimension?.name || 'Unknown';
+            const points = response.selectedOption?.points || 0;
 
-            if (questionResult.data && optionResult.data) {
-              const dimensionId = questionResult.data.dimensionId;
-              const dimensionName = dimensionsMap.get(dimensionId || '') || 'Unknown';
-              const points = optionResult.data.points || 0;
-
-              if (!dimensionScoresForAssessment.has(dimensionName)) {
-                dimensionScoresForAssessment.set(dimensionName, { score: 0, count: 0 });
-              }
-
-              const dimScore = dimensionScoresForAssessment.get(dimensionName)!;
-              dimScore.score += points;
-              dimScore.count += 1;
-            }
-          }
-
-          for (const [dimensionName, { score, count }] of dimensionScoresForAssessment.entries()) {
             if (!dimensionAggregates.has(dimensionName)) {
-              dimensionAggregates.set(dimensionName, { totalScore: 0, totalResponses: 0, maxPossiblePerAssessment: 5 });
+              dimensionAggregates.set(dimensionName, { totalScore: 0, totalQuestions: 0 });
             }
 
             const aggregate = dimensionAggregates.get(dimensionName)!;
-            aggregate.totalScore += score;
-            aggregate.totalResponses += count;
+            aggregate.totalScore += points;
+            aggregate.totalQuestions += 1;
           }
         }
       }
 
       const numAssessments = assessmentsResult.data.length;
       const scores: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => {
-        const avgQuestionsPerDimension = data.totalResponses / numAssessments;
         const avgScore = data.totalScore / numAssessments;
-        const maxScore = avgQuestionsPerDimension * data.maxPossiblePerAssessment;
+        const avgQuestionsPerDimension = data.totalQuestions / numAssessments;
+        const maxScore = avgQuestionsPerDimension * 5;
 
         return {
           dimensionName: name,
