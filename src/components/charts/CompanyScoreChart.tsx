@@ -1,5 +1,5 @@
-import React from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import React, { useState } from 'react';
+import { TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface CompanyScoreChartProps {
   overallScore: number;
@@ -11,6 +11,8 @@ interface CompanyScoreChartProps {
 }
 
 export function CompanyScoreChart({ overallScore, dimensionScores }: CompanyScoreChartProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
   const getScoreColor = (percentage: number) => {
     if (percentage >= 80) return 'text-green-600 bg-green-100 border-green-200';
     if (percentage >= 60) return 'text-blue-600 bg-blue-100 border-blue-200';
@@ -54,29 +56,43 @@ export function CompanyScoreChart({ overallScore, dimensionScores }: CompanyScor
       </div>
 
       <div className="space-y-4">
-        <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Dimension Breakdown</h4>
-        {dimensionScores.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">No dimension scores available</p>
-        ) : (
-          dimensionScores.map((dimension, index) => {
-            const percentage = (dimension.score / dimension.maxScore) * 100;
-            return (
-              <div key={index} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium text-gray-700">{dimension.dimensionName}</span>
-                  <span className="text-gray-600 font-semibold">
-                    {dimension.score.toFixed(1)} / {dimension.maxScore}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${getBarColor(percentage)}`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full flex items-center justify-between text-sm font-semibold text-gray-700 uppercase tracking-wide hover:text-gray-900 transition-colors"
+        >
+          <span>Dimension Breakdown</span>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5" />
+          ) : (
+            <ChevronDown className="w-5 h-5" />
+          )}
+        </button>
+        {isExpanded && (
+          <div className="space-y-4 pt-2">
+            {dimensionScores.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">No dimension scores available</p>
+            ) : (
+              dimensionScores.map((dimension, index) => {
+                const percentage = (dimension.score / dimension.maxScore) * 100;
+                return (
+                  <div key={index} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-gray-700">{dimension.dimensionName}</span>
+                      <span className="text-gray-600 font-semibold">
+                        {dimension.score.toFixed(1)} / {dimension.maxScore}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${getBarColor(percentage)}`}
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
         )}
       </div>
     </div>
