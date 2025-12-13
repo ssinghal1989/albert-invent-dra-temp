@@ -35,6 +35,8 @@ interface Tier2Assessment {
   };
   hasReport: boolean;
   reportFileName?: string;
+  overallScore?: number;
+  maxScore?: number;
 }
 
 interface DimensionScore {
@@ -145,37 +147,66 @@ export function Tier2AssessmentsManagement() {
         return;
       }
 
-      const dimensionAggregates = new Map<string, { totalScore: number; count: number; maxScore: number }>();
+      const dimensionsResult = await client.models.Dimension.list();
+      const dimensionsMap = new Map(
+        (dimensionsResult.data || []).map(d => [d.id, d.name || 'Unknown'])
+      );
+
+      const dimensionAggregates = new Map<string, { totalScore: number; totalResponses: number; maxPossiblePerAssessment: number }>();
 
       for (const assessment of assessmentsResult.data) {
         const responsesResult = await client.models.AssessmentResponse.list({
           filter: {
             assessmentInstanceId: { eq: assessment.id }
-          },
-          selectionSet: ['id', 'questionId', 'selectedOptionId', 'question.dimensionId', 'selectedOption.points', 'question.dimension.name']
+          }
         });
 
         if (responsesResult.data) {
-          for (const response of responsesResult.data) {
-            const dimensionName = response.question?.dimension?.name || 'Unknown';
-            const points = response.selectedOption?.points || 0;
+          const dimensionScoresForAssessment = new Map<string, { score: number; count: number }>();
 
+          for (const response of responsesResult.data) {
+            const questionResult = await client.models.Question.get({ id: response.questionId || '' });
+            const optionResult = await client.models.ResponseOption.get({ id: response.selectedOptionId || '' });
+
+            if (questionResult.data && optionResult.data) {
+              const dimensionId = questionResult.data.dimensionId;
+              const dimensionName = dimensionsMap.get(dimensionId || '') || 'Unknown';
+              const points = optionResult.data.points || 0;
+
+              if (!dimensionScoresForAssessment.has(dimensionName)) {
+                dimensionScoresForAssessment.set(dimensionName, { score: 0, count: 0 });
+              }
+
+              const dimScore = dimensionScoresForAssessment.get(dimensionName)!;
+              dimScore.score += points;
+              dimScore.count += 1;
+            }
+          }
+
+          for (const [dimensionName, { score, count }] of dimensionScoresForAssessment.entries()) {
             if (!dimensionAggregates.has(dimensionName)) {
-              dimensionAggregates.set(dimensionName, { totalScore: 0, count: 0, maxScore: 5 });
+              dimensionAggregates.set(dimensionName, { totalScore: 0, totalResponses: 0, maxPossiblePerAssessment: 5 });
             }
 
             const aggregate = dimensionAggregates.get(dimensionName)!;
-            aggregate.totalScore += points;
-            aggregate.count += 1;
+            aggregate.totalScore += score;
+            aggregate.totalResponses += count;
           }
         }
       }
 
-      const scores: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => ({
-        dimensionName: name,
-        score: data.count > 0 ? data.totalScore / assessmentsResult.data.length : 0,
-        maxScore: data.maxScore
-      }));
+      const numAssessments = assessmentsResult.data.length;
+      const scores: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => {
+        const avgQuestionsPerDimension = data.totalResponses / numAssessments;
+        const avgScore = data.totalScore / numAssessments;
+        const maxScore = avgQuestionsPerDimension * data.maxPossiblePerAssessment;
+
+        return {
+          dimensionName: name,
+          score: avgScore,
+          maxScore: maxScore
+        };
+      });
 
       const total = scores.reduce((sum, d) => sum + d.score, 0);
 
@@ -214,22 +245,51 @@ export function Tier2AssessmentsManagement() {
           reports.map(r => [r.assessmentInstanceId, r])
         );
 
-        const assessmentsWithReports = tier2Result.data?.map(assessment => {
-          const report = reportsMap.get(assessment.id);
-          return {
-            id: assessment.id,
-            companyId: assessment.companyId,
-            initiatorUserId: assessment.initiatorUserId,
-            submittedAt: assessment.submittedAt,
-            scoredAt: assessment.scoredAt,
-            company: assessment.company,
-            initiator: assessment.initiator,
-            hasReport: !!report,
-            reportFileName: report?.reportFileName
-          };
-        }) || [];
+        const assessmentsWithScores = await Promise.all(
+          (tier2Result.data || []).map(async (assessment) => {
+            const report = reportsMap.get(assessment.id);
 
-        setAssessments(assessmentsWithReports);
+            const responsesResult = await client.models.AssessmentResponse.list({
+              filter: {
+                assessmentInstanceId: { eq: assessment.id }
+              }
+            });
+
+            let totalScore = 0;
+            let totalQuestions = 0;
+
+            if (responsesResult.data) {
+              for (const response of responsesResult.data) {
+                const optionResult = await client.models.ResponseOption.get({
+                  id: response.selectedOptionId || ''
+                });
+
+                if (optionResult.data) {
+                  totalScore += optionResult.data.points || 0;
+                  totalQuestions += 1;
+                }
+              }
+            }
+
+            const maxScore = totalQuestions * 5;
+
+            return {
+              id: assessment.id,
+              companyId: assessment.companyId,
+              initiatorUserId: assessment.initiatorUserId,
+              submittedAt: assessment.submittedAt,
+              scoredAt: assessment.scoredAt,
+              company: assessment.company,
+              initiator: assessment.initiator,
+              hasReport: !!report,
+              reportFileName: report?.reportFileName,
+              overallScore: totalScore,
+              maxScore: maxScore
+            };
+          })
+        );
+
+        setAssessments(assessmentsWithScores);
         setShowAssessmentsList(true);
       } catch (error) {
         console.error('Error loading assessments list:', error);
@@ -466,17 +526,14 @@ export function Tier2AssessmentsManagement() {
                     Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Submitted
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
+                    Overall Score
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {assessments.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
+                    <td colSpan={4} className="px-6 py-12 text-center">
                       <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 font-medium">No assessments found</p>
                       <p className="text-sm text-gray-400 mt-1">
@@ -485,51 +542,49 @@ export function Tier2AssessmentsManagement() {
                     </td>
                   </tr>
                 ) : (
-                  assessments.map((assessment) => (
-                    <tr key={assessment.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-mono text-gray-900">
-                          {assessment.id.slice(0, 12)}...
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {assessment.initiator?.name || 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-600">{assessment.initiator?.email || 'N/A'}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-900">
-                            {assessment.submittedAt
-                              ? new Date(assessment.submittedAt).toLocaleDateString()
-                              : 'Not submitted'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {assessment.scoredAt ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Completed
-                          </span>
-                        ) : assessment.submittedAt ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Submitted
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            In Progress
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
+                  assessments.map((assessment) => {
+                    const scorePercentage = assessment.maxScore && assessment.maxScore > 0
+                      ? (assessment.overallScore || 0) / assessment.maxScore * 100
+                      : 0;
+
+                    const getScoreColor = (percentage: number) => {
+                      if (percentage >= 80) return 'text-green-700 bg-green-100';
+                      if (percentage >= 60) return 'text-blue-700 bg-blue-100';
+                      if (percentage >= 40) return 'text-amber-700 bg-amber-100';
+                      return 'text-red-700 bg-red-100';
+                    };
+
+                    return (
+                      <tr key={assessment.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-mono text-gray-900">
+                            {assessment.id.slice(0, 12)}...
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-gray-400" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {assessment.initiator?.name || 'N/A'}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-600">{assessment.initiator?.email || 'N/A'}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className={`px-3 py-1 rounded-lg font-semibold ${getScoreColor(scorePercentage)}`}>
+                              {(assessment.overallScore || 0).toFixed(1)} / {assessment.maxScore || 0}
+                            </div>
+                            <span className="text-sm text-gray-500">
+                              ({scorePercentage.toFixed(1)}%)
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
