@@ -1,6 +1,7 @@
 import { defineBackend } from "@aws-amplify/backend";
 import { auth } from "./auth/resource";
 import { data } from "./data/resource";
+import { storage } from "./storage/resource";
 import { onScheduleCallFunction } from "./functions/onScheduleCall/resource";
 import { Policy, PolicyStatement, Effect } from "aws-cdk-lib/aws-iam";
 import { StartingPosition, EventSourceMapping } from "aws-cdk-lib/aws-lambda";
@@ -9,6 +10,7 @@ import { Stack } from "aws-cdk-lib";
 export const backend = defineBackend({
   auth,
   data,
+  storage,
   onScheduleCallFunction,
 });
 
