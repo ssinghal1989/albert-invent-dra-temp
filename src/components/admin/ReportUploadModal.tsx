@@ -5,19 +5,16 @@ import { LoadingButton } from '../ui/LoadingButton';
 import { fetchUserAttributes } from 'aws-amplify/auth';
 
 interface ReportUploadModalProps {
-  assessment: {
+  company: {
     id: string;
-    companyId?: string;
-    company?: {
-      name?: string;
-      primaryDomain: string;
-    };
+    name?: string;
+    primaryDomain: string;
   };
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export function ReportUploadModal({ assessment, onClose, onSuccess }: ReportUploadModalProps) {
+export function ReportUploadModal({ company, onClose, onSuccess }: ReportUploadModalProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [notes, setNotes] = useState('');
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -39,7 +36,7 @@ export function ReportUploadModal({ assessment, onClose, onSuccess }: ReportUplo
   };
 
   const handleUpload = async () => {
-    if (!selectedFile || !assessment.companyId) {
+    if (!selectedFile || !company.id) {
       setErrorMessage('Missing required information');
       return;
     }
@@ -52,8 +49,8 @@ export function ReportUploadModal({ assessment, onClose, onSuccess }: ReportUplo
       const uploadedBy = userAttributes.sub || 'admin';
 
       await uploadReport({
-        assessmentInstanceId: assessment.id,
-        companyId: assessment.companyId,
+        assessmentInstanceId: company.id,
+        companyId: company.id,
         file: selectedFile,
         uploadedBy,
         notes
@@ -91,11 +88,11 @@ export function ReportUploadModal({ assessment, onClose, onSuccess }: ReportUplo
 
         <div className="p-6 space-y-6">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="font-medium text-blue-900 mb-2">Assessment Details</h3>
+            <h3 className="font-medium text-blue-900 mb-2">Company Details</h3>
             <div className="space-y-1 text-sm text-blue-800">
-              <p><span className="font-medium">Company:</span> {assessment.company?.name || 'N/A'}</p>
-              <p><span className="font-medium">Domain:</span> {assessment.company?.primaryDomain || 'N/A'}</p>
-              <p><span className="font-medium">Assessment ID:</span> {assessment.id}</p>
+              <p><span className="font-medium">Company:</span> {company.name || 'N/A'}</p>
+              <p><span className="font-medium">Domain:</span> {company.primaryDomain}</p>
+              <p className="text-xs text-blue-600 mt-2">This report will be linked to the entire company</p>
             </div>
           </div>
 

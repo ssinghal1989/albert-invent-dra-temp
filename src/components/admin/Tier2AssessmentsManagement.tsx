@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Upload, Download, Building, Calendar, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { FileText, Upload, Download, Building, Calendar, CheckCircle, XCircle, ChevronDown, User } from 'lucide-react';
 import { client } from '../../amplifyClient';
 import { LoadingButton } from '../ui/LoadingButton';
 import { useLoader } from '../../hooks/useLoader';
 import { useAssessmentReport } from '../../hooks/useAssessmentReport';
 import { ReportUploadModal } from './ReportUploadModal';
+import { CompanyScoreChart } from '../charts/CompanyScoreChart';
 
 interface Company {
   id: string;
@@ -36,6 +37,20 @@ interface Tier2Assessment {
   reportFileName?: string;
 }
 
+interface DimensionScore {
+  dimensionName: string;
+  score: number;
+  maxScore: number;
+}
+
+interface CompanyReport {
+  id: string;
+  reportFileName: string;
+  reportFileKey: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export function Tier2AssessmentsManagement() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
@@ -45,13 +60,15 @@ export function Tier2AssessmentsManagement() {
     withoutReports: 0
   });
   const [assessments, setAssessments] = useState<Tier2Assessment[]>([]);
+  const [dimensionScores, setDimensionScores] = useState<DimensionScore[]>([]);
+  const [overallScore, setOverallScore] = useState(0);
+  const [companyReport, setCompanyReport] = useState<CompanyReport | null>(null);
   const [showAssessmentsList, setShowAssessmentsList] = useState(false);
-  const [selectedAssessment, setSelectedAssessment] = useState<Tier2Assessment | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const { isLoading: companiesLoading, withLoading: withCompaniesLoading } = useLoader();
   const { isLoading: statsLoading, withLoading: withStatsLoading } = useLoader();
   const { isLoading: assessmentsLoading, withLoading: withAssessmentsLoading } = useLoader();
-  const { downloadReport, getAllReports } = useAssessmentReport();
+  const { downloadReport, getAllReports, getReportsByCompanyId } = useAssessmentReport();
 
   useEffect(() => {
     loadCompanies();
@@ -83,25 +100,92 @@ export function Tier2AssessmentsManagement() {
           }
         });
 
-        const reports = await getAllReports();
-        const reportsMap = new Map(
-          reports.map(r => [r.assessmentInstanceId, r])
-        );
+        const companyReports = await getReportsByCompanyId(companyId);
+        const hasReport = companyReports.length > 0;
+
+        if (hasReport && companyReports[0]) {
+          setCompanyReport({
+            id: companyReports[0].id,
+            reportFileName: companyReports[0].reportFileName,
+            reportFileKey: companyReports[0].reportFileKey,
+            uploadedAt: companyReports[0].uploadedAt,
+            uploadedBy: companyReports[0].uploadedBy
+          });
+        } else {
+          setCompanyReport(null);
+        }
 
         const totalTier2 = tier2Result.data?.length || 0;
-        const withReports = tier2Result.data?.filter(a =>
-          reportsMap.has(a.id)
-        ).length || 0;
 
         setAssessmentStats({
           totalTier2,
-          withReports,
-          withoutReports: totalTier2 - withReports
+          withReports: hasReport ? 1 : 0,
+          withoutReports: hasReport ? 0 : 1
         });
+
+        await calculateCompanyScores(companyId);
       } catch (error) {
         console.error('Error loading assessment stats:', error);
       }
     });
+  };
+
+  const calculateCompanyScores = async (companyId: string) => {
+    try {
+      const assessmentsResult = await client.models.AssessmentInstance.list({
+        filter: {
+          assessmentType: { eq: "TIER2" },
+          companyId: { eq: companyId }
+        }
+      });
+
+      if (!assessmentsResult.data || assessmentsResult.data.length === 0) {
+        setDimensionScores([]);
+        setOverallScore(0);
+        return;
+      }
+
+      const dimensionAggregates = new Map<string, { totalScore: number; count: number; maxScore: number }>();
+
+      for (const assessment of assessmentsResult.data) {
+        const responsesResult = await client.models.AssessmentResponse.list({
+          filter: {
+            assessmentInstanceId: { eq: assessment.id }
+          },
+          selectionSet: ['id', 'questionId', 'selectedOptionId', 'question.dimensionId', 'selectedOption.points', 'question.dimension.name']
+        });
+
+        if (responsesResult.data) {
+          for (const response of responsesResult.data) {
+            const dimensionName = response.question?.dimension?.name || 'Unknown';
+            const points = response.selectedOption?.points || 0;
+
+            if (!dimensionAggregates.has(dimensionName)) {
+              dimensionAggregates.set(dimensionName, { totalScore: 0, count: 0, maxScore: 5 });
+            }
+
+            const aggregate = dimensionAggregates.get(dimensionName)!;
+            aggregate.totalScore += points;
+            aggregate.count += 1;
+          }
+        }
+      }
+
+      const scores: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => ({
+        dimensionName: name,
+        score: data.count > 0 ? data.totalScore / assessmentsResult.data.length : 0,
+        maxScore: data.maxScore
+      }));
+
+      const total = scores.reduce((sum, d) => sum + d.score, 0);
+
+      setDimensionScores(scores);
+      setOverallScore(total);
+    } catch (error) {
+      console.error('Error calculating company scores:', error);
+      setDimensionScores([]);
+      setOverallScore(0);
+    }
   };
 
   const loadAssessmentsList = async (companyId: string) => {
@@ -159,14 +243,12 @@ export function Tier2AssessmentsManagement() {
     await loadAssessmentStats(company.id);
   };
 
-  const handleUploadClick = (assessment: Tier2Assessment) => {
-    setSelectedAssessment(assessment);
+  const handleUploadClick = () => {
     setShowUploadModal(true);
   };
 
   const handleUploadSuccess = () => {
     setShowUploadModal(false);
-    setSelectedAssessment(null);
     if (selectedCompany) {
       loadAssessmentStats(selectedCompany.id);
       if (showAssessmentsList) {
@@ -175,23 +257,19 @@ export function Tier2AssessmentsManagement() {
     }
   };
 
-  const handleViewAllAssessments = () => {
-    if (selectedCompany) {
-      loadAssessmentsList(selectedCompany.id);
-    }
-  };
-
-  const handleDownloadClick = async (assessment: Tier2Assessment) => {
-    if (assessment.hasReport && assessment.reportFileName) {
+  const handleDownloadCompanyReport = async () => {
+    if (companyReport) {
       try {
-        const reports = await getAllReports();
-        const report = reports.find(r => r.assessmentInstanceId === assessment.id);
-        if (report) {
-          await downloadReport(report.reportFileKey, report.reportFileName);
-        }
+        await downloadReport(companyReport.reportFileKey, companyReport.reportFileName);
       } catch (error) {
         console.error('Error downloading report:', error);
       }
+    }
+  };
+
+  const handleViewAllAssessments = () => {
+    if (selectedCompany) {
+      loadAssessmentsList(selectedCompany.id);
     }
   };
 
@@ -235,67 +313,145 @@ export function Tier2AssessmentsManagement() {
       {selectedCompany && (
         <>
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Building className="w-6 h-6 text-blue-600" />
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Building className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {selectedCompany.name || selectedCompany.primaryDomain}
+                  </h3>
+                  <p className="text-sm text-gray-500">{selectedCompany.primaryDomain}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-bold text-gray-900">
-                  {selectedCompany.name || selectedCompany.primaryDomain}
-                </h3>
-                <p className="text-sm text-gray-500">{selectedCompany.primaryDomain}</p>
+
+              <div className="flex items-center gap-3">
+                {companyReport ? (
+                  <button
+                    onClick={handleDownloadCompanyReport}
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    <Download className="w-4 h-4" />
+                    Download Report
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleUploadClick}
+                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload Report
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Tier 2 Assessments</p>
                     <p className="text-3xl font-bold text-blue-600 mt-2">{assessmentStats.totalTier2}</p>
                   </div>
-                  <FileText className="w-10 h-10 text-blue-500" />
+                  <User className="w-10 h-10 text-blue-500" />
                 </div>
               </div>
 
               <div className="bg-green-50 p-6 rounded-lg border border-green-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">With Reports</p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">{assessmentStats.withReports}</p>
+                    <p className="text-sm text-gray-600">Company Report Status</p>
+                    <p className="text-lg font-bold text-green-600 mt-2">
+                      {companyReport ? 'Report Available' : 'No Report'}
+                    </p>
                   </div>
-                  <CheckCircle className="w-10 h-10 text-green-500" />
+                  {companyReport ? (
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  ) : (
+                    <XCircle className="w-10 h-10 text-amber-500" />
+                  )}
                 </div>
               </div>
 
-              <div className="bg-amber-50 p-6 rounded-lg border border-amber-100">
+              <div className="bg-purple-50 p-6 rounded-lg border border-purple-100">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-600">Without Reports</p>
-                    <p className="text-3xl font-bold text-amber-600 mt-2">{assessmentStats.withoutReports}</p>
+                    <p className="text-sm text-gray-600">Assessments Completed</p>
+                    <p className="text-3xl font-bold text-purple-600 mt-2">
+                      {assessmentStats.totalTier2}
+                    </p>
                   </div>
-                  <XCircle className="w-10 h-10 text-amber-500" />
+                  <FileText className="w-10 h-10 text-purple-500" />
                 </div>
               </div>
             </div>
+
+            {companyReport && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <div className="flex items-start gap-3">
+                  <FileText className="w-5 h-5 text-gray-600 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">{companyReport.reportFileName}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Uploaded on {new Date(companyReport.uploadedAt).toLocaleDateString()} at{' '}
+                      {new Date(companyReport.uploadedAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-gray-900">Manage Reports</h3>
-            <LoadingButton
-              onClick={handleViewAllAssessments}
-              isLoading={assessmentsLoading}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              <FileText className="w-4 h-4" />
-              View All Assessments
-            </LoadingButton>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CompanyScoreChart
+              overallScore={overallScore}
+              dimensionScores={dimensionScores}
+            />
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Assessment Summary</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Participants</p>
+                    <p className="text-2xl font-bold text-gray-900">{assessmentStats.totalTier2}</p>
+                  </div>
+                  <User className="w-8 h-8 text-gray-400" />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="text-sm text-gray-600">Dimensions Evaluated</p>
+                    <p className="text-2xl font-bold text-gray-900">{dimensionScores.length}</p>
+                  </div>
+                  <FileText className="w-8 h-8 text-gray-400" />
+                </div>
+
+                <div className="mt-6">
+                  <LoadingButton
+                    onClick={handleViewAllAssessments}
+                    isLoading={assessmentsLoading}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                  >
+                    <FileText className="w-4 h-4" />
+                    View Individual Assessments
+                  </LoadingButton>
+                </div>
+              </div>
+            </div>
           </div>
         </>
       )}
 
       {selectedCompany && showAssessmentsList && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Individual Assessments</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Showing all Tier 2 assessments completed by employees from this company
+            </p>
+          </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -304,26 +460,23 @@ export function Tier2AssessmentsManagement() {
                     Assessment ID
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Company
+                    Participant
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Initiator
+                    Email
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Submitted
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Report Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Actions
+                    Status
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {assessments.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={5} className="px-6 py-12 text-center">
                       <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-500 font-medium">No assessments found</p>
                       <p className="text-sm text-gray-400 mt-1">
@@ -336,73 +489,44 @@ export function Tier2AssessmentsManagement() {
                     <tr key={assessment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-mono text-gray-900">
-                          {assessment.id.slice(0, 8)}...
+                          {assessment.id.slice(0, 12)}...
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-gray-400" />
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-900">
-                              {assessment.company?.name || 'N/A'}
-                            </div>
-                            <div className="text-gray-500">{assessment.company?.primaryDomain}</div>
-                          </div>
-                        </div>
-                      </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm">
-                        <div className="font-medium text-gray-900">
-                          {assessment.initiator?.name || 'N/A'}
-                        </div>
-                        <div className="text-gray-500">{assessment.initiator?.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-900">
-                          {assessment.submittedAt
-                            ? new Date(assessment.submittedAt).toLocaleDateString()
-                            : 'Not submitted'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {assessment.hasReport ? (
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="text-sm text-green-600 font-medium">
-                            {assessment.reportFileName}
+                          <User className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {assessment.initiator?.name || 'N/A'}
                           </span>
                         </div>
-                      ) : (
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">{assessment.initiator?.email || 'N/A'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <XCircle className="w-4 h-4 text-amber-500" />
-                          <span className="text-sm text-amber-600 font-medium">No report</span>
+                          <Calendar className="w-4 h-4 text-gray-400" />
+                          <span className="text-sm text-gray-900">
+                            {assessment.submittedAt
+                              ? new Date(assessment.submittedAt).toLocaleDateString()
+                              : 'Not submitted'}
+                          </span>
                         </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {assessment.hasReport ? (
-                          <button
-                            onClick={() => handleDownloadClick(assessment)}
-                            className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
-                          >
-                            <Download className="w-4 h-4" />
-                            Download
-                          </button>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {assessment.scoredAt ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Completed
+                          </span>
+                        ) : assessment.submittedAt ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Submitted
+                          </span>
                         ) : (
-                          <button
-                            onClick={() => handleUploadClick(assessment)}
-                            className="flex items-center gap-1 px-3 py-1 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Upload
-                          </button>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            In Progress
+                          </span>
                         )}
-                      </div>
                       </td>
                     </tr>
                   ))
@@ -413,12 +537,11 @@ export function Tier2AssessmentsManagement() {
         </div>
       )}
 
-      {showUploadModal && selectedAssessment && (
+      {showUploadModal && selectedCompany && (
         <ReportUploadModal
-          assessment={selectedAssessment}
+          company={selectedCompany}
           onClose={() => {
             setShowUploadModal(false);
-            setSelectedAssessment(null);
           }}
           onSuccess={handleUploadSuccess}
         />
