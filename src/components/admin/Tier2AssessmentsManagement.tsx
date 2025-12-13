@@ -6,6 +6,9 @@ import { useLoader } from '../../hooks/useLoader';
 import { useAssessmentReport } from '../../hooks/useAssessmentReport';
 import { ReportUploadModal } from './ReportUploadModal';
 import { CompanyScoreChart } from '../charts/CompanyScoreChart';
+import { Tier2ScoreResult, ensureDimensionScores, Question } from '../../utils/tier2ScoreCalculator';
+import { questionsService } from '../../services/questionsService';
+import { Tier2TemplateId } from '../../services/defaultQuestions';
 
 interface Company {
   id: string;
@@ -147,55 +150,63 @@ export function Tier2AssessmentsManagement() {
         return;
       }
 
-      const dimensionAggregates = new Map<string, { totalScore: number; totalQuestions: number }>();
-
-      for (const assessment of assessmentsResult.data) {
-        const responsesResult = await client.models.AssessmentResponse.list({
-          filter: {
-            assessmentInstanceId: { eq: assessment.id }
-          },
-          selectionSet: [
-            'id',
-            'questionId',
-            'selectedOptionId',
-            'question.dimensionId',
-            'question.dimension.name',
-            'selectedOption.points'
-          ]
-        });
-
-        if (responsesResult.data) {
-          for (const response of responsesResult.data) {
-            const dimensionName = response.question?.dimension?.name || 'Unknown';
-            const points = response.selectedOption?.points || 0;
-
-            if (!dimensionAggregates.has(dimensionName)) {
-              dimensionAggregates.set(dimensionName, { totalScore: 0, totalQuestions: 0 });
-            }
-
-            const aggregate = dimensionAggregates.get(dimensionName)!;
-            aggregate.totalScore += points;
-            aggregate.totalQuestions += 1;
+      const { data: questionsData } = await questionsService.getQuestionsByTemplate(Tier2TemplateId);
+      const questions: Question[] = questionsData ? questionsData?.map(q => {
+        let metadata: { pillar?: string; dimension?: string } | undefined = undefined;
+        if (q.metadata) {
+          try {
+            metadata = typeof q.metadata === 'string' ? JSON.parse(q.metadata) : q.metadata as any;
+          } catch (e) {
+            metadata = undefined;
           }
         }
+        return {
+          id: q.id || '',
+          prompt: q.prompt || '',
+          metadata,
+          options: []
+        };
+      }) : [];
+
+      const scores: Tier2ScoreResult[] = assessmentsResult.data
+        .filter((a) => a.score)
+        .map((a) => {
+          const score = JSON.parse(a.score as string);
+          const responses = a.responses ? JSON.parse(a.responses as string) : undefined;
+          return ensureDimensionScores(score, responses, questions);
+        });
+
+      if (scores.length === 0) {
+        setDimensionScores([]);
+        setOverallScore(0);
+        return;
       }
 
-      const numAssessments = assessmentsResult.data.length;
-      const scores: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => {
-        const avgScore = data.totalScore / numAssessments;
-        const avgQuestionsPerDimension = data.totalQuestions / numAssessments;
-        const maxScore = avgQuestionsPerDimension * 5;
+      const dimensionAggregates = new Map<string, { totalScore: number; totalMaxScore: number }>();
 
-        return {
-          dimensionName: name,
-          score: avgScore,
-          maxScore: maxScore
-        };
+      scores.forEach((score) => {
+        if (score.dimensionScores && score.dimensionScores.length > 0) {
+          score.dimensionScores.forEach((dimension) => {
+            if (!dimensionAggregates.has(dimension.dimension)) {
+              dimensionAggregates.set(dimension.dimension, { totalScore: 0, totalMaxScore: 0 });
+            }
+            const aggregate = dimensionAggregates.get(dimension.dimension)!;
+            aggregate.totalScore += dimension.dimensionScore;
+            aggregate.totalMaxScore += dimension.maxScore;
+          });
+        }
       });
 
-      const total = scores.reduce((sum, d) => sum + d.score, 0);
+      const count = scores.length;
+      const dimensionScoresList: DimensionScore[] = Array.from(dimensionAggregates.entries()).map(([name, data]) => ({
+        dimensionName: name,
+        score: data.totalScore / count,
+        maxScore: data.totalMaxScore / count
+      }));
 
-      setDimensionScores(scores);
+      const total = dimensionScoresList.reduce((sum, d) => sum + d.score, 0);
+
+      setDimensionScores(dimensionScoresList);
       setOverallScore(total);
     } catch (error) {
       console.error('Error calculating company scores:', error);
